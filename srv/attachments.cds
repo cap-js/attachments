@@ -5,8 +5,12 @@ service ObjectStoreService {
     };
 
     action uploadBulk(attachments : String, images : String) returns {
-            message : String
-        };
+        message : String
+    };
+
+    action emptyBucket(attachments : String, images : String) returns {
+        message : String
+    };
 
     action uploadFile(bytes : Integer, name : String, contentType : String) returns {
         message : String
@@ -17,6 +21,10 @@ service ObjectStoreService {
     };
 
     action getFile(fileName : String)                                       returns {
+        inputStream : Binary
+    };
+
+    action getObjectAsStream(fileName : String)                             returns {
         inputStream : Binary
     };
 

@@ -15,7 +15,34 @@ class ObjectStoreService extends cds.ApplicationService {
 
 		const { credentials, plan } = verifyInput()
 		const { ObjectStore } = require(`./plans/${plan}`)
-		const store = new ObjectStore(credentials);
+		const store = new ObjectStore(credentials)
+
+		this.on('getObjectAsStream', async (req) => {
+			try {
+				const res = await store.getObjectAsStream(req.data.fileName)
+				return Promise.resolve(res)
+			} catch (err) {
+				return Promise.reject(err.toString())
+			}
+		})
+
+		this.on('uploadBulk', async req => {
+			try {
+				const res = await store.uploadBulk()
+				return Promise.resolve(res)
+			} catch (err) {
+				return Promise.reject(err.toString())
+			}
+		})
+
+		this.on('emptyBucket', async req => {
+			try {
+				const res = await store.emptyBucket()
+				return Promise.resolve(res)
+			} catch (err) {
+				return Promise.reject(err.toString())
+			}
+		})
 
 		this.on('listObjects', async req => {
 			try {
@@ -59,22 +86,5 @@ function getMsg(key) {
 	return msg
 }
 
-function getAttachmentsByAnnotation() {
-        const attachments = []
-        const images = []
-		console.log(cds)
-		Object.values(cds.entities).filter(e => e.compositions).forEach(c => {
-            const elements = c.elements;
-            Object.entries(elements).forEach(([k, v]) => {
-                    if (v.target === 'Documents') {
-                        attachments.push(`${c.name}.${k}`)
-                    }
-                    if (v['@Core.IsMediaType'] && !c.projection) {
-                        images.push(`${c.name}.${k.replace('_mediaType', '')}`)
-                    }
-                })
-        })
-		return { attachments, images }
-}
 
 module.exports = { ObjectStoreService }
