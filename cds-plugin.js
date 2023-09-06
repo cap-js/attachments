@@ -29,10 +29,12 @@ cds.on('served', async () => {
 
     if (data.length && ref) {
       data.map((d, i) => {
+        if (d && d.customer && ref) {
           const file = `${ref}-${d.customer.ID}.png`
           Object.assign(d.customer, {
             avatar: `${origin}/media/?file=${file}`
           })
+        }
       })
     }
     return data
