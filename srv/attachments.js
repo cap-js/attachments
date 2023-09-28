@@ -77,10 +77,10 @@ function getMsg(key) {
 	let msg;
 	switch (key) {
 		case 'no_credentials':
-			msg = ` ❗️ No service credentials detected. ❗️\n`
+			msg = `❗️ No service credentials detected. ❗️\n`
 			break
 		case 'unknown_plan':
-			msg = ` ❗️ Unknown service plan! Choose from: ${SERVICE_PLANS.join(', ')} ❗️\n`
+			msg = `❗️ Unknown service plan! Choose from: ${SERVICE_PLANS.join(', ')} ❗️\n`
 			break
 	}
 	return msg
