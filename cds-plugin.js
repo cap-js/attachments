@@ -2,6 +2,7 @@ const cds = require('@sap/cds')
 
 // Make images available to app under:
 // <APP_URL>/media/filename
+// TODO: Have this on the service where the attachment was annotated
 cds.on('bootstrap', async app => {
   app.get('/media/', async (req, res) => {
     const { ObjectStoreService } = cds.services

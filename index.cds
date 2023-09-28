@@ -4,8 +4,8 @@ using from './srv/attachments';
 // TODO: Elaborate with MediaData
 // entity MediaData {
 //   key ID : UUID;
-//   imageType : String @Core.IsMediaType: true;
-//   imageUrl  : String @Core.IsURL @Core.MediaType: imageType;
+//   type : String @Core.IsMediaType: true;
+//   url  : String @Core.IsURL @Core.MediaType: type;
 // }
 
 // entity Documents : managed, MediaData {
@@ -15,6 +15,9 @@ using from './srv/attachments';
 // }
 
 //type Attachments : Composition of many Documents;
-
-// QUESTION: Why is @Core.IsURL highlighted by CDS annotations?
 type Image : String @Core.IsURL @Core.MediaType : 'image/png';
+
+annotate Image with @(
+    title: 'Attachments:Image',
+    description: 'Type Image from @cap-js/attachments'
+);
