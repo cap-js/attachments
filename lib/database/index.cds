@@ -1,12 +1,10 @@
+using { cuid, managed } from '@sap/cds/common';
+
 @protocol: 'none'
-service AWSAttachmentsService {
+service DBAttachmentsService {
 
     action onSTREAM(fileName : String) returns {
         inputStream : LargeBinary
     };
-
-    action onGET() returns {
-        objectList: String;
-    }
 
 }
