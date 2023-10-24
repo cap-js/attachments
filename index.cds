@@ -1,5 +1,5 @@
 using { managed } from '@sap/cds/common';
-using from './srv/attachments';
+//using from './srv/attachments';
 
 // TODO: Elaborate with MediaData
 // entity MediaData {
