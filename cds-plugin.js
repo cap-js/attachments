@@ -22,6 +22,9 @@ cds.on('bootstrap', async app => {
 		// TODO: Get rid of this renaming
 		file = file.replace('MediaData', 'sap.capire.incidents.Customers')
 
+		// TODO: Show what MediaData is available (in database/bucket/etc.)
+		//console.log(await srv.onGET(req.headers.host))
+
 		const stream = await srv.onSTREAM(file)
 		if (stream) {
 			res.setHeader('Content-Type', 'application/octet-stream')
