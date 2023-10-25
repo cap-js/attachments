@@ -4,7 +4,7 @@ using { cuid, managed } from '@sap/cds/common';
 service DBAttachmentsService {
 
     action onSTREAM(fileName : String) returns {
-        inputStream : LargeBinary
+        inputStream : LargeBinary;
     };
 
 }
