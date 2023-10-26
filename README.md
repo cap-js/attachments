@@ -1,37 +1,118 @@
-# cap-js Repository Template
+# Attachments Plugin for SAP Cloud Application Programming Model (CAP)
 
-Default templates for cap-js open source repositories, including LICENSE, .reuse/dep5, Code of Conduct, etc... All repositories on github.com/cap-js will be created based on this template.
+[![REUSE status](https://api.reuse.software/badge/github.com/cap-js/change-tracking)](https://api.reuse.software/info/github.com/cap-js/attachments)
 
-## To-Do
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset handling via simple type imports for `Image`, `Document` and `Attachments`. 
 
-In case you are the maintainer of a new cap-js open source project, these are the steps to do with the template files:
+1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
+2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
+3. [Et voilà:](#attachments-view)
 
-- Check if the default license (Apache 2.0) also applies to your project. A license change should only be required in exceptional cases. If this is the case, please change the [license file](LICENSE).
-- Enter the correct metadata for the REUSE tool. See our [wiki page](https://wiki.wdf.sap.corp/wiki/display/ospodocs/Using+the+Reuse+Tool+of+FSFE+for+Copyright+and+License+Information) for details how to do it. You can find an initial .reuse/dep5 file to build on. Please replace the parts inside the single angle quotation marks < > by the specific information for your repository and be sure to run the REUSE tool to validate that the metadata is correct.
-- Adjust the contribution guidelines (e.g. add coding style guidelines, pull request checklists, different license if needed etc.)
-- Add information about your project to this README (name, description, requirements etc). Especially take care for the <your-project> placeholders - those ones need to be replaced with your project name. See the sections below the horizontal line and [our guidelines on our wiki page](https://wiki.wdf.sap.corp/wiki/display/ospodocs/Guidelines+for+README.md+file) what is required and recommended.
-- Remove all content in this README above and including the horizontal line ;)
+<!--img width="1300" alt="attachments-view" src="_assets/attachments-view.png"-->
 
-***
+### Table of Contents
 
-# Our new open source project
+- [Preliminaries](#preliminaries)
+- [Setup](#setup)
+- [Types](#types)
+- [Test-drive locally](#test-drive-locally)
+- [Attachments View](#attachments-view)
+- [Contributing](#contributing)
+- [Code of Conduct](#code-of-conduct)
+- [Licensing](#licensing)
 
-## About this project
 
-*Insert a short description of your project here...*
 
-## Requirements and Setup
+## Preliminaries
 
-*Insert a short description what is required to get your project running...*
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base to add attachments to. Clone the repository and apply the step-by-step instructions:
 
-## Support, Feedback, Contributing
+```sh
+git clone https://github.com/cap-js/incidents-app
+cd incidents-app
+npm i
+```
 
-This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/<your-project>/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
+<!--**Alternatively**, you can clone the incidents app including the prepared enhancements for change-tracking:
+
+```sh
+git clone https://github.com/cap-js/calesi --recursive
+cd calesi
+npm i
+```
+
+```sh
+cds w samples/attachments
+```
+-->
+
+
+## Setup
+
+To enable automatic asset handling, simply add this self-configuring plugin package to your project:
+
+```sh
+npm add @cap-js/attachments
+```
+
+
+
+## Annotations
+
+All we need to do is to denote the respective asset elements with type `Image`, `Documents`, or `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
+
+```cds
+using { sap.capire.incidents } from '@capire/incidents';
+using { Image } from '@cap-js/attachments';
+
+// Add customer avatars and annotate as type 'Image'
+extend incidents.Customers with {
+  avatar: Image;
+}
+
+annotate ProcessorService.Incidents with @(
+    UI.LineItem : [
+        ...up to { Value : title },
+        // This adds an 'avatar' image column before customer
+        {
+            $Type : 'UI.DataField',
+            Value : customer.avatar_url,
+            Label: '{i18n>Avatar}'
+        },
+        ...
+    ]
+);
+```
+
+...
+
+
+## Test-drive locally
+
+With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
+
+1. **Start the server**:
+  ```sh
+  cds watch
+  ```
+2....
+
+## Attachments View
+
+
+<!--   ![Incidents with Attachments](./assets/readme_table.png) -->
+
+
+## Contributing
+
+This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/change-tracking/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
+
 
 ## Code of Conduct
 
 We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. By participating in this project, you agree to abide by its [Code of Conduct](CODE_OF_CONDUCT.md) at all times.
 
+
 ## Licensing
 
-Copyright (20xx-)20xx SAP SE or an SAP affiliate company and <your-project> contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/<your-project>).
+Copyright 2023 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/change-tracking).
