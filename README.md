@@ -2,7 +2,7 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/cap-js/change-tracking)](https://api.reuse.software/info/github.com/cap-js/attachments)
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset handling via simple type imports for `Image`, `Document` and `Attachments`. 
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset handling via simple type imports for `Image`, `Document` and `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
 
 1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
 2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
