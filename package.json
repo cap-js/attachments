@@ -21,7 +21,18 @@
     "cds": {
         "requires": {
             "attachments": {
-                "model": "@cap-js/attachments"
+                "model": "@cap-js/attachments/lib/common",
+                "impl": "@cap-js/attachments/lib/common"
+            },
+            "[hybrid]": {
+                "s3-standard": {
+                    "model": "@cap-js/attachments/lib/s3-standard",
+                    "impl": "@cap-js/attachments/lib/s3-standard"
+                }
+            },
+            "database": {
+                "model": "@cap-js/attachments/lib/database",
+                "impl": "@cap-js/attachments/lib/database"
             }
         }
     },
