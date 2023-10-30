@@ -5,6 +5,8 @@ service DBAttachmentsService {
         objectList : String;
     };
 
+    action onPUT(entity : String, files: array of String) returns {};
+
     action onSTREAM(fileName : String) returns {
         inputStream : LargeBinary;
     };
