@@ -6,7 +6,9 @@ entity MediaData {
   url      : String @Core.IsURL @Core.MediaType: mimeType;
 }
 
-type Image       : managed, MediaData {}
+type Image       : managed, MediaData {
+  fileName        : String(255);
+}
 
 type Attachments : managed, MediaData {
   fileName        : String(255);
@@ -60,7 +62,7 @@ context sap.attachments {
   annotate AttachmentsView with @(UI: {
     PresentationVariant: {Visualizations: ['@UI.LineItem'], },
     LineItem           : [
-      {Value: fileName}
+      { Value: fileName }
     ]
   });
 

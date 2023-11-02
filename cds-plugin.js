@@ -2,7 +2,7 @@ const cds = require('@sap/cds')
 
 const hasAttachments = (entity) => {
 	if (entity['@attachments'] || entity.elements && Object.values(entity.elements).some(e => {
-		if (['Image', 'Document'].includes(e.type)) {
+		if (['Image', 'Attachments'].includes(e.type)) {
 			e['@' + e.type] = true
 			return e
 		}
@@ -44,7 +44,7 @@ cds.on('loaded', async (m) => {
 
 
 cds.on('served', async () => {
-	const { beforeReadAttachmentsView } = require("./lib/attachments")
+	const { beforeReadAttachmentsView } = require("./lib")
 
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
