@@ -1,69 +1,63 @@
 using { cuid, managed } from '@sap/cds/common';
 
-entity MediaData {
-  content  : LargeBinary;
-  mimeType : String(500) @Core.IsMediaType: true;
-  url      : String @Core.IsURL @Core.MediaType: mimeType;
-}
-
-type Image       : managed, MediaData {
-  fileName        : String(255);
-}
-
-type Attachments : managed, MediaData {
-  fileName        : String(255);
-  fileDisplayName : String(255);
-  fileDescription : LargeString;
-  fileSize        : Integer;
-  languageCode    : String;
-  lastMalwareScan : Timestamp;
-  readOnly        : Boolean;
-}
+type Image: Association to sap.attachments.Images;
+type Document: Association to sap.attachments.Documents;
 
 context sap.attachments {
+
+  @cds.autoexpose
+  entity Images: managed, MediaData {
+    key ID   : UUID;
+    fileName : String;
+  }
+
+  entity Documents : managed, MediaData {
+    key ID : UUID;
+    title  : String;
+    object : String(36); //> the object we're attached to
+  }
+
+  entity MediaData {
+    content  : LargeBinary;
+    // FIXME: Why is there an annotation error on @Core.IsURL?
+    url      : String @Core.IsURL: true @Core.MediaType: mimeType;
+    mimeType : String @Core.IsMediaType: true;
+  }
+
   /**
    * Used in cds-plugin.js as template for attachments
    */
-  aspect aspect @(UI.Facets: [{
-    $Type : 'UI.ReferenceFacet',
-    ID    : 'AttachmentsFacet',
-    Label : '{i18n>Attachments}',
-    Target: 'attachments/@UI.PresentationVariant',
-  //TODO: Use for lazy-loading once Fiori fixes bugs and v1.120 is released
-  //![@UI.PartOfPreview]: false
-  }]) {
-    attachments : Association to many AttachmentsView
-                    on attachments.entityKey = ID;
-    key ID      : String;
-  }
+  // aspect aspect @(UI.Facets: [{
+  //   $Type : 'UI.ReferenceFacet',
+  //   ID    : 'AttachmentsFacet',
+  //   Label : '{i18n>Attachments}',
+  //   Target: 'resources/@UI.PresentationVariant',
+  // //TODO: Use for lazy-loading once Fiori fixes bugs and v1.120 is released
+  // //![@UI.PartOfPreview]: false
+  // }]) {
+  //   resources : Association to many sap.attachments.ResourceView
+  //                   on resources.ID = ID;
+  //   key ID   : String;
+  // }
 
-  view AttachmentsView as
-    select from Attachments {
-      *,
-      attachmentslist.entityKey as entityKey,
-    };
+  // entity Resources : managed {
+  //   key ID: UUID;
+  //   fileName: String;
+  // }
 
+  // view ResourceView as
+  //   select from Documents, Images {
+  //     Documents.ID as DocumentID,
+  //     Images.ID as ImageID
+  //     //attachmentslist.entityKey as entityKey
+  //   };
 
-  @cds.autoexpose: true
-  entity AttachmentsList : managed, cuid {
-      entityKey   : UUID @title: '{i18n>Objects.entityKey}';
-      attachments : Composition of many Attachments
-                    on attachments.attachmentslist = $self;
-  }
-
-  entity Attachments {
-    key ID              : UUID;
-        fileName        : String;
-        title           : String;
-        object          : String;
-        attachmentslist : Association to AttachmentsList;
-  }
-
-  annotate AttachmentsView with @(UI: {
-    PresentationVariant: {Visualizations: ['@UI.LineItem'], },
-    LineItem           : [
-      { Value: fileName }
-    ]
-  });
+  // annotate ResourceView with @(UI: {
+  //   PresentationVariant: { Visualizations: ['@UI.LineItem'] },
+  //   LineItem           : [
+  //     { Value: DocumentID },
+  //     { Value: ImageID }
+  //   ]
+  // });
 
 }

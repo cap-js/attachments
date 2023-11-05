@@ -1,7 +1,7 @@
 @protocol: 'none'
 service AWSAttachmentsService {
 
-    action onGET(origin : String)      returns {
+    action onGET(req: String, images: String)      returns {
         objectList : String;
     };
 

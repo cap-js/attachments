@@ -1,7 +1,7 @@
 @protocol: 'none'
 service DBAttachmentsService {
 
-    action onGET(origin : String)      returns {
+    action onGET(entity: String, resources: String)      returns {
         objectList : String;
     };
 
