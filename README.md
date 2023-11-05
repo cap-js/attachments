@@ -65,7 +65,6 @@ All we need to do is to denote the respective asset elements with type `Image`, 
 using { sap.capire.incidents } from './processor-service';
 using { Document, Image } from '@cap-js/attachments';
 
-@cds.autoexpose
 extend incidents.Customers with {
   avatar: Image;
 }
