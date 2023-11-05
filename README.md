@@ -62,25 +62,18 @@ npm add @cap-js/attachments
 All we need to do is to denote the respective asset elements with type `Image`, `Documents`, or `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
 
 ```cds
-using { sap.capire.incidents } from '@capire/incidents';
-using { Image } from '@cap-js/attachments';
+using { sap.capire.incidents } from './processor-service';
+using { Document, Image } from '@cap-js/attachments';
 
-// Add customer avatars and annotate as type 'Image'
+@cds.autoexpose
 extend incidents.Customers with {
   avatar: Image;
 }
 
 annotate ProcessorService.Incidents with @(
-    UI.LineItem : [
-        ...up to { Value : title },
-        // This adds an 'avatar' image column before customer
-        {
-            $Type : 'UI.DataField',
-            Value : customer.avatar_url,
-            Label: '{i18n>Avatar}'
-        },
-        ...
-    ]
+    UI.HeaderInfo : {
+        TypeImageUrl : customer.avatar.url,
+    }
 );
 ```
 
@@ -95,7 +88,7 @@ With the steps above, we have successfully set up asset handling for our referen
   ```sh
   cds watch
   ```
-2....
+2. More to come...
 
 ## Attachments View
 
