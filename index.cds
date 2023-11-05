@@ -17,7 +17,7 @@ context sap.attachments {
     object : String(36); //> the object we're attached to
   }
 
-  entity MediaData {
+  type MediaData {
     content  : LargeBinary;
     // FIXME: Why is there an annotation error on @Core.IsURL?
     url      : String @Core.IsURL: true @Core.MediaType: mimeType;
