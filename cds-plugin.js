@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const cds = require('@sap/cds')
 
 const markResources = (entity) => {
@@ -46,9 +48,15 @@ cds.on('served', async () => {
 			for (const entity of Object.values(srv.entities)) {
 				if (entity['@attachments']) {
 
+					const media_srv = await _getServiceConnection()
+
+					// Upload sample data (preferably UI at later stage)
+					await _uploadSampleData(media_srv)
+
 					srv.prepend(() => srv.on("READ", async(req, next) => {
 						const data = await next();
 
+						// Get associations to images
 						const propsFromAssocs = []
 						Object.entries(req.target._associations).forEach(([k, v]) => {
 							const assocImages = cds.entities[v.target]['@attachments']?.['Image']
@@ -57,14 +65,15 @@ cds.on('served', async () => {
 							}
 						})
 
-						const media_srv = await _getServiceConnection()
-
+						// Add app urls for image streaming
 						if (data) {
 							for (const prop of propsFromAssocs) {
 								const [k, v] = prop
 								if (data?.[k]) {
-									const res = await media_srv.onGET(data[k][v].ID)
+									// TODO: How do we uniquely identify an asset?
+									const res = await media_srv.onGET(`${data[k].name}.png`)
 									const fileName = res[0].fileName ? res[0].fileName : res[0].Key
+									if (!data[k]?.[v]) data[k] = { [v]: {} };
 									data[k][v].url = `/media/?file=${fileName}`
 									data[k][v]['url@odata.mediaReadLink'] = `/media/?file=${fileName}`
 								}
@@ -93,4 +102,27 @@ const _getServiceConnection = async () => {
 
 	const srvName = SERVICE_PLANS[plan] ? SERVICE_PLANS[plan] : SERVICE_PLANS['db-service'];
 	return await cds.connect.to(srvName)
+  }
+
+  async function _uploadSampleData(media_srv) {
+	const items = [   {
+		ID: '1',
+		fileName: 'Daniel Watts.png',
+		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Daniel Watts.png'))
+	},
+	{
+		ID: '2',
+		fileName: 'Stormy Weathers.png',
+		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Stormy Weathers.png'))
+	},
+	{
+		ID: '3',
+		fileName: 'Sunny Sunshine.png',
+		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Sunny Sunshine.png'))
+	}]
+	try {
+		await media_srv.onPUT(items)
+	} catch (err) {
+		// TODO: UPSERST instead of INSERT - how to determine unique ID?
+	}
   }

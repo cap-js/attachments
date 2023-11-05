@@ -23,41 +23,4 @@ context sap.attachments {
     url      : String @Core.IsURL: true @Core.MediaType: mimeType;
     mimeType : String @Core.IsMediaType: true;
   }
-
-  /**
-   * Used in cds-plugin.js as template for attachments
-   */
-  // aspect aspect @(UI.Facets: [{
-  //   $Type : 'UI.ReferenceFacet',
-  //   ID    : 'AttachmentsFacet',
-  //   Label : '{i18n>Attachments}',
-  //   Target: 'resources/@UI.PresentationVariant',
-  // //TODO: Use for lazy-loading once Fiori fixes bugs and v1.120 is released
-  // //![@UI.PartOfPreview]: false
-  // }]) {
-  //   resources : Association to many sap.attachments.ResourceView
-  //                   on resources.ID = ID;
-  //   key ID   : String;
-  // }
-
-  // entity Resources : managed {
-  //   key ID: UUID;
-  //   fileName: String;
-  // }
-
-  // view ResourceView as
-  //   select from Documents, Images {
-  //     Documents.ID as DocumentID,
-  //     Images.ID as ImageID
-  //     //attachmentslist.entityKey as entityKey
-  //   };
-
-  // annotate ResourceView with @(UI: {
-  //   PresentationVariant: { Visualizations: ['@UI.LineItem'] },
-  //   LineItem           : [
-  //     { Value: DocumentID },
-  //     { Value: ImageID }
-  //   ]
-  // });
-
 }
