@@ -1,0 +1,2 @@
+@protocol: 'none'
+service DBAttachmentsService {}

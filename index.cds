@@ -1,17 +1,26 @@
-using { managed } from '@sap/cds/common';
-//using from './srv/attachments';
+using { cuid, managed } from '@sap/cds/common';
 
-entity MediaData {
-  type : String @Core.IsMediaType: true;
-  url  : String @Core.IsURL @Core.MediaType: 'image/png';
-  content: LargeBinary;
+type Image: Association to sap.attachments.Images;
+type Document: Association to sap.attachments.Documents;
+
+context sap.attachments {
+
+  @cds.autoexpose
+  entity Images: managed, MediaData {
+    key ID   : UUID;
+    fileName : String;
+  }
+
+  entity Documents : managed, MediaData {
+    key ID : UUID;
+    title  : String;
+    object : String(36); //> the object we're attached to
+  }
+
+  entity MediaData {
+    content  : LargeBinary;
+    // FIXME: Why is there an annotation error on @Core.IsURL?
+    url      : String @Core.IsURL: true @Core.MediaType: mimeType;
+    mimeType : String @Core.IsMediaType: true;
+  }
 }
-
-type Image : MediaData {
-    fileName: String;
-}
-
-annotate Image with @(
-    title: 'Attachments:Image',
-    description: 'Type Image from @cap-js/attachments'
-);
