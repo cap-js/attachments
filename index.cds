@@ -15,8 +15,8 @@ context sap.attachments {
   }]) {
     // Essentially: Association to many Attachments on attachments.attachmentslist.object = ID;
     attachments    : Association to many AttachmentsView
-                     on attachments.objectKey = objectKey;
-    key objectKey  : UUID;
+                     on attachments.entityKey = ID;
+    key ID  : UUID;
   }
 
   // This is a helper view to flatten the assoc path to the objectKey
@@ -24,12 +24,9 @@ context sap.attachments {
   view AttachmentsView as
     select from Documents {
       *,
-      attachments.objectKey as objectKey, // flattening assoc path -> this is the main reason for having this helper view
-      attachments.createdAt as createdAt,
-      attachments.createdBy as createdBy,
-    }
-    excluding {
-      objectKey
+      attachments.entityKey as entityKey, // flattening assoc path -> this is the main reason for having this helper view
+      attachments.modifiedAt as modifiedAt,
+      attachments.modifiedBy as modifiedBy,
     };
 
   // TODO: Get rid of this autoexpose
@@ -39,28 +36,27 @@ context sap.attachments {
         fileName : String;
   }
 
-  entity Documents : managed, MediaData {
-    key ID          : UUID @UI.Hidden;
+  @cds.autoexpose
+  entity Documents : cuid, managed, MediaData {
         fileName    : String;
         title       : String;
-        object      : String; //> the object we're attached to
+        entityKey   : UUID; //> the object we're attached to
         attachments : Association to Attachments;
   }
 
   // TODO: Get rid of this autoexpose
   @cds.autoexpose
   entity Attachments : managed, cuid {
-    key objectKey : UUID;
+    entityKey : UUID @odata.Type:'Edm.String';
     createdAt : managed:createdAt @title: 'On';
     createdBy : managed:createdBy @title: 'By';
     documents : Composition of many Documents
-                  on documents.ID = $self.objectKey;
+                on documents.attachments = $self;
   }
 
   type MediaData {
     content  : LargeBinary;
-    // FIXME: Why is there an annotation error on @Core.IsURL?
-    url      : String  @Core.IsURL      : true  @Core.MediaType: mimeType;
+    url      : String  @odata.Type:'Edm.String' @Core.IsURL: true  @Core.MediaType: mimeType;
     mimeType : String  @Core.IsMediaType: true;
   }
 
@@ -68,13 +64,13 @@ context sap.attachments {
     PresentationVariant: {
       Visualizations: ['@UI.LineItem'],
       SortOrder     : [{
-        Property  : createdAt,
+        Property  : modifiedAt,
         Descending: true
       }],
     },
     LineItem           : [
-      {Value: createdAt},
-      {Value: createdBy},
+      {Value: modifiedAt},
+      {Value: modifiedBy},
       {Value: fileName},
       {Value: title}
     ],
