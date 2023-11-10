@@ -22,12 +22,7 @@ context sap.attachments {
   // This is a helper view to flatten the assoc path to the objectKey
   @readonly
   view AttachmentsView as
-    select from Documents {
-      *,
-      attachments.entityKey as entityKey, // flattening assoc path -> this is the main reason for having this helper view
-      attachments.modifiedAt as modifiedAt,
-      attachments.modifiedBy as modifiedBy,
-    };
+    select from Documents { * };
 
   // TODO: Get rid of this autoexpose
   @cds.autoexpose
@@ -72,7 +67,8 @@ context sap.attachments {
       {Value: createdAt},
       {Value: createdBy},
       {Value: fileName},
-      {Value: title}
+      {Value: title},
+      {Value: entityKey}
     ],
     DeleteHidden       : true,
   });
