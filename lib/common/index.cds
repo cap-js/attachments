@@ -7,12 +7,14 @@ service AttachmentsService {
     entity Images    as projection on db.Images;
     entity Documents as projection on db.Documents;
 
-    action onGET(origin : String)      returns {
-        objects : String[];
+    action onGET(entity: String, items: Records[]) returns {
+        objects: String[];
     };
 
-    action onSTREAM(fileName : String) returns {
-        stream : LargeBinary;
+    action onPUT(entity: String, items: Records[]) returns {};
+
+    action onSTREAM(entity: String, fileName: String) returns {
+        stream: LargeBinary;
     };
 
 }
