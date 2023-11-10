@@ -56,7 +56,7 @@ context sap.attachments {
 
   type MediaData {
     content  : LargeBinary;
-    url      : String  @odata.Type:'Edm.String' @Core.IsURL: true  @Core.MediaType: mimeType;
+    url      : String  @Core.IsURL: true  @Core.MediaType: mimeType;
     mimeType : String  @Core.IsMediaType: true;
   }
 
@@ -64,13 +64,13 @@ context sap.attachments {
     PresentationVariant: {
       Visualizations: ['@UI.LineItem'],
       SortOrder     : [{
-        Property  : modifiedAt,
+        Property  : createdAt,
         Descending: true
       }],
     },
     LineItem           : [
-      {Value: modifiedAt},
-      {Value: modifiedBy},
+      {Value: createdAt},
+      {Value: createdBy},
       {Value: fileName},
       {Value: title}
     ],

@@ -67,7 +67,6 @@ cds.on('served', async () => {
 			for (const entity of Object.values(srv.entities)) {
 				if (entity['@attachments']) {
 					any = true
-					const media_srv = await getServiceConnection()
 					srv.prepend(() => srv.on("READ", ReadImagesHandler))
 				}
 			}
