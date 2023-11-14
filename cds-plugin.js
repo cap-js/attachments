@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const cds = require('@sap/cds')
 
-const { getServiceConnection, hasResources } = require('./lib/helpers')
+const { connectToAttachmentsService, hasResources } = require('./lib/helpers')
 
 
 cds.on('loaded', async (m) => {
@@ -45,7 +45,7 @@ cds.on('bootstrap', async app => {
 	app.get('/media/', async (req, res) => {
 		let ID = req.query.ID;
 		if (ID) {
-			const media_srv = await getServiceConnection()
+			const media_srv = await connectToAttachmentsService()
 			// TODO: Get service dynamically
 			const stream = await media_srv.onSTREAM('sap.attachments.Images', ID)
 			if (stream) {
