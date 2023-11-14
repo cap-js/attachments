@@ -31,7 +31,6 @@ context sap.attachments {
         fileName : String;
   }
 
-  @cds.autoexpose
   entity Documents : cuid, managed, MediaData {
         fileName    : String;
         title       : String;
@@ -39,8 +38,6 @@ context sap.attachments {
         attachments : Association to Attachments;
   }
 
-  // TODO: Get rid of this autoexpose
-  @cds.autoexpose
   entity Attachments : managed, cuid {
     entityKey : UUID @odata.Type:'Edm.String';
     createdAt : managed:createdAt @title: 'On';
