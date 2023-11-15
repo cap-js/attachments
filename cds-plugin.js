@@ -32,14 +32,6 @@ cds.on('loaded', async (m) => {
 			  entity.elements.attachments = assoc
 			}
 
-			// WIP: Add association to Images
-			// const srv = name.split('.')[0]
-			// const props = entity['@attachments']?.Image
-			// if (props?.length > 0 && !srv.startsWith('sap')) {
-			// 	console.log('>> Found', props, 'on', name)
-			// 	const imageDef = m.definitions[name].elements[props[0]]
-			// }
-
 			// Add UI.Facet for AttachmentsView
 			entity['@UI.Facets']?.push(facet)
 
