@@ -22,7 +22,7 @@ cds.on('loaded', async (m) => {
 			const keys = [], { elements: elms } = entity
 			for (let e in elms) if (elms[e].key) keys.push(e)
 
-			// Add association to ChangeView...
+			// Add association to AttachmentsView
 			const on = [...attachments.on]; keys.forEach((k, i) => { i && on.push('||'); on.push({ ref: [k] }) })
 			const assoc = { ...attachments, on }
 			const query = entity.projection || entity.query?.SELECT
@@ -32,15 +32,28 @@ cds.on('loaded', async (m) => {
 			  entity.elements.attachments = assoc
 			}
 
-			// Add UI.Facet for Change History List
+			// WIP: Add association to Images
+			// const srv = name.split('.')[0]
+			// const props = entity['@attachments']?.Image
+			// if (props?.length > 0 && !srv.startsWith('sap')) {
+			// 	console.log('>> Found', props, 'on', name)
+			// 	const imageDef = m.definitions[name].elements[props[0]]
+			// }
+
+			// Add UI.Facet for AttachmentsView
 			entity['@UI.Facets']?.push(facet)
 
 		}
 	}
+
+	const sortObject = o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {})
+	m.definitions = sortObject(m.definitions)
+	fs.writeFileSync(path.join(__dirname, 'model-test.csn'), JSON.stringify(m, null, 4), 'utf8')
 })
 
 // Independent of the data source (db or remote bucket), stream data
 // behind app '/media' url
+
 cds.on('bootstrap', async app => {
 	app.get('/media/', async (req, res) => {
 		let ID = req.query.ID;

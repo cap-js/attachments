@@ -24,10 +24,7 @@ context sap.attachments {
   view AttachmentsView as
     select from Documents { * };
 
-  // TODO: Get rid of this autoexpose
-  @cds.autoexpose
-  entity Images : managed, MediaData {
-    key ID       : UUID @UI.Hidden;
+  entity Images : cuid, managed, MediaData {
         fileName : String;
   }
 
