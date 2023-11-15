@@ -37,10 +37,6 @@ cds.on('loaded', async (m) => {
 
 		}
 	}
-
-	const sortObject = o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {})
-	m.definitions = sortObject(m.definitions)
-	fs.writeFileSync(path.join(__dirname, 'model-test.csn'), JSON.stringify(m, null, 4), 'utf8')
 })
 
 // Independent of the data source (db or remote bucket), stream data

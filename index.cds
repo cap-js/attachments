@@ -1,6 +1,6 @@
 using { cuid, managed } from '@sap/cds/common';
 
-type Image       : Association to sap.attachments.Images;
+type Image : Composition of sap.attachments.Images;
 type Attachments : Association to sap.attachments.Attachments;
 
 context sap.attachments {
@@ -51,13 +51,13 @@ context sap.attachments {
 
   annotate AttachmentsView with @(UI: {
     PresentationVariant: {
-      Visualizations: ['@UI.LineItem'],
+      Visualizations: ['@UI.LineItem#uploadTable'],
       SortOrder     : [{
         Property  : createdAt,
         Descending: true
       }],
     },
-    LineItem           : [
+    LineItem #uploadTable: [
       {Value: createdAt},
       {Value: createdBy},
       {Value: fileName},
