@@ -1,16 +1,40 @@
-const fs = require('fs')
-const path = require('path')
 const cds = require('@sap/cds')
 
-const { getServiceConnection, markResources } = require('./lib/helpers')
+const { ReadAttachmentsHandler, ReadImagesHandler } = require('./lib')
+const { connectToAttachmentsService, hasResources } = require('./lib/helpers')
 
 
 cds.on('loaded', async (m) => {
+
+	// Get definitions from Dummy entity in our models
+	const { 'sap.attachments.aspect': aspect } = m.definitions; if (!aspect) return // some other model
+	const { '@UI.Facets': [facet], elements: { attachments } } = aspect
+	attachments.on.pop() // remove ID -> filled in below
+
+
 	for (let name in m.definitions) {
 		const entity = m.definitions[name]
 		// Mark entity with '@attachments: { Image: [], Documents: [] }' which
 		// contains a list of keys of the associated type 'Image' or 'Document'
-		markResources(entity)
+		if (hasResources(entity)) {
+
+			const keys = [], { elements: elms } = entity
+			for (let e in elms) if (elms[e].key) keys.push(e)
+
+			// Add association to AttachmentsView
+			const on = [...attachments.on]; keys.forEach((k, i) => { i && on.push('||'); on.push({ ref: [k] }) })
+			const assoc = { ...attachments, on }
+			const query = entity.projection || entity.query?.SELECT
+			if (query) {
+			  (query.columns ??= ['*']).push({ as: 'attachments', cast: assoc })
+			} else {
+			  entity.elements.attachments = assoc
+			}
+
+			// Add UI.Facet for AttachmentsView
+			entity['@UI.Facets']?.push(facet)
+
+		}
 	}
 })
 
@@ -18,10 +42,11 @@ cds.on('loaded', async (m) => {
 // behind app '/media' url
 cds.on('bootstrap', async app => {
 	app.get('/media/', async (req, res) => {
-		let file = req.query.file;
-		if (file) {
-			const media_srv = await getServiceConnection()
-			const stream = await media_srv.onSTREAM(file)
+		let ID = req.query.ID;
+		if (ID) {
+			const media_srv = await connectToAttachmentsService()
+			// TODO: Get service dynamically (from keys)
+			const stream = await media_srv.onSTREAM('sap.attachments.Images', ID)
 			if (stream) {
 				res.setHeader('Content-Type', 'application/octet-stream')
 				stream.pipe(res)
@@ -34,44 +59,18 @@ cds.on('bootstrap', async app => {
 cds.on('served', async () => {
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
-
-			const { ReadHandler } = require('./lib')
-
+			let any
 			for (const entity of Object.values(srv.entities)) {
 				if (entity['@attachments']) {
-					const media_srv = await getServiceConnection()
-
-					// Simulates upload of sample data for now
-					// TODO: Preferably this should be done via the UI
-					await _uploadSampleData(media_srv)
-
-					srv.prepend(() => srv.on("READ", ReadHandler))
+					any = true
+					// This is needed to append image urls to the data
+					srv.prepend(() => srv.on("READ", ReadImagesHandler))
 				}
+			}
+			// This is only needed for extra formatting
+			if (any && srv.entities.AttachmentsView) {
+				srv.prepend(() => srv.on("READ", srv.entities.AttachmentsView, ReadAttachmentsHandler))
 			}
 		}
 	}
 })
-
-// Sample data for simulated upload
-async function _uploadSampleData(media_srv) {
-	const items = [{
-		ID: '1',
-		fileName: 'Daniel Watts.png',
-		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Daniel Watts.png'))
-	},
-	{
-		ID: '2',
-		fileName: 'Stormy Weathers.png',
-		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Stormy Weathers.png'))
-	},
-	{
-		ID: '3',
-		fileName: 'Sunny Sunshine.png',
-		content: fs.readFileSync(path.join(cds.env._home, 'assets', 'Sunny Sunshine.png'))
-	}]
-	try {
-		await media_srv.onPUT(items)
-	} catch (err) {
-		// TODO: UPSERST instead of INSERT - how to determine unique ID?
-	}
-}

@@ -18,23 +18,6 @@
     "peerDependencies": {
         "@sap/cds": "^7"
     },
-    "cds": {
-        "requires": {
-            "attachments": {
-                "model": "@cap-js/attachments"
-            },
-            "db-service": {
-                "model": "@cap-js/attachments/lib/db-service",
-                "impl": "@cap-js/attachments/lib/db-service"
-            },
-            "[hybrid]": {
-                "s3-standard": {
-                    "model": "@cap-js/attachments/lib/s3-standard",
-                    "impl": "@cap-js/attachments/lib/s3-standard"
-                }
-            }
-        }
-    },
     "scripts": {
         "lint": "npx eslint .",
         "test": "npx jest --silent"
