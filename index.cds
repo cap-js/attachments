@@ -52,6 +52,7 @@ context sap.attachments {
   }
 
   annotate AttachmentsView with @(UI: {
+    MediaResource: { Stream: content },
     PresentationVariant: {
       Visualizations: ['@UI.LineItem#uploadTable'],
       SortOrder     : [{
