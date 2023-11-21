@@ -22,7 +22,10 @@ context sap.attachments {
   // This is a helper view to flatten the assoc path to the objectKey
   @readonly
   view AttachmentsView as
-    select from Documents { * };
+    select from Documents {
+      *,
+      attachments.entityKey as entityKey
+     };
 
   entity Images : cuid, managed, MediaData {
         fileName : String;
@@ -31,11 +34,10 @@ context sap.attachments {
   entity Documents : cuid, managed, MediaData {
         fileName    : String;
         title       : String;
-        entityKey   : UUID; //> the object we're attached to
         attachments : Association to Attachments;
   }
 
-  entity Attachments : managed, cuid {
+  entity Attachments : cuid, managed {
     entityKey : UUID @odata.Type:'Edm.String';
     createdAt : managed:createdAt @title: 'On';
     createdBy : managed:createdBy @title: 'By';

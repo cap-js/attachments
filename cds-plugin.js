@@ -1,7 +1,6 @@
-const fs = require('fs')
-const path = require('path')
 const cds = require('@sap/cds')
 
+const { ReadAttachmentsHandler, ReadImagesHandler } = require('./lib')
 const { connectToAttachmentsService, hasResources } = require('./lib/helpers')
 
 
@@ -41,13 +40,12 @@ cds.on('loaded', async (m) => {
 
 // Independent of the data source (db or remote bucket), stream data
 // behind app '/media' url
-
 cds.on('bootstrap', async app => {
 	app.get('/media/', async (req, res) => {
 		let ID = req.query.ID;
 		if (ID) {
 			const media_srv = await connectToAttachmentsService()
-			// TODO: Get service dynamically
+			// TODO: Get service dynamically (from keys)
 			const stream = await media_srv.onSTREAM('sap.attachments.Images', ID)
 			if (stream) {
 				res.setHeader('Content-Type', 'application/octet-stream')
@@ -61,16 +59,15 @@ cds.on('bootstrap', async app => {
 cds.on('served', async () => {
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
-
-			const { ReadImagesHandler, ReadAttachmentsHandler } = require('./lib')
-
 			let any
 			for (const entity of Object.values(srv.entities)) {
 				if (entity['@attachments']) {
 					any = true
+					// This is needed to append image urls to the data
 					srv.prepend(() => srv.on("READ", ReadImagesHandler))
 				}
 			}
+			// This is only needed for extra formatting
 			if (any && srv.entities.AttachmentsView) {
 				srv.prepend(() => srv.on("READ", srv.entities.AttachmentsView, ReadAttachmentsHandler))
 			}
