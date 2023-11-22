@@ -38,23 +38,6 @@ cds.on('loaded', async (m) => {
 	}
 })
 
-// Independent of the data source (db or remote bucket), stream data
-// behind app '/media' url
-cds.on('bootstrap', async app => {
-	app.get('/media/', async (req, res) => {
-		let ID = req.query.ID;
-		if (ID) {
-			const media_srv = await connectToAttachmentsService()
-			// TODO: Get service dynamically (from keys)
-			const stream = await media_srv.onSTREAM('sap.attachments.Images', ID)
-			if (stream) {
-				res.setHeader('Content-Type', 'application/octet-stream')
-				stream.pipe(res)
-			}
-		}
-		return res
-	})
-})
 
 cds.on('served', async () => {
 	for (const srv of cds.services) {
