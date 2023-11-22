@@ -46,9 +46,10 @@ context sap.attachments {
   }
 
   type MediaData {
-    //FIXME: We shouldn't need this twice...
+    //FIXME: Having @Core.IsURL: true  @Core.MediaType generates
+    // strange url strings ending with /url instead of /content
     content  : LargeBinary @Core.MediaType: mimeType;
-    url      : String  @Core.IsURL: true  @Core.MediaType: mimeType;
+    url      : String; // @Core.IsURL: true  @Core.MediaType: mimeType;
     mimeType : String  @Core.IsMediaType: true;
   }
 
