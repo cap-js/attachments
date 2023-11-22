@@ -46,7 +46,8 @@ context sap.attachments {
   }
 
   type MediaData {
-    content  : LargeBinary;
+    //FIXME: We shouldn't need this twice...
+    content  : LargeBinary @Core.MediaType: mimeType;
     url      : String  @Core.IsURL: true  @Core.MediaType: mimeType;
     mimeType : String  @Core.IsMediaType: true;
   }
