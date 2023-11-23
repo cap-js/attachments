@@ -40,19 +40,23 @@ cds.on('loaded', async (m) => {
 
 
 cds.on('served', async () => {
-	for (const srv of cds.services) {
-		if (srv instanceof cds.ApplicationService) {
-			let any
-			for (const entity of Object.values(srv.entities)) {
-				if (entity['@attachments']) {
-					any = true
-					// This is needed to append image urls to the data
-					srv.prepend(() => srv.on("READ", ReadImagesHandler))
+	const plan = cds.env.requires['@cap-js/attachments']?.['service-plan'] || 'db-service'
+
+	if (plan !== 'db-service') {
+		for (const srv of cds.services) {
+			if (srv instanceof cds.ApplicationService) {
+				let any
+				for (const entity of Object.values(srv.entities)) {
+					if (entity['@attachments']) {
+						any = true
+						// This is needed to append image urls to the data
+						//srv.prepend(() => srv.on("READ", ReadImagesHandler))
+					}
 				}
-			}
-			// This is only needed for extra formatting
-			if (any && srv.entities.AttachmentsView) {
-				srv.prepend(() => srv.on("READ", srv.entities.AttachmentsView, ReadAttachmentsHandler))
+				// This is only needed for extra formatting
+				if (any && srv.entities.AttachmentsView) {
+					//srv.prepend(() => srv.on("READ", srv.entities.AttachmentsView, ReadAttachmentsHandler))
+				}
 			}
 		}
 	}

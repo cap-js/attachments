@@ -20,7 +20,6 @@ context sap.attachments {
   }
 
   // This is a helper view to flatten the assoc path to the objectKey
-  @readonly
   view AttachmentsView as
     select from Documents {
       *,
@@ -54,18 +53,22 @@ context sap.attachments {
   }
 
   annotate AttachmentsView with @(UI: {
+    MediaResource: {
+      Stream: content
+    },
     PresentationVariant: {
-      Visualizations: ['@UI.LineItem#uploadTable'],
+      Visualizations: ['@UI.LineItem'],
       SortOrder     : [{
         Property  : createdAt,
         Descending: true
       }],
     },
-    LineItem #uploadTable: [
+    LineItem: [
       {Value: createdAt},
       {Value: createdBy},
       {Value: fileName},
       {Value: title},
+      {Value: content},
       {Value: entityKey}
     ],
     DeleteHidden       : true,
