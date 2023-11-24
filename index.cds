@@ -19,9 +19,7 @@ context sap.attachments {
     key ID  : UUID;
   }
 
-  // This is a helper view to flatten the assoc path to the objectKey
-  @cds.autoexpose: true
-  view AttachmentsView as
+  entity AttachmentsView as
     select from Documents {
       *,
       attachments.entityKey as entityKey
@@ -44,7 +42,7 @@ context sap.attachments {
 
   type MediaData {
     fileName : String;
-    content   : LargeBinary @Core.Immutable @Core.ContentDisposition.Filename: fileName @Core.MediaType: mimeType;
+    content   : LargeBinary @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @title: 'Attachment' @odata.Type: 'Edm.Stream' @Core.Immutable: true;
     mimeType  : String  @Core.IsMediaType: true;
     url       : String;
   }
@@ -61,12 +59,8 @@ context sap.attachments {
       }],
     },
     LineItem: [
-      {Value: createdAt},
-      {Value: createdBy},
       {Value: fileName},
-      {Value: title},
-      {Value: content},
-      {Value: entityKey}
+      {Value: content}
     ],
     DeleteHidden       : true,
   });
