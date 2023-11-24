@@ -36,6 +36,8 @@ cds.on('loaded', async (m) => {
 
 		}
 	}
+
+	m.definitions['ProcessorService'].push()
 })
 
 

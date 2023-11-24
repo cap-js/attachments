@@ -20,19 +20,16 @@ context sap.attachments {
   }
 
   // This is a helper view to flatten the assoc path to the objectKey
+  @cds.autoexpose: true
   view AttachmentsView as
     select from Documents {
       *,
-
       attachments.entityKey as entityKey
      };
 
-  entity Images : cuid, managed, MediaData {
-        file_name : String;
-  }
+  entity Images : cuid, managed, MediaData {}
 
   entity Documents : cuid, managed, MediaData {
-        file_name    : String @Core.ContentDisposition.Filename;
         title       : String;
         attachments : Association to Attachments;
   }
@@ -46,11 +43,10 @@ context sap.attachments {
   }
 
   type MediaData {
-    //FIXME: Having @Core.IsURL: true  @Core.MediaType generates
-    // strange url strings ending with /url instead of /content
-    content  : LargeBinary @Core.MediaType: mimeType;
-    url      : String;
-    mimeType : String  @Core.IsMediaType: true;
+    fileName : String;
+    content   : LargeBinary @Core.Immutable @Core.ContentDisposition.Filename: fileName @Core.MediaType: mimeType;
+    mimeType  : String  @Core.IsMediaType: true;
+    url       : String;
   }
 
   annotate AttachmentsView with @(UI: {
@@ -67,7 +63,7 @@ context sap.attachments {
     LineItem: [
       {Value: createdAt},
       {Value: createdBy},
-      {Value: file_name},
+      {Value: fileName},
       {Value: title},
       {Value: content},
       {Value: entityKey}
