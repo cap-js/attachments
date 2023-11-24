@@ -23,15 +23,16 @@ context sap.attachments {
   view AttachmentsView as
     select from Documents {
       *,
+
       attachments.entityKey as entityKey
      };
 
   entity Images : cuid, managed, MediaData {
-        fileName : String;
+        file_name : String;
   }
 
   entity Documents : cuid, managed, MediaData {
-        fileName    : String;
+        file_name    : String @Core.ContentDisposition.Filename;
         title       : String;
         attachments : Association to Attachments;
   }
@@ -48,7 +49,7 @@ context sap.attachments {
     //FIXME: Having @Core.IsURL: true  @Core.MediaType generates
     // strange url strings ending with /url instead of /content
     content  : LargeBinary @Core.MediaType: mimeType;
-    url      : String; // @Core.IsURL: true  @Core.MediaType: mimeType;
+    url      : String;
     mimeType : String  @Core.IsMediaType: true;
   }
 
@@ -66,7 +67,7 @@ context sap.attachments {
     LineItem: [
       {Value: createdAt},
       {Value: createdBy},
-      {Value: fileName},
+      {Value: file_name},
       {Value: title},
       {Value: content},
       {Value: entityKey}
