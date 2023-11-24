@@ -42,8 +42,8 @@ context sap.attachments {
 
   type MediaData {
     fileName : String;
-    content   : LargeBinary @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @title: 'Attachment' @odata.Type: 'Edm.Stream' @Core.Immutable: true;
-    mimeType  : String  @Core.IsMediaType: true;
+    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName  @odata.Type: 'Edm.Stream' @Core.Immutable: true;
+    mimeType  : String @title: 'Attachment Type' @Core.IsMediaType: true;
     url       : String;
   }
 
@@ -59,6 +59,8 @@ context sap.attachments {
       }],
     },
     LineItem: [
+      {Value: createdAt},
+      {Value: createdBy},
       {Value: fileName},
       {Value: content}
     ],

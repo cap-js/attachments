@@ -1,7 +1,7 @@
 const cds = require('@sap/cds')
 
-const { ReadAttachmentsHandler, ReadImagesHandler } = require('./lib')
-const { connectToAttachmentsService, hasResources } = require('./lib/helpers')
+const { CreateAttachmentsHandler, ReadImagesHandler } = require('./lib')
+const { hasResources } = require('./lib/helpers')
 
 
 cds.on('loaded', async (m) => {
@@ -44,15 +44,17 @@ cds.on('served', async () => {
 		if (srv instanceof cds.ApplicationService) {
 			let any
 			for (const entity of Object.values(srv.entities)) {
-				if (entity['@attachments']) {
+				// TODO: Should only attach this read handler for type 'Image' annotations?
+				if (entity['@attachments'] && entity.name !== `${srv.name}}.AttachmentsView`) {
 					any = true
 					// This is needed to append image urls to the data
-					srv.prepend(() => srv.on("READ", ReadImagesHandler))
+					srv.prepend(() => srv.on("READ", entity, ReadImagesHandler))
 				}
 			}
-			// This is only needed for extra formatting
+			// This is only needed to actually add our items into the attachments table
+			// when uploaded using the Fiori UploadTable type, which triggers a CREATE on drag/drop
 			if (any && srv.entities.AttachmentsView) {
-				//srv.prepend(() => srv.on("READ", srv.entities.AttachmentsView, ReadAttachmentsHandler))
+				srv.prepend(() => srv.on("CREATE", srv.entities.AttachmentsView, CreateAttachmentsHandler))
 			}
 		}
 	}
