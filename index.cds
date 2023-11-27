@@ -28,7 +28,7 @@ context sap.attachments {
   entity Images : cuid, managed, MediaData {}
 
   entity Documents : cuid, managed, MediaData {
-        title       : String;
+        note        : String;
         attachments : Association to Attachments;
   }
 
@@ -42,7 +42,7 @@ context sap.attachments {
 
   type MediaData {
     fileName : String;
-    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName  @odata.Type: 'Edm.Stream' @Core.Immutable: true;
+    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @Core.Immutable: true;
     mimeType  : String @title: 'Attachment Type' @Core.IsMediaType: true;
     url       : String;
   }
@@ -61,8 +61,8 @@ context sap.attachments {
     LineItem: [
       {Value: createdAt},
       {Value: createdBy},
-      {Value: fileName},
-      {Value: content}
+      {Value: content},
+      {Value: note}
     ],
     DeleteHidden       : true,
   });
