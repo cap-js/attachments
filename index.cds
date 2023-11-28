@@ -1,7 +1,8 @@
 using { cuid, managed } from '@sap/cds/common';
 
 type Image : Composition of sap.attachments.Images;
-type Attachments : Association to sap.attachments.Attachments;
+type Attachments : Composition of many sap.attachments.MyAttachments on docs.object = $self;
+
 
 context sap.attachments {
 
@@ -10,63 +11,49 @@ context sap.attachments {
     $Type                : 'UI.ReferenceFacet',
     ID                   : 'AttachmentsFacet',
     Label                : '{i18n>Attachments}',
-    Target               : 'attachments/@UI.PresentationVariant',
-    //![@UI.PartOfPreview] : false
+    Target               : 'attachments/@UI.PresentationVariant'
   }]) {
-    // Essentially: Association to many Attachments on attachments.attachmentslist.object = ID;
-    attachments    : Association to many AttachmentsView
-                     on attachments.entityKey = ID;
+    attachments    : Association to many Attachments on attachments.parent = $self.ID;
     key ID  : UUID;
   }
 
-  // This is a helper view to flatten the assoc path to the objectKey
-  @readonly
-  view AttachmentsView as
-    select from Documents {
-      *,
-      attachments.entityKey as entityKey
-     };
+  entity Images : cuid, managed, MediaData {}
 
-  entity Images : cuid, managed, MediaData {
-        fileName : String;
+entity MyAttachments: Attachments {
+  object: Association to incidents.Incidents;
+}
+
+  entity Attachments : cuid, managed, MediaData {
+      parent     : String;
+      note       : String;
   }
 
-  entity Documents : cuid, managed, MediaData {
-        fileName    : String;
-        title       : String;
-        attachments : Association to Attachments;
+   type MediaData {
+    fileName : String;
+    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @Core.Immutable: true;
+    mimeType  : String @title: 'Attachment Type' @Core.IsMediaType: true;
+    url       : String;
   }
 
-  entity Attachments : cuid, managed {
-    entityKey : UUID @odata.Type:'Edm.String';
-    createdAt : managed:createdAt @title: 'On';
-    createdBy : managed:createdBy @title: 'By';
-    documents : Composition of many Documents
-                on documents.attachments = $self;
-  }
-
-  type MediaData {
-    content  : LargeBinary;
-    url      : String  @Core.IsURL: true  @Core.MediaType: mimeType;
-    mimeType : String  @Core.IsMediaType: true;
-  }
-
-  annotate AttachmentsView with @(UI: {
+  annotate AttachmentsTable with @(UI: {
+    MediaResource: {
+      Stream: content
+    },
     PresentationVariant: {
-      Visualizations: ['@UI.LineItem#uploadTable'],
+      Visualizations: ['@UI.LineItem'],
       SortOrder     : [{
         Property  : createdAt,
         Descending: true
       }],
     },
-    LineItem #uploadTable: [
+    LineItem: [
       {Value: createdAt},
       {Value: createdBy},
-      {Value: fileName},
-      {Value: title},
-      {Value: entityKey}
+      {Value: content},
+      {Value: note}
     ],
     DeleteHidden       : true,
   });
+
 
 }
