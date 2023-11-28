@@ -10,19 +10,17 @@ context sap.attachments {
     $Type                : 'UI.ReferenceFacet',
     ID                   : 'AttachmentsFacet',
     Label                : '{i18n>Attachments}',
-    Target               : 'attachments/@UI.PresentationVariant',
-    //![@UI.PartOfPreview] : false
+    Target               : 'attachments/@UI.PresentationVariant'
   }]) {
-    // Essentially: Association to many Attachments on attachments.attachmentslist.object = ID;
-    attachments    : Association to many AttachmentsView
-                     on attachments.entityKey = ID;
+    attachments    : Association to many AttachmentsTable
+                     on attachments.object = ID;
     key ID  : UUID;
   }
 
-  entity AttachmentsView as
+  entity AttachmentsTable as
     select from Documents {
       *,
-      attachments.entityKey as entityKey
+      attachments.object as object
      };
 
   entity Images : cuid, managed, MediaData {}
@@ -33,7 +31,7 @@ context sap.attachments {
   }
 
   entity Attachments : cuid, managed {
-    entityKey : UUID @odata.Type:'Edm.String';
+    object : UUID @odata.Type:'Edm.String';
     createdAt : managed:createdAt @title: 'On';
     createdBy : managed:createdBy @title: 'By';
     documents : Composition of many Documents
@@ -47,7 +45,7 @@ context sap.attachments {
     url       : String;
   }
 
-  annotate AttachmentsView with @(UI: {
+  annotate AttachmentsTable with @(UI: {
     MediaResource: {
       Stream: content
     },
