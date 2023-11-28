@@ -1,6 +1,6 @@
 const cds = require('@sap/cds')
 
-const { CreateAttachmentsHandler, ReadImagesHandler } = require('./lib')
+const { CreateHandler, PutHandler, ReadHandler, SaveHandler } = require('./lib')
 const { hasResources } = require('./lib/helpers')
 
 
@@ -42,21 +42,14 @@ cds.on('loaded', async (m) => {
 cds.on('served', async () => {
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
-			let any
 			for (const entity of Object.values(srv.entities)) {
-				// TODO: Should only attach this read handler for type 'Image' annotations?
 				if (entity['@attachments']) {
-					any = true
-					// This is needed to append image urls to the data
-					srv.prepend(() => srv.on("READ", entity, ReadImagesHandler))
+					srv.prepend(() => srv.on("READ", ReadHandler))
+					cds.db.before("CREATE", CreateHandler)
 				}
 			}
-			// This is only needed to actually add our items into the attachments table
-			// when uploaded using the Fiori UploadTable type, which triggers a CREATE on drag/drop
-			if (any && srv.entities.AttachmentsView) {
-				// TODO: Should be using cds.db.before('CREATE', ...)
-				srv.prepend(() => srv.on("CREATE", srv.entities.AttachmentsView, CreateAttachmentsHandler))
-			}
+			//srv.prepend(() => srv.on("PUT", `${srv.name}.Attachments`, PutHandler))
 		}
 	}
+	cds.db.before("*", SaveHandler)
 })

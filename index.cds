@@ -17,21 +17,23 @@ context sap.attachments {
     key ID  : UUID;
   }
 
+  // Should this be draft enabled?
+  //@odata.draft.enabled
   entity AttachmentsTable as
     select from Documents {
       *,
       attachments.object as object
-     };
+    };
 
   entity Images : cuid, managed, MediaData {}
 
   entity Documents : cuid, managed, MediaData {
-        note        : String;
+        note        : String @title: 'Note';
         attachments : Association to Attachments;
   }
 
   entity Attachments : cuid, managed {
-    object : UUID @odata.Type:'Edm.String';
+    object : UUID;
     createdAt : managed:createdAt @title: 'On';
     createdBy : managed:createdBy @title: 'By';
     documents : Composition of many Documents
@@ -57,9 +59,9 @@ context sap.attachments {
       }],
     },
     LineItem: [
+      {Value: content},
       {Value: createdAt},
       {Value: createdBy},
-      {Value: content},
       {Value: note}
     ],
     DeleteHidden       : true,
