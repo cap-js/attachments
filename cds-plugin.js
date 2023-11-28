@@ -45,7 +45,7 @@ cds.on('served', async () => {
 			let any
 			for (const entity of Object.values(srv.entities)) {
 				// TODO: Should only attach this read handler for type 'Image' annotations?
-				if (entity['@attachments'] && entity.name !== `${srv.name}}.AttachmentsView`) {
+				if (entity['@attachments']) {
 					any = true
 					// This is needed to append image urls to the data
 					srv.prepend(() => srv.on("READ", entity, ReadImagesHandler))
@@ -54,6 +54,7 @@ cds.on('served', async () => {
 			// This is only needed to actually add our items into the attachments table
 			// when uploaded using the Fiori UploadTable type, which triggers a CREATE on drag/drop
 			if (any && srv.entities.AttachmentsView) {
+				// TODO: Should be using cds.db.before('CREATE', ...)
 				srv.prepend(() => srv.on("CREATE", srv.entities.AttachmentsView, CreateAttachmentsHandler))
 			}
 		}
