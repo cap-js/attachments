@@ -1,6 +1,6 @@
 const cds = require('@sap/cds')
 
-const { PutHandler, ReadHandler } = require('./lib')
+const { SaveHandler, ReadHandler } = require('./lib')
 const { hasResources } = require('./lib/helpers')
 
 cds.on('served', async () => {
@@ -8,11 +8,12 @@ cds.on('served', async () => {
 		if (srv instanceof cds.ApplicationService) {
 			for (const entity of Object.values(srv.entities)) {
 				//if (hasResources(entity)) {
-				srv.prepend(() => srv.on("READ", ReadHandler))
+				srv.prepend((impl) => impl.on("READ", ReadHandler))
 				//}
 			}
 			// TODO: Experimental (streams attachments content)
-			srv.prepend(() => srv.on("PATCH", `${srv}.Attachments`, PutHandler))
+			const { Incidents } = srv.entities
+			srv.prepend((impl) => impl.on("SAVE", Incidents, SaveHandler))
 		}
 	}
 })
