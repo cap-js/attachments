@@ -13,32 +13,28 @@ context sap.attachments {
     Target               : 'attachments/@UI.PresentationVariant',
     //![@UI.PartOfPreview] : false
   }]) {
-    // Essentially: Association to many Attachments on attachments.attachmentslist.object = ID;
-    attachments    : Association to many AttachmentsView
-                     on attachments.entityKey = ID;
+    attachments    : Association to many AttachmentsTable
+                     on attachments.object = ID;
     key ID  : UUID;
   }
 
-  // This is a helper view to flatten the assoc path to the objectKey
-  @readonly
-  view AttachmentsView as
+  // Should this be draft enabled?
+  //@odata.draft.enabled
+  entity AttachmentsTable as
     select from Documents {
       *,
-      attachments.entityKey as entityKey
-     };
+      attachments.object as object
+    };
 
-  entity Images : cuid, managed, MediaData {
-        fileName : String;
-  }
+  entity Images : cuid, managed, MediaData {}
 
   entity Documents : cuid, managed, MediaData {
-        fileName    : String;
-        title       : String;
+        note        : String @title: 'Note';
         attachments : Association to Attachments;
   }
 
   entity Attachments : cuid, managed {
-    entityKey : UUID @odata.Type:'Edm.String';
+    object : UUID;
     createdAt : managed:createdAt @title: 'On';
     createdBy : managed:createdBy @title: 'By';
     documents : Composition of many Documents
@@ -46,25 +42,28 @@ context sap.attachments {
   }
 
   type MediaData {
-    content  : LargeBinary;
-    url      : String  @Core.IsURL: true  @Core.MediaType: mimeType;
-    mimeType : String  @Core.IsMediaType: true;
+    fileName : String;
+    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @Core.Immutable: true;
+    mimeType  : String @title: 'Attachment Type' @Core.IsMediaType: true;
+    url       : String;
   }
 
-  annotate AttachmentsView with @(UI: {
+  annotate AttachmentsTable with @(UI: {
+    MediaResource: {
+      Stream: content
+    },
     PresentationVariant: {
-      Visualizations: ['@UI.LineItem#uploadTable'],
+      Visualizations: ['@UI.LineItem'],
       SortOrder     : [{
         Property  : createdAt,
         Descending: true
       }],
     },
-    LineItem #uploadTable: [
+    LineItem: [
+      {Value: content},
       {Value: createdAt},
       {Value: createdBy},
-      {Value: fileName},
-      {Value: title},
-      {Value: entityKey}
+      {Value: note}
     ],
     DeleteHidden       : true,
   });
