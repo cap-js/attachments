@@ -1,2 +1,0 @@
-@protocol: 'none'
-service AWSAttachmentsService {}

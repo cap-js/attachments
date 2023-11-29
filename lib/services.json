@@ -1,12 +1,12 @@
 {
 	"db-service": {
 		"name": "DBAttachmentsService",
-		"model": "@cap-js/attachments/lib/db-service",
+		"model": "@cap-js/attachments/lib/common",
 		"impl": "@cap-js/attachments/lib/db-service"
 	},
 	"s3-standard": {
 		"name": "AWSAttachmentsService",
-		"model": "@cap-js/attachments/lib/s3-standard",
+		"model": "@cap-js/attachments/lib/common",
 		"impl": "@cap-js/attachments/lib/s3-standard"
 	}
 }
