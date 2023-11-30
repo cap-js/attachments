@@ -102,6 +102,11 @@ With the steps above, we have successfully set up asset handling for our referen
 
     ![Customers with Image](./_assets/attachments-sample.png)
 
+> [!Important]
+> To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
+> `src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"`
+
+4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.).
 
 ## Contributing
 
