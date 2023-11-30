@@ -7,7 +7,7 @@ context sap.attachments {
   entity Images : cuid, managed, MediaData {}
 
   entity Attachments : cuid, managed, MediaData {
-    object : UUID;
+    object    : UUID; // The object we are attached to
     note      : String @title: 'Note';
   }
 
