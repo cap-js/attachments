@@ -2,7 +2,7 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/cap-js/change-tracking)](https://api.reuse.software/info/github.com/cap-js/attachments)
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset handling via simple type imports for `Image`, `Document` and `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset storage and handling by using a predefined *type* `Image` or *entity* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
 
 1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
 2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
@@ -12,14 +12,15 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 ### Table of Contents
 
-- [Preliminaries](#preliminaries)
-- [Setup](#setup)
-- [Types](#types)
-- [Test-drive locally](#test-drive-locally)
-- [Attachments View](#attachments-view)
-- [Contributing](#contributing)
-- [Code of Conduct](#code-of-conduct)
-- [Licensing](#licensing)
+- [Attachments Plugin for SAP Cloud Application Programming Model (CAP)](#attachments-plugin-for-sap-cloud-application-programming-model-cap)
+    - [Table of Contents](#table-of-contents)
+  - [Preliminaries](#preliminaries)
+  - [Setup](#setup)
+  - [Annotations](#annotations)
+  - [Test-drive locally](#test-drive-locally)
+  - [Contributing](#contributing)
+  - [Code of Conduct](#code-of-conduct)
+  - [Licensing](#licensing)
 
 
 
@@ -59,21 +60,27 @@ npm add @cap-js/attachments
 
 ## Annotations
 
-All we need to do is to denote the respective asset elements with type `Image`, `Documents`, or `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
+All we need to do is to denote the respective asset elements with *type* `Image` or define a composition of *entity* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
 
 ```cds
 using { sap.capire.incidents } from './processor-service';
-using { Document, Image } from '@cap-js/attachments';
+using { Image, sap.attachments as my } from '@cap-js/attachments';
 
+
+// How to use type 'Image'
 extend incidents.Customers with {
-  avatar: Image;
-}
+  avatar : Image;
+};
+annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
+  TypeImageUrl: customer.avatar.url
+});
 
-annotate ProcessorService.Incidents with @(
-    UI.HeaderInfo : {
-        TypeImageUrl : customer.avatar.url,
-    }
-);
+
+// How to use entity 'Attachments'
+extend incidents.Incidents with {
+  attachments : Composition of many my.Attachments
+                on attachments.object = $self.ID;
+};
 ```
 
 ...
@@ -87,12 +94,13 @@ With the steps above, we have successfully set up asset handling for our referen
   ```sh
   cds watch
   ```
-2. More to come...
+2. **Navigate to an incident's object page**, for example:
 
-## Attachments View
+    Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
 
+3. The `Image` annotation enabled us to show the customer's avatar in the header next to their name (see 1), while the `Attachments` annotation has generated an out-of-the-box Attachments table (see 2) at the bottom of the Object page:
 
-<!--   ![Incidents with Attachments](./assets/readme_table.png) -->
+    ![Customers with Image](./_assets/attachments-sample.png)
 
 
 ## Contributing
