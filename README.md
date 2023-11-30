@@ -8,7 +8,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
 3. [Et voilà:](#attachments-view)
 
-<!--img width="1300" alt="attachments-view" src="_assets/attachments-view.png"-->
+![Upload an attachment](./_assets/upload.gif)
 
 ### Table of Contents
 
@@ -94,7 +94,7 @@ With the steps above, we have successfully set up asset handling for our referen
   ```sh
   cds watch
   ```
-2. **Navigate to an incident's object page**, for example:
+2. **Navigate to the object page** of the closed incident:
 
     Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
 
@@ -106,7 +106,16 @@ With the steps above, we have successfully set up asset handling for our referen
 > To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
 > `src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"`
 
-4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.).
+4. **Navigate to the object page** of the first open incident:
+
+Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
+
+**Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_data/attachments/Solar Panel Report.pdf_](https://github.com/cap-js/attachments-sample/data/attachments/Solar Panel Report.pdf):
+
+
+![Upload an attachment](./_assets/upload.gif)
+
+
 
 ## Contributing
 
