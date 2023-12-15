@@ -47,6 +47,10 @@ cds w samples/attachments
 ```
 -->
 
+> [!Important]
+> To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
+> `src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"`
+
 
 ## Setup
 
@@ -56,7 +60,8 @@ To enable automatic asset handling, simply add this self-configuring plugin pack
 npm add @cap-js/attachments
 ```
 
-
+> [!Note]
+> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](https://github.com/cap-js/attachments-sample?tab=readme-ov-file#setup) once.
 
 ## Annotations
 
@@ -89,11 +94,24 @@ extend incidents.Incidents with {
 ## Test-drive locally
 
 With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
+We can try out two difference scenarios, (i) the *default* scenario where the image/attachments contents are stored locally in the database and (ii) the *hybrid* scenario where the contents are stored in an AWS S3 bucket.
 
 1. **Start the server**:
-  ```sh
-  cds watch
-  ```
+  - *Default* scenario (In memory database):
+      ```sh
+      cds watch
+      ```
+  - *Hybrid* scenario (AWS S3): 
+      ```sh
+      cds watch --profile hybrid
+      ```
+      You can verify that your service bindings setup was successful by checking for the following in your output:
+
+      ```
+      resolving cloud service bindings...
+      bound @cap-js/attachments to Cloud Foundry managed service attachments-sample:attachments-sample-key
+      ```
+
 2. **Navigate to the object page** of the closed incident:
 
     Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
@@ -101,10 +119,6 @@ With the steps above, we have successfully set up asset handling for our referen
 3. The `Image` annotation enabled us to show the customer's avatar in the header next to their name (see 1), while the `Attachments` annotation has generated an out-of-the-box Attachments table (see 2) at the bottom of the Object page:
 
     ![Customers with Image](./_assets/attachments-sample.png)
-
-> [!Important]
-> To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
-> `src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"`
 
 4. **Navigate to the object page** of the first open incident:
 
