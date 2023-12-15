@@ -54,6 +54,9 @@ cds w samples/attachments
 +        src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"
 ```
 
+> [!Note]
+> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](https://github.com/cap-js/attachments-sample?tab=readme-ov-file#setup) once.
+
 
 ## Setup
 
@@ -62,9 +65,6 @@ To enable automatic asset handling, simply add this self-configuring plugin pack
 ```sh
 npm add @cap-js/attachments
 ```
-
-> [!Note]
-> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](https://github.com/cap-js/attachments-sample?tab=readme-ov-file#setup) once.
 
 ## Annotations
 
