@@ -49,7 +49,10 @@ cds w samples/attachments
 
 > [!Important]
 > To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
-> `src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"`
+```diff
+-        src="https://sapui5.hana.ondemand.com/1.120.0/resources/sap-ui-core.js"
++        src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"
+```
 
 
 ## Setup
