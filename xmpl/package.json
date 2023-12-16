@@ -1,23 +1,23 @@
 {
-    "name": "@capire/attachments-sample",
-    "version": "1.0.0",
-    "dependencies": {
-        "@cap-js/attachments": "*",
-        "@capire/incidents": "*",
-        "@sap/cds": "*"
-    },
-    "private": true,
-    "devDependencies": {
-        "@cap-js/sqlite": "*"
-    },
-    "cds": {
-        "requires": {
-            "[hybrid]": {
-                "@cap-js/attachments": {
-                    "service-name": "attachments-sample",
-                    "service-plan": "s3-standard"
-                }
-            }
+  "name": "@capire/attachments-sample",
+  "version": "1.0.0",
+  "dependencies": {
+    "@cap-js/attachments": "*",
+    "@capire/incidents": "*",
+    "@sap/cds": "*"
+  },
+  "private": true,
+  "devDependencies": {
+    "@cap-js/sqlite": "*"
+  },
+  "cds": {
+    "requires": {
+      "[hybrid]": {
+        "@cap-js/attachments": {
+          "service-name": "attachments-sample",
+          "service-plan": "s3-standard"
         }
+      }
     }
+  }
 }
