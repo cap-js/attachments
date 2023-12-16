@@ -96,11 +96,11 @@ module.exports = class ProcessorService extends cds.ApplicationService {
         switch (plan) {
             case 'db-service':
                 // If not service plan is provided, the contents are stored with their metadata in the database
-                await INSERT.into('sap.common.Images').entries(data_images)
+                await INSERT.into('sap.common.Attachments').entries(data_images)
                 await INSERT.into('sap.common.Attachments').entries(data_attachments)
                 break
             case 's3-standard':
-                await INSERT.into('sap.common.Images').entries(data_images_wo_contents)
+                await INSERT.into('sap.common.Attachments').entries(data_images_wo_contents)
                 await INSERT.into('sap.common.Attachments').entries(data_attachments_wo_contents)
 
                 // For AWS S3, the contents are stored in the bucket

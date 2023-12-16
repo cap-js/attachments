@@ -6,15 +6,18 @@ using { sap.capire.incidents } from '../app/services';
 extend incidents.Customers with {
   avatar : Image;
 };
-annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
-  TypeImageUrl: customer.avatar.url
-});
 
 // Demonstrate how to use entity 'Attachments'
 extend incidents.Incidents with {
   attachments : Composition of many Attachments on attachments.object = $self.ID;
 };
 
+
+// -- UI Annotations -----------------------------------------------------------
+
+annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
+  TypeImageUrl: customer.avatar.url
+});
 
 // TODO: Can we pull these two annnotations back into the attachments library
 // and add them dynamically (on cds boostrap)?

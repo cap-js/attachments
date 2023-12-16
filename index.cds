@@ -25,7 +25,7 @@ entity Attachments : cuid, managed {
 // exactly one composition throughout the whole model.
 // So we have to use the following workaround for the time being:
 type Image : Composition of Images;
-entity Images : Attachments {};
+entity Images as projection on Attachments;
 
 
 // - Fiori Annotations ----------------------------------------------------------
