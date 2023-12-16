@@ -7,7 +7,7 @@ entity Attachments : cuid, managed {
   filename : String;
   url      : String;
   mimeType : String
-    @title: 'Attachment Type'
+    @title: 'Media Type'
     @Core.IsMediaType: true;
   content  : LargeBinary
     @title: 'Attachment'
@@ -19,7 +19,14 @@ entity Attachments : cuid, managed {
 }
 
 /** Shortcut for single images as to-one attachements */
-type Image : Composition of Attachments;
+// type Image : Composition of Attachments;
+// REVISIT: We cannot use the above shortcut because of a bug in @sap/cds'
+// getDraftTreeRoot function which assumes a given entity can only show up in
+// exactly one composition throughout the whole model.
+// So we have to use the following workaround for the time being:
+type Image : Composition of Images;
+entity Images : Attachments {};
+
 
 // - Fiori Annotations ----------------------------------------------------------
 annotate Attachments with @UI: {
