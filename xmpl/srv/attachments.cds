@@ -1,14 +1,14 @@
 using { sap.common.Image, sap.common.Attachments } from '@cap-js/attachments';
-using { sap.capire.incidents } from '../app/services';
+using { sap.capire.incidents as my } from '../app/services';
 
 
 // Demonstrate how to use type 'Image'
-extend incidents.Customers with {
+extend my.Customers with {
   avatar : Image;
 };
 
 // Demonstrate how to use entity 'Attachments'
-extend incidents.Incidents with {
+extend my.Incidents with {
   attachments : Composition of many Attachments on attachments.object = $self.ID;
 };
 
