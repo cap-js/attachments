@@ -8,7 +8,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
 3. [Et voilà:](#attachments-view)
 
-![Upload an attachment](./_assets/upload.gif)
+![Upload an attachment](./etc/upload.gif)
 
 ### Table of Contents
 
@@ -104,7 +104,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
       ```sh
       cds watch
       ```
-  - *Hybrid* scenario (AWS S3): 
+  - *Hybrid* scenario (AWS S3):
       ```sh
       cds watch --profile hybrid
       ```
@@ -121,7 +121,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
 
 3. The `Image` annotation enabled us to show the customer's avatar in the header next to their name (see 1), while the `Attachments` annotation has generated an out-of-the-box Attachments table (see 2) at the bottom of the Object page:
 
-    ![Customers with Image](./_assets/attachments-sample.png)
+    ![Customers with Image](./etc/facet.png)
 
 4. **Navigate to the object page** of the first open incident:
 
@@ -130,7 +130,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
     **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_data/attachments/Solar Panel Report.pdf_](https://github.com/cap-js/attachments-sample/blob/main/data/attachments/Solar%20Panel%20Report.pdf):
 
 
-    ![Upload an attachment](./_assets/upload.gif)
+    ![Upload an attachment](./etc/upload.gif)
 
 
 

@@ -1,21 +1,34 @@
 using { cuid, managed } from '@sap/cds/common';
+namespace sap.common;
 
-type Image : Composition of sap.attachments.Images;
-
-context sap.attachments {
-
-  entity Images : cuid, managed, MediaData {}
-
-  entity Attachments : cuid, managed, MediaData {
-    object    : UUID; // The object we are attached to
-    note      : String @title: 'Note';
-  }
-
-  type MediaData {
-    fileName : String;
-    content   : LargeBinary @title: 'Attachment' @Core.MediaType: mimeType @Core.ContentDisposition.Filename: fileName @Core.Immutable: true;
-    mimeType  : String @title: 'Attachment Type' @Core.IsMediaType: true;
-    url       : String;
-  }
-
+/** entity to store metadata about attachements  */
+entity Attachments : cuid, managed {
+  object   : String(111); // The object we are attached to
+  filename : String;
+  url      : String;
+  mimeType : String
+    @title: 'Attachment Type'
+    @Core.IsMediaType: true;
+  content  : LargeBinary
+    @title: 'Attachment'
+    @Core.MediaType: mimeType
+    @Core.ContentDisposition.Filename: filename
+    @Core.Immutable: true;
+  note     : String
+    @title: 'Note';
 }
+
+/** Shortcut for single images as to-one attachements */
+type Image : Composition of Attachments;
+
+// - Fiori Annotations ----------------------------------------------------------
+annotate Attachments with @UI: {
+  MediaResource: { Stream: content },
+  LineItem: [
+    {Value: content},
+    {Value: createdAt},
+    {Value: createdBy},
+    {Value: note}
+  ],
+  DeleteHidden: true,
+};
