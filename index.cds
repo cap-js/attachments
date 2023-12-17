@@ -2,20 +2,13 @@ using { cuid, managed } from '@sap/cds/common';
 
 /** entity to store metadata about attachements  */
 entity sap.common.Attachments : cuid, managed {
-  subject   : String(111); // The object we are attached to
   kind     : String(77);  // e.g. 'image', 'document', 'video', ...
+  subject  : String(111); // The object we are attached to
   filename : String;
   url      : String;
-  mimeType : String
-    @title: 'Media Type'
-    @Core.IsMediaType: true;
-  content  : LargeBinary
-    @title: 'Attachment'
-    @Core.MediaType: mimeType
-    @Core.ContentDisposition.Filename: filename
-    @Core.Immutable: true;
-  note     : String
-    @title: 'Note';
+  mimeType : String @title: 'Media Type';
+  content  : LargeBinary @title: 'Attachment';
+  note     : String @title: 'Note';
 }
 
 /** Shortcut for multiple attachments as to-many relationship to Attachments */
@@ -42,4 +35,9 @@ annotate sap.common.Attachments with @UI: {
     {Value: note}
   ],
   DeleteHidden: true,
+} {
+  mimeType @Core.IsMediaType: true;
+  content @Core.MediaType: mimeType
+    @Core.ContentDisposition.Filename: filename
+    @Core.Immutable: true;
 };
