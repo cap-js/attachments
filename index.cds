@@ -22,13 +22,13 @@ entity sap.common.Attachments : cuid, managed {
 type Attachments : Composition of many sap.common.Attachments;
   // Note: on condition is filled in automatically
 
-/** Shortcut for single images as to-one relationship to Attachments */
-// type Image : Composition of Attachments;
-// REVISIT: We cannot use the above shortcut because of a bug in @sap/cds'
-// getDraftTreeRoot function which assumes a given entity can only show up in
-// exactly one composition throughout the whole model.
-// So we have to use the following workaround for the time being:
+/** Shortcut for single image as to-one relationship to Attachments */
 type Image : Composition of sap.common.Images;
+// REVISIT: ^^^ should be: Composition of sap.common.Attachments;
+// However, we cannot do so today because of a bug in @sap/cds' getDraftTreeRoot
+// function which assumes a given entity can only show up in exactly one composition
+// throughout the whole model.
+// So we have to use this workaround for the time being:
 entity sap.common.Images as projection on sap.common.Attachments;
 
 
