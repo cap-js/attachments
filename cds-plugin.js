@@ -1,8 +1,24 @@
 const cds = require('@sap/cds')
 const DEBUG = cds.debug('attachments')
 
+cds.on('loaded', async (m) => {
+  const Attachments = m.definitions['sap.common.Attachments']
+  if (Attachments) Attachments._is_attachments = true; else return
+  cds.linked(m).forall('Composition', comp => {
+    if(comp._target._is_attachments && comp.parent && !comp.on) {
+      let keys = Object.keys(comp.parent.keys)
+      if (keys.length > 1) throw cds.error `Objects with attachments must have a single key element`
+      comp.on = [
+        {"ref":[ comp.name, 'object' ]}, '=',
+        {"ref":[ '$self', keys[0] ]}
+      ]
+      delete comp.keys
+    }
+  })
+})
+
+
 cds.on('served', async () => {
-	cds.entities('sap.common').Attachments._is_attachments = true
 	let any = 0
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
