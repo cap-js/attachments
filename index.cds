@@ -1,21 +1,28 @@
 using { cuid, managed } from '@sap/cds/common';
 
-/** entity to store metadata about attachements  */
+/**
+ * The system entity to store metadata about attachements.
+ * In case of db-based service, also the content itself.
+ */
 entity sap.common.Attachments : cuid, managed {
   kind     : String(77);  // e.g. 'image', 'document', 'video', ...
   subject  : String(111); // The object we are attached to
   filename : String;
   url      : String;
-  content  : LargeBinary @title: 'Attachment';
+  content  : LargeBinary @title: 'Attachment'; // only for db-based services
   mimeType : String @title: 'Media Type';
   note     : String @title: 'Note';
 }
 
-/** Shortcut for multiple attachments as to-many relationship to Attachments */
+/**
+ * Shortcut for multiple attachments as to-many relationship to Attachments
+ */
 type Attachments : Composition of many sap.common.Attachments;
   // Note: on condition is filled in automatically
 
-/** Shortcut for single image as to-one relationship to Attachments */
+/**
+ * Shortcut for single image as to-one relationship to Attachments
+ */
 type Image : Composition of sap.common.Images;
 // REVISIT: ^^^ should be: Composition of sap.common.Attachments;
 // However, we cannot do so today because of a bug in @sap/cds' getDraftTreeRoot
