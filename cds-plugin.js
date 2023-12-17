@@ -5,7 +5,7 @@ cds.on('loaded', async (m) => {
   const Attachments = m.definitions['sap.common.Attachments']
   if (Attachments) Attachments._is_attachments = true; else return
   cds.linked(m).forall('Composition', comp => {
-    if(comp._target._is_attachments && comp.parent && !comp.on) {
+    if(comp._target._is_attachments && comp.parent && comp.is2many && !comp.on) {
       let keys = Object.keys(comp.parent.keys)
       if (keys.length > 1) throw cds.error `Objects with attachments must have a single key element`
       comp.on = [

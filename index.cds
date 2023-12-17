@@ -1,8 +1,7 @@
 using { cuid, managed } from '@sap/cds/common';
-namespace sap.common;
 
 /** entity to store metadata about attachements  */
-entity Attachments : cuid, managed {
+entity sap.common.Attachments : cuid, managed {
   object   : String(111); // The object we are attached to
   kind     : String(77);  // e.g. 'image', 'document', 'video', ...
   filename : String;
@@ -19,18 +18,22 @@ entity Attachments : cuid, managed {
     @title: 'Note';
 }
 
-/** Shortcut for single images as to-one attachements */
+/** Shortcut for multiple attachments as to-many relationship to Attachments */
+type Attachments : Composition of many sap.common.Attachments;
+  // Note: on condition is filled in automatically
+
+/** Shortcut for single images as to-one relationship to Attachments */
 // type Image : Composition of Attachments;
 // REVISIT: We cannot use the above shortcut because of a bug in @sap/cds'
 // getDraftTreeRoot function which assumes a given entity can only show up in
 // exactly one composition throughout the whole model.
 // So we have to use the following workaround for the time being:
-type Image : Composition of Images;
-entity Images as projection on Attachments;
+type Image : Composition of sap.common.Images;
+entity sap.common.Images as projection on sap.common.Attachments;
 
 
 // - Fiori Annotations ----------------------------------------------------------
-annotate Attachments with @UI: {
+annotate sap.common.Attachments with @UI: {
   MediaResource: { Stream: content },
   LineItem: [
     {Value: content},
