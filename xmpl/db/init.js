@@ -1,3 +1,5 @@
+// This is for demo purposes only, not for production use!
+
 const cds = require('@sap/cds')
 cds.once('served', async () => {
   const Attachments = await cds.connect.to('attachments')
