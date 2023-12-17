@@ -3,9 +3,9 @@
 const cds = require('@sap/cds')
 cds.once('served', async () => {
   const Attachments = await cds.connect.to('attachments')
-  const data = await SELECT `ID,filename`.from('sap.common.Attachments').where({ content: null })
-  await Promise.all (data.map(_init))
-  await Attachments.upload(data)
+  const attachments = await SELECT `ID,filename`.from('sap.common.Attachments').where({ content: null })
+  await Promise.all (attachments.map(_init))
+  await Attachments.upload(attachments)
   await UPDATE ('ProcessorService.Customers') .set (`avatar_ID = ID`)
 })
 
