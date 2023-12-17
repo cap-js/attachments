@@ -6,8 +6,8 @@ entity sap.common.Attachments : cuid, managed {
   subject  : String(111); // The object we are attached to
   filename : String;
   url      : String;
-  mimeType : String @title: 'Media Type';
   content  : LargeBinary @title: 'Attachment';
+  mimeType : String @title: 'Media Type';
   note     : String @title: 'Note';
 }
 
