@@ -58,15 +58,15 @@ cds.on('served', async () => {
 async function ReadAttachmentsHandler (req, next) {
 
   // Add image streaming
-  const imageIsRequested = req._path?.endsWith('$value')
-  if (imageIsRequested) {
+  const image_requested = req._path?.endsWith('$value')
+  if (image_requested) {
     const stream = await cds.services.attachments.download(req.params[0])
     return { value: stream }
   }
 
   // Add attachment streaming (i.e. for S3 bucket)
-  const attachmentIsRequested = req._path?.endsWith('content') && !req.entity.endsWith('.drafts')
-  if (attachmentIsRequested) {
+  const attachment_requested = req._path?.endsWith('content') && !req.entity.endsWith('.drafts')
+  if (attachment_requested) {
     const stream = await cds.services.attachments.download(req.data.ID)
     return { value: stream }
   }
