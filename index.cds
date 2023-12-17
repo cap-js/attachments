@@ -4,6 +4,7 @@ namespace sap.common;
 /** entity to store metadata about attachements  */
 entity Attachments : cuid, managed {
   object   : String(111); // The object we are attached to
+  kind     : String(77);  // e.g. 'image', 'document', 'video', ...
   filename : String;
   url      : String;
   mimeType : String

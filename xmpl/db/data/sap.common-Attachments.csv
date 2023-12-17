@@ -1,0 +1,9 @@
+ID                                   ,filename                  ,mimeType                 ,object                               ,note           ,createdAt                ,createdBy
+8fc8231b-f6d7-43d1-a7e1-725c8e988d18 ,Daniel Watts.png          ,image/png                ,                                     ,               ,                         ,
+feb04eac-f84f-4232-bd4f-80a178f24a17 ,Stormy Weathers.png       ,image/png                ,                                     ,               ,                         ,
+2b87f6ca-28a2-41d6-8c69-ccf16aa6389d ,Sunny Sunshine.png        ,image/png                ,                                     ,               ,                         ,
+548da458-fa8b-4c3b-a1d0-ba034d54600a ,INVERTER FAULT REPORT.pdf ,application/pdf          ,3b23bb4b-4ac7-4a24-ac02-aa10cabd842c ,               ,2023-10-10T18:53:26.751Z ,alice
+cc351101-0505-4e11-8f1b-67544ee156cc ,Inverter-error-logs.txt   ,text/plain               ,3b23bb4b-4ac7-4a24-ac02-aa10cabd842c ,Raw error logs ,2023-10-11T19:52:26.751Z ,alice
+cbd9ca9e-2c7d-4898-9fe5-4e7f46598209 ,No_Current.xlsx           ,application/vnd.ms-excel ,3a4ede72-244a-4f5f-8efa-b17e032d01ee ,               ,2023-10-09T18:50:20.751Z ,alice
+016a6800-dc4f-4b96-8883-68ecd12a49c5 ,strange-noise.csv         ,text/csv                 ,3ccf474c-3881-44b7-99fb-59a2a4668418 ,               ,2023-10-18T18:55:26.751Z ,alice
+4474092e-1863-4f03-8821-7cdae5f44cdf ,Broken Solar Panel.jpg    ,image/jpeg               ,3583f982-d7df-4aad-ab26-301d4a157cd7 ,               ,2023-10-01T15:53:26.751Z ,alice

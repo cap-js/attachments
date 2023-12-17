@@ -1,4 +1,13 @@
-// Proxy to the base app's model to have ./change-tracking.cds work in both
-// this extension app as well as when copied to incidents-app.
-// This file is not required for real projects.
 using from '@capire/incidents/app/services';
+using from '../db/schema';
+
+annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
+  TypeImageUrl: customer.avatar.url
+});
+
+// TODO: Can we pull these two annnotations back into the attachments library
+// and add them dynamically (on cds boostrap)?
+annotate ProcessorService.Incidents with @(UI.Facets: [ ..., {
+  $Type : 'UI.ReferenceFacet', Target: 'attachments/@UI.LineItem',
+  Label : '{i18n>Attachments}',
+}]);
