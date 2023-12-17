@@ -7,12 +7,20 @@ cds.on('loaded', async (m) => {
   cds.linked(m).forall('Composition', comp => {
     if(comp._target._is_attachments && comp.parent && comp.is2many && !comp.on) {
       let keys = Object.keys(comp.parent.keys)
-      if (keys.length > 1) throw cds.error `Objects with attachments must have a single key element`
+      if (keys.length > 1) throw cds.error `Entities with attachments must have a single key element`
+      // Fill in on condition
+      delete comp.keys
       comp.on = [
         {"ref":[ comp.name, 'subject' ]}, '=',
         {"ref":[ '$self', keys[0] ]}
       ]
-      delete comp.keys
+      // Add UI.Facets
+      let Facets = comp.parent['@UI.Facets']
+      if (Facets) Facets.push({
+        $Type : 'UI.ReferenceFacet', Target: `${comp.name}/@UI.LineItem`,
+        Label : '{i18n>Attachments}',
+      })
+      console.trace(Facets)
     }
   })
 })

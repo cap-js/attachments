@@ -32,7 +32,8 @@ type Image : Composition of sap.common.Images;
 entity sap.common.Images as projection on sap.common.Attachments;
 
 
-// - Fiori Annotations ----------------------------------------------------------
+// -- Fiori Annotations ----------------------------------------------------------
+
 annotate sap.common.Attachments with @UI: {
   MediaResource: { Stream: content },
   LineItem: [
