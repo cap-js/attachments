@@ -6,18 +6,8 @@
     "@capire/incidents": "*",
     "@sap/cds": "*"
   },
-  "private": true,
   "devDependencies": {
     "@cap-js/sqlite": "*"
   },
-  "cds": {
-    "requires": {
-      "[hybrid]": {
-        "@cap-js/attachments": {
-          "service-name": "attachments-sample",
-          "service-plan": "s3-standard"
-        }
-      }
-    }
-  }
+  "private": true
 }

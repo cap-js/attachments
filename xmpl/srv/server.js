@@ -2,4 +2,4 @@
 // in this monorepo setup. It is not required in a real-world project.
 
 const cds = require("@sap/cds");
-cds.once("served", () => require('./attachments').prototype.init.call(cds.services.ProcessorService))
+cds.once("served", () => require('./content/init').prototype.init.call(cds.services.ProcessorService))
