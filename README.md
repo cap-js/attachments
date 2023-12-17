@@ -86,8 +86,7 @@ annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
 
 // How to use entity 'Attachments'
 extend incidents.Incidents with {
-  attachments : Composition of many my.Attachments
-                on attachments.object = $self.ID;
+  attachments : Attachments;
 };
 ```
 

@@ -9,7 +9,7 @@ cds.on('loaded', async (m) => {
       let keys = Object.keys(comp.parent.keys)
       if (keys.length > 1) throw cds.error `Objects with attachments must have a single key element`
       comp.on = [
-        {"ref":[ comp.name, 'object' ]}, '=',
+        {"ref":[ comp.name, 'subject' ]}, '=',
         {"ref":[ '$self', keys[0] ]}
       ]
       delete comp.keys
@@ -98,7 +98,7 @@ const SaveHandler = async function (req, next) {
 
   // Copy attachments from draft to active
   // REVISIT: This is loading the attachments into buffers -> needs streaming instead
-  const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ object: req.data.ID })
+  const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
   await Promise.all (attachments.map (a => a.content && AttachmentsSrv.upload(a)))
 
   return results

@@ -2,7 +2,7 @@ using { cuid, managed } from '@sap/cds/common';
 
 /** entity to store metadata about attachements  */
 entity sap.common.Attachments : cuid, managed {
-  object   : String(111); // The object we are attached to
+  subject   : String(111); // The object we are attached to
   kind     : String(77);  // e.g. 'image', 'document', 'video', ...
   filename : String;
   url      : String;
