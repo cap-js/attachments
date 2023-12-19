@@ -20,7 +20,6 @@ cds.on('loaded', async (m) => {
         $Type : 'UI.ReferenceFacet', Target: `${comp.name}/@UI.LineItem`,
         Label : '{i18n>Attachments}',
       })
-      console.trace(Facets)
     }
   })
 })
