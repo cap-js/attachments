@@ -16,7 +16,7 @@ For the AWS S3 Object store sample, we have already prepared a service instance 
     In this directory (_services/attachments/_), you can generate a new file _.cdsrc-private.json by running:
 
     ```sh
-    cds bind @cap-js/attachments -2 attachments-sample:attachments-sample-key
+    cds bind @cap-js/attachments -2 attachments-sample:attachments-sample-key --kind s3
     ```
 
 
