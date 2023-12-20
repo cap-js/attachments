@@ -34,19 +34,6 @@ cd incidents-app
 npm i
 ```
 
-<!--**Alternatively**, you can clone the incidents app including the prepared enhancements for change-tracking:
-
-```sh
-git clone https://github.com/cap-js/calesi --recursive
-cd calesi
-npm i
-```
-
-```sh
-cds w samples/attachments
-```
--->
-
 > [!Important]
 > To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
 ```diff
@@ -55,7 +42,7 @@ cds w samples/attachments
 ```
 
 > [!Note]
-> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](https://github.com/cap-js/attachments-sample?tab=readme-ov-file#setup) once.
+> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](./db/content?tab=readme-ov-file#setup) once.
 
 
 ## Setup
@@ -71,23 +58,11 @@ npm add @cap-js/attachments
 All we need to do is to denote the respective asset elements with *type* `Image` or define a composition of *entity* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
 
 ```cds
-using { sap.capire.incidents } from './processor-service';
-using { Image, sap.attachments as my } from '@cap-js/attachments';
+using { sap.capire.incidents as my } from '@capire/incidents/db/schema';
+using { Image, Attachments } from '@cap-js/attachments';
 
-
-// How to use type 'Image'
-extend incidents.Customers with {
-  avatar : Image;
-};
-annotate ProcessorService.Incidents with @(UI.HeaderInfo: {
-  TypeImageUrl: customer.avatar.url
-});
-
-
-// How to use entity 'Attachments'
-extend incidents.Incidents with {
-  attachments : Attachments;
-};
+extend my.Incidents with { attachments: Attachments }
+extend my.Customers with { avatar: Image }
 ```
 
 ...
@@ -126,7 +101,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
 
     Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
 
-    **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_data/attachments/Solar Panel Report.pdf_](https://github.com/cap-js/attachments-sample/blob/main/data/attachments/Solar%20Panel%20Report.pdf):
+    **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [db/content/Solar Panel Report.pdf_](./db/content/Solar%20Panel%20Report.pdf):
 
 
     ![Upload an attachment](./etc/upload.gif)
@@ -135,7 +110,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
 
 ## Contributing
 
-This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/change-tracking/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
+This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
 
 
 ## Code of Conduct
@@ -145,4 +120,4 @@ We as members, contributors, and leaders pledge to make participation in our com
 
 ## Licensing
 
-Copyright 2023 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/change-tracking).
+Copyright 2023 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/attachments).
