@@ -101,7 +101,7 @@ We can try out two difference scenarios, (i) the *default* scenario where the im
 
     Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
 
-    **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_db/content/Solar Panel Report.pdf_](./db/content/Solar%20Panel%20Report.pdf):
+    **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
 
 
     ![Upload an attachment](./etc/upload.gif)
