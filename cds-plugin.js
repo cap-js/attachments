@@ -1,15 +1,15 @@
 const cds = require('@sap/cds/lib')
-const LOG = cds.log('cds.attachments')
+const LOG = cds.log('attachments')
 const DEBUG = LOG._debug ? LOG.debug : undefined
 
 cds.on('loaded', UnfoldModel)
-cds.once('served', async ()=> Promise.all([
-  await UploadInitialContent(),
-  await PluginHandlers(),
+cds.once('served', ()=> Promise.all([
+  UploadInitialContent(),
+  PluginHandlers(),
 ]))
 
 
-async function UnfoldModel (csn) {
+function UnfoldModel (csn) {
   const Attachments = csn.definitions['sap.common.Attachments']
   if (Attachments) Attachments._is_attachments = true; else return
   cds.linked(csn).forall('Composition', comp => {
@@ -49,11 +49,13 @@ async function UploadInitialContent() {
 
 
 async function PluginHandlers () {
-	let any = 0
+  const Attachments = cds.model.definitions['sap.common.Attachments']
+  if (Attachments) Attachments._is_attachments = true; else return
+	await cds.connect.to('attachments') // ensure to connect to the attachments service
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
 			Object.values(srv.entities) .forEach (entity => {
-				let _any=0; for (let e in entity.elements) {
+				let any=0; for (let e in entity.elements) {
 					if (e === 'SiblingEntity') continue // REVISIT: Why do we have this?
 					const element = entity.elements[e]
 					if (element._target?._is_attachments) {
@@ -62,18 +64,16 @@ async function PluginHandlers () {
 							srv.on ("READ", `${entity.name}/${e}`, ReadAttachmentsHandler)
 							srv.on ("READ", entity.name +'/'+ element.name, ReadAttachmentsHandler)
 						})
-						_any++
+						any++
 					}
 				}
-				if (_any) srv.prepend(() => {
+				if (any) srv.prepend(() => {
 					srv.on ("READ", entity, ReadHandler)
 					srv.on ("SAVE", entity, SaveHandler)
-					any++
 				})
 			})
 		}
 	}
-	if (any) await cds.connect.to('attachments') // ensure to connect to the attachments service
 }
 
 
@@ -126,6 +126,7 @@ const SaveHandler = async function (req, next) {
   const AttachmentsSrv = cds.services.attachments
   const { Attachments } = this.entities
   // REVISIT: This is loading the attachments into buffers -> needs streaming instead
+  // REVISIT: This is always fetching and re-uploading all attachments from draft data -> needs to be optimized
   const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
   await Promise.all (attachments.map (a => a.content && AttachmentsSrv.upload(a)))
   return results
