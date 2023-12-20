@@ -9,10 +9,10 @@ cds.once('served', async ()=> Promise.all([
 ]))
 
 
-async function UnfoldModel (m) {
-  const Attachments = m.definitions['sap.common.Attachments']
+async function UnfoldModel (csn) {
+  const Attachments = csn.definitions['sap.common.Attachments']
   if (Attachments) Attachments._is_attachments = true; else return
-  cds.linked(m).forall('Composition', comp => {
+  cds.linked(csn).forall('Composition', comp => {
     if(comp._target._is_attachments && comp.parent && comp.is2many && !comp.on) {
       let keys = Object.keys(comp.parent.keys)
       if (keys.length > 1) throw cds.error `Entities with attachments must have a single key element`
@@ -33,7 +33,7 @@ async function UnfoldModel (m) {
 }
 
 
-async function UploadInitialContent (srv) {
+async function UploadInitialContent() {
   const { isdir, local } = cds.utils, _content = isdir('db/content'); if (!_content) return
   const Attachments = await cds.connect.to('attachments')
   const { join } = cds.utils.path
@@ -120,15 +120,12 @@ async function ReadHandler (req, next) {
 
 
 const SaveHandler = async function (req, next) {
+  // Copy attachments from draft to active
   const results = await next()
-
   const AttachmentsSrv = cds.services.attachments
   const { Attachments } = this.entities
-
-  // Copy attachments from draft to active
   // REVISIT: This is loading the attachments into buffers -> needs streaming instead
   const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
   await Promise.all (attachments.map (a => a.content && AttachmentsSrv.upload(a)))
-
   return results
 }
