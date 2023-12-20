@@ -40,8 +40,9 @@ async function UploadInitialContent() {
   const { readFile } = cds.utils.promises
   const _init = a => readFile(join(_content, a.filename)).then(c => a.content = c)
   // REVISIT: This ^^^ is not streaming, is it?
-  LOG.info('Loading initial content from', local(_content))
   const attachments = await SELECT `ID, filename` .from `sap.common.Attachments` .where `content is null`
+  if (!attachments.length) return
+  LOG.info('Loading initial content from', local(_content))
   await Promise.all (attachments.map(_init))
   await Attachments.upload(attachments)
 }
