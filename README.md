@@ -5,7 +5,7 @@
 The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset storage and handling by using a predefined *type* `Image` or *entity* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
 
 1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
-2. [Add `Image`, `Document`, or `Attachments` types to your CDS models](#annotations)
+2. [Add `Image` or `Attachments` types to your CDS models](#annotations)
 3. [Et voilà:](#attachments-view)
 
 ![Upload an attachment](./etc/upload.gif)
@@ -42,7 +42,7 @@ npm i
 ```
 
 > [!Note]
-> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](./db/content?tab=readme-ov-file#setup) once.
+> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](./xmpl/README.md#setup) once.
 
 
 ## Setup
@@ -55,7 +55,7 @@ npm add @cap-js/attachments
 
 ## Annotations
 
-All we need to do is to denote the respective asset elements with *type* `Image` or define a composition of *entity* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
+All we need to do is to denote the respective asset elements with *type* `Image` or `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
 
 ```cds
 using { sap.capire.incidents as my } from '@capire/incidents/db/schema';
