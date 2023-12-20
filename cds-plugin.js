@@ -1,7 +1,14 @@
-const cds = require('@sap/cds')
+const cds = require('@sap/cds/lib')
 const DEBUG = cds.debug('attachments')
 
-cds.on('loaded', async (m) => {
+cds.on('loaded', UnfoldModel)
+cds.once('served', async ()=> Promise.all([
+  await UploadInitialContent(),
+  await PluginHandlers(),
+]))
+
+
+async function UnfoldModel (m) {
   const Attachments = m.definitions['sap.common.Attachments']
   if (Attachments) Attachments._is_attachments = true; else return
   cds.linked(m).forall('Composition', comp => {
@@ -22,10 +29,23 @@ cds.on('loaded', async (m) => {
       })
     }
   })
-})
+}
 
 
-cds.on('served', async () => {
+async function UploadInitialContent (srv) {
+  const { isdir } = cds.utils, _content = isdir('db/content'); if (!_content) return
+  const { join } = cds.utils.path
+  const { readFile } = cds.utils.promises
+  const _init = a => readFile(join(_content, a.filename)).then(c => a.content = c)
+  // REVISIT: This ^^^ is not streaming, is it?
+  const Attachments = await cds.connect.to('attachments')
+  const attachments = await SELECT `ID, filename` .from `sap.common.Attachments` .where `content is null`
+  await Promise.all (attachments.map(_init))
+  await Attachments.upload(attachments)
+}
+
+
+async function PluginHandlers () {
 	let any = 0
 	for (const srv of cds.services) {
 		if (srv instanceof cds.ApplicationService) {
@@ -51,7 +71,7 @@ cds.on('served', async () => {
 		}
 	}
 	if (any) await cds.connect.to('attachments') // ensure to connect to the attachments service
-})
+}
 
 
 async function ReadAttachmentsHandler (req, next) {
