@@ -1,5 +1,6 @@
 const cds = require('@sap/cds/lib')
-const DEBUG = cds.debug('attachments')
+const LOG = cds.log('cds.attachments')
+const DEBUG = LOG._debug ? LOG.debug : undefined
 
 cds.on('loaded', UnfoldModel)
 cds.once('served', async ()=> Promise.all([
@@ -33,12 +34,13 @@ async function UnfoldModel (m) {
 
 
 async function UploadInitialContent (srv) {
-  const { isdir } = cds.utils, _content = isdir('db/content'); if (!_content) return
+  const { isdir, local } = cds.utils, _content = isdir('db/content'); if (!_content) return
+  const Attachments = await cds.connect.to('attachments')
   const { join } = cds.utils.path
   const { readFile } = cds.utils.promises
   const _init = a => readFile(join(_content, a.filename)).then(c => a.content = c)
   // REVISIT: This ^^^ is not streaming, is it?
-  const Attachments = await cds.connect.to('attachments')
+  LOG.info('Loading initial content from', local(_content))
   const attachments = await SELECT `ID, filename` .from `sap.common.Attachments` .where `content is null`
   await Promise.all (attachments.map(_init))
   await Attachments.upload(attachments)
