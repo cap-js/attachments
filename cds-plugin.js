@@ -130,9 +130,8 @@ const SaveHandler = async function (req, next) {
   const draft_attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
   let upload_attachments = []
   draft_attachments.forEach (d => {
-    const isNew = d.content === null
-    const isUpdated = attachments.find(a => a.ID === d.ID && a.content !== d.content)
-    if (isNew || isUpdated) {
+    const doUpdate = attachments.some(a => a.ID === d.ID && (a.content === null || a.content !== d.content))
+    if (doUpdate) {
         upload_attachments.push(d)
     }
   })
