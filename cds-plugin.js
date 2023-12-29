@@ -44,7 +44,9 @@ async function UploadInitialContent() {
   if (!attachments.length) return
   LOG.info('Loading initial content from', local(_content))
   await Promise.all (attachments.map(_init))
-  await Attachments.upload(attachments)
+  // Only upload attachments if they are not already uploaded
+  const new_attachments = await Attachments.get_new_uploads(attachments)
+  await Attachments.upload(new_attachments)
 }
 
 
@@ -126,8 +128,9 @@ const SaveHandler = async function (req, next) {
   const AttachmentsSrv = cds.services.attachments
   const { Attachments } = this.entities
   // REVISIT: This is loading the attachments into buffers -> needs streaming instead
-  // The service's upload function takes care of only uploading new attachments
   const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
-  await Promise.all (attachments.map (a => a.content && AttachmentsSrv.upload(a)))
+  // REVISIT: Only upload attachments if they are not already uploaded -> Fiori UI/CDS should distinguish between draft and active attachments
+  const new_attachments = await AttachmentsSrv.get_new_uploads(attachments)
+  await Promise.all (new_attachments.map (a => AttachmentsSrv.upload(a)))
   return results
 }
