@@ -74,6 +74,10 @@ With the steps above, we have successfully set up asset handling for our referen
 We can try out two difference scenarios, (i) the *default* scenario where the image/attachments contents are stored locally in the database and (ii) the *hybrid* scenario where the contents are stored in an AWS S3 bucket.
 
 1. **Start the server**:
+
+> [!Note]
+> To debug the plugin, start the command with `DEBUG=attachments`
+
   - *Default* scenario (In memory database):
       ```sh
       cds watch
