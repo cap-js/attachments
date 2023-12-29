@@ -126,15 +126,8 @@ const SaveHandler = async function (req, next) {
   const AttachmentsSrv = cds.services.attachments
   const { Attachments } = this.entities
   // REVISIT: This is loading the attachments into buffers -> needs streaming instead
-  const attachments = await SELECT`ID, filename, content`.from(Attachments).where({ subject: req.data.ID })
-  const draft_attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
-  let upload_attachments = []
-  draft_attachments.forEach (d => {
-    const doUpdate = attachments.some(a => a.ID === d.ID && (a.content === null || a.content !== d.content))
-    if (doUpdate) {
-        upload_attachments.push(d)
-    }
-  })
-  await Promise.all (upload_attachments.map (a => a.content && AttachmentsSrv.upload(a)))
+  // The service's upload function takes care of only uploading new attachments
+  const attachments = await SELECT`ID, filename, content`.from(Attachments.drafts).where({ subject: req.data.ID })
+  await Promise.all (attachments.map (a => a.content && AttachmentsSrv.upload(a)))
   return results
 }
