@@ -54,6 +54,7 @@ async function PluginHandlers () {
               const handler = target._is_images ? ReadImage : ReadAttachment
               for (let each of [target, target.drafts]) if (each) srv.on ("READ", each, handler)
             })
+            // srv.on ("NEW", entity, AddAttachmentHandler(element))
             srv.after ("SAVE", entity, DraftSaveHandler4(element))
 						any++
 					}
