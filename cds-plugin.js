@@ -39,7 +39,7 @@ async function UploadInitialContent() {
 
 
 async function PluginHandlers () {
-  if ('Attachements' in cds.model.definitions) ; else return
+  if ('Attachments' in cds.model.definitions) ; else return
 	await cds.connect.to('attachments') // ensure to connect to the attachments service
   const Images = cds.model.definitions['sap.common.Images']
   Images._is_images = true
