@@ -1,4 +1,4 @@
-using { cuid, managed } from '@sap/cds/common';
+using { managed } from '@sap/cds/common';
 
 aspect MediaData @(_is_media_data) {
   url      : String;
@@ -11,14 +11,17 @@ aspect Attachments : managed, MediaData {
   note         : String @title: 'Note';
 }
 
-entity sap.common.Images : cuid, MediaData {}
+entity sap.common.Images : MediaData {
+  key ID : UUID;
+  filename : String @title: 'Filename';
+}
 type Image : Composition of sap.common.Images;
 
 
 // -- Fiori Annotations ----------------------------------------------------------
 
 annotate MediaData with @UI.MediaResource: { Stream: content } {
-  content  @Core.MediaType: mimeType @odata.draft.skip;
+  content @Core.MediaType: mimeType @odata.draft.skip;
   mimeType @Core.IsMediaType;
 }
 
@@ -31,5 +34,9 @@ annotate Attachments with @UI:{
   ],
   // DeleteHidden,
 } {
+  content @Core:{ Immutable, ContentDisposition.Filename: filename }
+}
+
+annotate sap.common.Images with {
   content @Core:{ Immutable, ContentDisposition.Filename: filename }
 }
