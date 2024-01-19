@@ -13,7 +13,8 @@
     "test": "npx jest --silent"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.400.0"
+    "@aws-sdk/client-s3": "^3.400.0",
+    "@sap/xsenv": "^4.2.0"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^1.0.1",
