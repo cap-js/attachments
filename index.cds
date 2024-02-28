@@ -3,7 +3,7 @@ using { managed } from '@sap/cds/common';
 aspect MediaData @(_is_media_data) {
   url      : String;
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
-  mimeType : String @title: 'Media Type';
+  mimeType : String @title: 'Media Type' default 'application/octet-stream';
 }
 
 aspect Attachments : managed, MediaData {
@@ -34,7 +34,7 @@ annotate Attachments with @UI:{
   ],
   // DeleteHidden,
 } {
-  content @Core:{ Immutable, ContentDisposition.Filename: filename }
+  content @Core:{ Immutable, ContentDisposition.Filename: filename, ContentDisposition.Type: 'inline' }
 }
 
 annotate sap.common.Images with {
