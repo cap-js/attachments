@@ -29,7 +29,7 @@ module.exports = async function () {
   await attachments.put (Images, [
     [ '1004155', 'Daniel Watts.png' ],
     [ '1004161', 'Stormy Weathers.png' ],
-    [ '1004100', 'Sunny Sunshine.png' ],
+    [ '1004100', 'Sunny Sunshine.png' ]
   ].map(([ ID, filename ]) => ({
     ID, filename,
     content: createReadStream (join(__dirname, 'content', filename)),
