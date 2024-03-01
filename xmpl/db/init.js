@@ -27,11 +27,11 @@ module.exports = async function () {
 
   const { 'sap.common.Images': Images } = cds.model.entities
   await attachments.put (Images, [
-    [ '1004155', 'Daniel Watts.png' ],
-    [ '1004161', 'Stormy Weathers.png' ],
-    [ '1004100', 'Sunny Sunshine.png' ]
-  ].map(([ ID, filename ]) => ({
-    ID, filename,
+    [ '1004155', 'Daniel Watts.png', 'image/jpeg'],
+    [ '1004161', 'Stormy Weathers.png', 'image/jpeg'],
+    [ '1004100', 'Sunny Sunshine.png', 'image/jpeg']
+  ].map(([ ID, filename, mimeType ]) => ({
+    ID, filename, mimeType,
     content: createReadStream (join(__dirname, 'content', filename)),
   })))
 
