@@ -1,5 +1,12 @@
 const cds = require('@sap/cds/lib')
 module.exports = async function () {
+  
+  // this ensures customers are in the db already
+  cds.once('served', async () => {
+    const { 'sap.capire.incidents.Customers': Customers } = cds.model.entities
+    await UPDATE (Customers) .set ('avatar_ID = ID')
+  })
+
   const attachments = await cds.connect.to('attachments')
   const { join } = cds.utils.path
   const { createReadStream } = cds.utils.fs
@@ -20,14 +27,12 @@ module.exports = async function () {
 
   const { 'sap.common.Images': Images } = cds.model.entities
   await attachments.put (Images, [
-    [ '8fc8231b-f6d7-43d1-a7e1-725c8e988d18', 'Daniel Watts.png', 'image/png' ],
-    [ 'feb04eac-f84f-4232-bd4f-80a178f24a17', 'Stormy Weathers.png', 'image/png' ],
-    [ '2b87f6ca-28a2-41d6-8c69-ccf16aa6389d', 'Sunny Sunshine.png', 'image/png' ],
+    [ '1004155', 'Daniel Watts.png', 'image/png'],
+    [ '1004161', 'Stormy Weathers.png', 'image/png'],
+    [ '1004100', 'Sunny Sunshine.png', 'image/png']
   ].map(([ ID, filename, mimeType ]) => ({
     ID, filename, mimeType,
     content: createReadStream (join(__dirname, 'content', filename)),
   })))
 
-  const { 'sap.capire.incidents.Customers': Customers } = cds.model.entities
-  await UPDATE (Customers) .set ('avatar_ID = ID')
 }
