@@ -27,7 +27,7 @@ annotate MediaData with @UI.MediaResource: { Stream: content } {
 
 annotate Attachments with @UI:{
   LineItem: [
-    {Value: content}, // FIXME: by that we always read the content, even if not needed, as in attachments lists!
+    {Value: content},
     {Value: createdAt},
     {Value: createdBy},
     {Value: note}
