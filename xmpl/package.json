@@ -4,7 +4,8 @@
   "dependencies": {
     "@cap-js/attachments": "*",
     "@capire/incidents": "*",
-    "@sap/cds": "*"
+    "@sap/cds": "*",
+    "@cap-js/sqlite": "*"
   },
   "devDependencies": {
     "@cap-js/sqlite": "*"
