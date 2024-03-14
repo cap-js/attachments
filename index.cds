@@ -5,12 +5,12 @@ aspect MediaData @(_is_media_data) {
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
   mimeType : String @title: 'Media Type' default 'application/octet-stream';
   filename : String @title: 'Filename';
-  status :  String enum {
-    UNSCANNED = 'UNSCANNED';
-    UNDER_SCAN = 'UNDER_SCAN';
-    MALWARE_DETECTED = 'MALWARE_DETECTED';
-    CLEAN = 'CLEAN';
-    } default 'UNSCANNED';
+  status :  String @title: 'Status' enum {
+    UNSCANNED = 'Unscanned';
+    UNDER_SCAN = 'Under Scan';
+    MALWARE_DETECTED = 'Malware Detected';
+    CLEAN = 'Clean';
+    } default 'Unscanned';
 }
 
 aspect Attachments : managed, cuid, MediaData {
@@ -26,11 +26,13 @@ type Image : Composition of sap.common.Images;
 annotate MediaData with @UI.MediaResource: { Stream: content } {
   content @Core.MediaType: mimeType @odata.draft.skip;
   mimeType @Core.IsMediaType;
+  status @readonly;
 }
 
 annotate Attachments with @UI:{
   LineItem: [
     {Value: content},
+    {Value: status},
     {Value: createdAt},
     {Value: createdBy},
     {Value: note}
