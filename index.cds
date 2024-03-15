@@ -1,15 +1,15 @@
 using { managed, cuid } from '@sap/cds/common';
 
 aspect MediaData @(_is_media_data) {
-  url      : UUID;
+  url      : String;
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
   mimeType : String @title: 'Media Type' default 'application/octet-stream';
   filename : String @title: 'Filename';
   status :  String @title: 'Status' enum {
-    UNSCANNED = 'Unscanned';
-    UNDER_SCAN = 'Under Scan';
-    MALWARE_DETECTED = 'Malware Detected';
-    CLEAN = 'Clean';
+    Unscanned ;
+    Scanning;
+    Infected;
+    Clean;
     } default 'Unscanned';
 }
 
@@ -24,7 +24,7 @@ type Image : Composition of sap.common.Images;
 // -- Fiori Annotations ----------------------------------------------------------
 
 annotate MediaData with @UI.MediaResource: { Stream: content } {
-  content @Core.MediaType: mimeType @odata.draft.skip;
+  content @Core.MediaType: mimeType @odata.draft.skip; 
   mimeType @Core.IsMediaType;
   status @readonly;
 }
