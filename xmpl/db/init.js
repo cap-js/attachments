@@ -3,7 +3,7 @@ module.exports = async function () {
   
   // this ensures customers are in the db already
   cds.once('served', async () => {
-    const { 'sap.capire.incidents.Customers': Customers } = cds.model.entities
+    const { 'sap.capire.incidents.Customers': Customers } = cds.entities
     await UPDATE (Customers) .set ('avatar_ID = ID')
   })
 
@@ -11,8 +11,8 @@ module.exports = async function () {
   const { join } = cds.utils.path
   const { createReadStream } = cds.utils.fs
 
-  const { 'sap.capire.incidents.Incidents.attachments': Attachments } = cds.model.entities
-  await attachments.put (Attachments, [
+  const { 'sap.capire.incidents.Incidents.attachments': Attachments } = cds.entities
+  await attachments.initialDataUpload (Attachments, [
     [ '3b23bb4b-4ac7-4a24-ac02-aa10cabd842c', 'INVERTER FAULT REPORT.pdf', 'application/pdf', cds.utils.uuid(),cds.utils.uuid(), 'Unscanned'],
     [ '3b23bb4b-4ac7-4a24-ac02-aa10cabd842c', 'Inverter-error-logs.txt', 'application/txt' , cds.utils.uuid(), cds.utils.uuid(),'Clean'],
     [ '3a4ede72-244a-4f5f-8efa-b17e032d01ee', 'No_Current.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', cds.utils.uuid(), cds.utils.uuid(),'Under Scan'],
@@ -25,8 +25,8 @@ module.exports = async function () {
     createdBy: 'alice',
   })))
 
-  const { 'sap.common.Images': Images } = cds.model.entities
-  await attachments.put (Images, [
+  const { 'sap.common.Images': Images } = cds.entities
+  await attachments.initialDataUpload (Images, [
     [ '1004155', 'Daniel Watts.png', 'image/png', cds.utils.uuid(), 'Clean'],
     [ '1004161', 'Stormy Weathers.png', 'image/png', cds.utils.uuid(), 'Clean'],
     [ '1004100', 'Sunny Sunshine.png', 'image/png', cds.utils.uuid(), 'Clean'],
