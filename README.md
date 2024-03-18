@@ -2,7 +2,7 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/cap-js/change-tracking)](https://api.reuse.software/info/github.com/cap-js/attachments)
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset storage and handling by using a predefined *type* `Image` or *entity* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset storage and handling by using a predefined *type* `Image` or *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
 
 1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
 2. [Add `Image` or `Attachments` types to your CDS models](#annotations)
@@ -38,7 +38,7 @@ npm i
 > To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
 ```diff
 -        src="https://sapui5.hana.ondemand.com/1.120.0/resources/sap-ui-core.js"
-+        src="https://sapui5untested.int.sap.eu2.hana.ondemand.com/resources/sap-ui-core.js"
++        src="https://sapui5.hana.ondemand.com/1.121.0/resources/sap-ui-core.js"
 ```
 
 > [!Note]
@@ -61,7 +61,7 @@ All we need to do is to denote the respective asset elements with *type* `Image`
 using { sap.capire.incidents as my } from '@capire/incidents/db/schema';
 using { Image, Attachments } from '@cap-js/attachments';
 
-extend my.Incidents with { attachments: Attachments }
+extend my.Incidents with { attachments: Composition of many Attachments }
 extend my.Customers with { avatar: Image }
 ```
 
