@@ -30,6 +30,11 @@ annotate MediaData with @UI.MediaResource: { Stream: content } {
 }
 
 annotate Attachments with @UI:{
+  HeaderInfo  : {
+      $Type : 'UI.HeaderInfoType',
+      TypeName : '{i18n>Attachment}',
+      TypeNamePlural : '{i18n>Attachments}',
+  },
   LineItem: [
     {Value: content},
     {Value: status},
