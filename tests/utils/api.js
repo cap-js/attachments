@@ -2,7 +2,7 @@ class RequestSend {
   constructor(post) {
     this.post = post;
   }
-  async apiAction(
+  async draftModeActions(
     serviceName,
     entityName,
     id,

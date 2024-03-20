@@ -8,14 +8,14 @@ const { join } = cds.utils.path;
 axios.defaults.auth = { username: "alice" };
 jest.setTimeout(5 * 60 * 1000);
 
-describe("Tests for Attachments - mock data (xmpl) in in-memory database", () => {
-  let attachmentsSrv = null;
-  let utils = null;
-  let sampleDocID = null;
-  const incidentID = "3b23bb4b-4ac7-4a24-ac02-aa10cabd842c";
-  beforeAll(async () => {
-    attachmentsSrv = await cds.connect.to("attachments");
-    utils = new RequestSend(POST);
+const utils = new RequestSend(POST);
+let sampleDocID = null;
+let incidentID = null;
+
+describe("Tests for mock data in xmpl attachments - in-memory db", () => {
+  beforeAll(() => {
+    sampleDocID = null;
+    incidentID = "3b23bb4b-4ac7-4a24-ac02-aa10cabd842c";
   });
 
   //Reading the attachment list and checking for content
@@ -52,14 +52,10 @@ describe("Tests for Attachments - mock data (xmpl) in in-memory database", () =>
   });
 });
 
-describe("Tests for Attachments - calls on sample application in in-memory db", () => {
-  let attachmentsSrv = null;
-  let utils = null;
-  let sampleDocID = null;
-  const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
+describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
-    attachmentsSrv = await cds.connect.to("attachments");
-    utils = new RequestSend(POST);
+    sampleDocID = null;
+    incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
   });
 
   //Draft mode uploading attachment
@@ -82,7 +78,7 @@ describe("Tests for Attachments - calls on sample application in in-memory db", 
 
     try {
       //trigger to upload attachment
-      await utils.apiAction(
+      await utils.draftModeActions(
         "processor",
         "Incidents",
         incidentID,
@@ -142,7 +138,7 @@ describe("Tests for Attachments - calls on sample application in in-memory db", 
     );
     try {
       //trigger to delete attachment
-      await utils.apiAction(
+      await utils.draftModeActions(
         "processor",
         "Incidents",
         incidentID,
