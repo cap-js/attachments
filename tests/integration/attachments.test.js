@@ -1,45 +1,21 @@
 const cds = require("@sap/cds");
 const incidentsApp = require("path").resolve(__dirname, "./../../xmpl");
-const { expect, data, axios, GET, POST, PATCH, DELETE } =
-  cds.test(incidentsApp);
+const { expect, axios, GET, POST, DELETE } = cds.test(incidentsApp);
 const { RequestSend } = require("../utils/api");
 const { createReadStream } = cds.utils.fs;
+const { join } = cds.utils.path;
 
 axios.defaults.auth = { username: "alice" };
 jest.setTimeout(5 * 60 * 1000);
 
-describe("Tests for Attachments - mock data and xmpl in-memory database", () => {
+describe("Tests for Attachments - mock data (xmpl) in in-memory database", () => {
   let attachmentsSrv = null;
   let utils = null;
+  let sampleDocID = null;
+  const incidentID = "3b23bb4b-4ac7-4a24-ac02-aa10cabd842c";
   beforeAll(async () => {
     attachmentsSrv = await cds.connect.to("attachments");
     utils = new RequestSend(POST);
-  });
-
-  //Reading the uploaded attachment content and that it exists - Inverter Fault Report.pdf
-  it("Reading the uploaded attachment document", async () => {
-    //checking the uploaded attachment document
-    try {
-      const response = await GET(
-        "odata/v4/processor/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true)/attachments(up__ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,filename='INVERTER%20FAULT%20REPORT.pdf',IsActiveEntity=true)/content"
-      );
-      expect(response.status).to.equal(200);
-    } catch (err) {
-      console.log(err);
-    }
-  });
-
-  //Reading the uploaded attachment content image and that it exists - Broken solar panel.jpg
-  it("Reading the uploaded attachment image", async () => {
-    //checking the uploaded attachment document
-    try {
-      const response = await GET(
-        "odata/v4/processor/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true)/attachments(up__ID=3583f982-d7df-4aad-ab26-301d4a157cd7,filename='Broken%20Solar%20Panel.jpg',IsActiveEntity=true)/content"
-      );
-      expect(response.status).to.equal(200);
-    } catch (err) {
-      console.log(err);
-    }
   });
 
   //Reading the attachment list and checking for content
@@ -47,22 +23,40 @@ describe("Tests for Attachments - mock data and xmpl in-memory database", () => 
     //read attachments list for Incident - Inverter not functional
     try {
       const response = await GET(
-        "odata/v4/processor/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true)/attachments"
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the mock data has two attachments
+      //the mock data has two attachments in this incident
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(2);
+      sampleDocID = response.data.value[0].ID;
       //to make sure content is not read
       expect(response.data.value[0].content).to.be.undefined;
     } catch (err) {
-      console.log(err);
+      expect(err).to.be.undefined;
+    }
+  });
+
+  //Reading the uploaded attachment content and that it exists
+  it("Reading the uploaded attachment document", async () => {
+    //checking the uploaded attachment document
+
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data).to.not.be.undefined;
+    } catch (err) {
+      expect(err).to.be.undefined;
     }
   });
 });
 
-describe("Tests for Attachments - sample application in-memory database", () => {
+describe("Tests for Attachments - calls on sample application in in-memory db", () => {
   let attachmentsSrv = null;
   let utils = null;
+  let sampleDocID = null;
+  const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
   beforeAll(async () => {
     attachmentsSrv = await cds.connect.to("attachments");
     utils = new RequestSend(POST);
@@ -73,107 +67,99 @@ describe("Tests for Attachments - sample application in-memory database", () => 
     //function to upload image
     let action = await POST.bind(
       {},
-      `odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=false)/attachments`,
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
-        up__ID: "3a4ede72-244a-4f5f-8efa-b17e032d01ee",
-        filename: "strange-noise.csv",
-        mimeType: "text/csv",
-        content: createReadStream(
-          "/Users/I543676/Desktop/Setup/calesi/plugins/attachments/xmpl/db/content/strange-noise.csv"
-        ),
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
       }
     );
-    //trigger to upload attachment
-    await utils.apiAction(
-      "processor",
-      "Incidents",
-      "3a4ede72-244a-4f5f-8efa-b17e032d01ee",
-      "ProcessorService",
-      action
-    );
-    //read attachment in active table
+
     try {
-      const response = await GET(
-        "odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=true)/attachments(up__ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,filename='strange-noise.csv',IsActiveEntity=true)/content"
+      //trigger to upload attachment
+      await utils.apiAction(
+        "processor",
+        "Incidents",
+        incidentID,
+        "ProcessorService",
+        action
       );
-      expect(response.status).to.equal(200);
     } catch (err) {
-      console.log(err);
+      expect(err).to.be.undefined;
     }
 
-    //read attachments list for Incident - No current on a sunny day
+    //read attachments list for Incident
     try {
       const response = await GET(
-        "odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=true)/attachments"
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
       //the data should have two attachments
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(2);
       //to make sure content is not read
       expect(response.data.value[0].content).to.be.undefined;
+      sampleDocID =
+        response.data.value[0].filename == "sample.pdf"
+          ? response.data.value[0].ID
+          : response.data.value[1].ID;
     } catch (err) {
-      console.log(err);
+      expect(err).to.be.undefined;
+    }
+
+    //read attachment in active table
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data).to.not.be.undefined;
+    } catch (err) {
+      expect(err).to.be.undefined;
     }
   });
 
   //Deleting the attachment
   it("Deleting the attachment", async () => {
-    //check the url of the uploaded attachment in main table
+    //check the content of the uploaded attachment in main table
     try {
       const response = await GET(
-        "odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=true)/attachments(up__ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,filename='strange-noise.csv',IsActiveEntity=true)/content"
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       );
       expect(response.status).to.equal(200);
     } catch (err) {
-      console.log(err);
-    }
-
-    try {
-      const response = await GET(
-        "odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=true)/attachments"
-      );
-      //the data should have two attachments
-      expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(2);
-      //to make sure content is not read
-      expect(response.data.value[0].content).to.be.undefined;
-    } catch (err) {
-      console.log(err);
+      expect(err).to.be.undefined;
     }
 
     //delete attachment
+    let action = await DELETE.bind(
+      {},
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
+    );
     try {
-      let action = await DELETE.bind(
-        {},
-        `odata/v4/processor/Incidents_attachments(up__ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,filename='strange-noise.csv',IsActiveEntity=false)`
-      );
       //trigger to upload attachment
       await utils.apiAction(
         "processor",
         "Incidents",
-        "3a4ede72-244a-4f5f-8efa-b17e032d01ee",
+        incidentID,
         "ProcessorService",
         action
       );
     } catch (err) {
-      console.log(err);
+      expect(err).to.be.undefined;
     }
 
+    //content should not be there
     try {
       const response = await GET(
-        "odata/v4/processor/Incidents(ID=3a4ede72-244a-4f5f-8efa-b17e032d01ee,IsActiveEntity=true)/attachments"
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       );
-      //the data should have two attachments
-      expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(1);
-      //to make sure content is not read
-      expect(response.data.value[0].content).to.be.undefined;
     } catch (err) {
-      console.log(err);
+      expect(err.code).to.equal("ERR_BAD_REQUEST");
     }
   });
 });
