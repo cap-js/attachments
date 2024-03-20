@@ -6,7 +6,7 @@ aspect MediaData @(_is_media_data) {
   mimeType : String @title: 'Media Type' default 'application/octet-stream';
   filename : String @title: 'Filename';
   status :  String @title: 'Status' enum {
-    Unscanned ;
+    Unscanned;
     Scanning;
     Infected;
     Clean;
@@ -14,10 +14,10 @@ aspect MediaData @(_is_media_data) {
 }
 
 aspect Attachments : managed, cuid, MediaData {
-  note         : String @title: 'Note'; 
+  note : String @title: 'Note'; 
 }
 
-entity sap.common.Images : cuid,MediaData {
+entity sap.common.Images : cuid, MediaData {
 }
 type Image : Composition of sap.common.Images;
 
@@ -36,12 +36,11 @@ annotate Attachments with @UI:{
     {Value: createdAt},
     {Value: createdBy},
     {Value: note}
-  ],
-  // DeleteHidden,
+  ]
 } {
-  content @Core:{ Immutable, ContentDisposition.Filename: filename, ContentDisposition.Type: 'inline' }
+  content @Core : { Immutable, ContentDisposition.Filename: filename, ContentDisposition.Type: 'inline' }
 }
 
 annotate sap.common.Images with {
-  content @Core:{ Immutable, ContentDisposition.Filename: filename }
+  content @Core : { Immutable, ContentDisposition.Filename: filename }
 }
