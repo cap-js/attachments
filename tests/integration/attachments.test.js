@@ -63,8 +63,8 @@ describe("Tests for Attachments - calls on sample application in in-memory db", 
   });
 
   //Draft mode uploading attachment
-  it("Uploading image in draft mode", async () => {
-    //function to upload image
+  it("Uploading attachment in draft mode", async () => {
+    //function to upload attachment
     let action = await POST.bind(
       {},
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
@@ -141,7 +141,7 @@ describe("Tests for Attachments - calls on sample application in in-memory db", 
       `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
     );
     try {
-      //trigger to upload attachment
+      //trigger to delete attachment
       await utils.apiAction(
         "processor",
         "Incidents",

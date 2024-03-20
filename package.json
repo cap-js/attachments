@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "run-tests": "npx jest attachments.test.js"
+    "test": "npx jest attachments.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",
