@@ -67,7 +67,7 @@ We can try out the scenarios where the attachments contents are stored locally i
 
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 
-    ![Customers with Image](./etc/facet.png)
+    ![Attachments Table](./etc/facet.png)
 
 
 ## Using SAP Object Store
@@ -104,7 +104,7 @@ Go to [Object page for incident **Solar panel broken**](http://localhost:4004/in
 3. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
 
 
-    ![Delete an attachment](./etc/upload.gif)
+    ![Delete an attachment](./etc/delete.gif)
 
 
 ## Contributing
