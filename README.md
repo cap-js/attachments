@@ -7,7 +7,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 ### Table of Contents
 
 - [Setup](#setup)
-- [Use `Attachments` types](#use-attachments-types)
+- [Use `Attachments`](#use-attachments)
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Advanced Usage](#advanced-usage)
@@ -36,9 +36,9 @@ To enable attachments, simply add this self-configuring plugin package to your p
 > To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
 
 
-## Use Attachments Types
+## Use Attachments 
 
-All we need to do is to denote the respective asset elements with *type* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
+To use Attachments, create an element with an `Attachments` type. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
 
 ```cds
 using { sap.capire.incidents as my } from './schema';
@@ -55,9 +55,6 @@ With the steps above, we have successfully set up asset handling for our referen
 We can try out the scenarios where the attachments contents are stored locally in the database.
 
 1. **Start the server**:
-
-> [!Note]
-> To debug the plugin, start the command with `DEBUG=attachments`
 
   - *Default* scenario (In memory database):
       ```sh
@@ -90,7 +87,7 @@ For using SAP Object Store, you must already have a service instance with a buck
     In the project directory, you can generate a new file _.cdsrc-private.json by running:
 
     ```sh
-    cds bind attachments -2 <>:<> --kind s3
+    cds bind attachments -2 <INSTANCE>:<SERVICE-KEY> --kind s3
     ```
 
 
