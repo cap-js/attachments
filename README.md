@@ -2,7 +2,7 @@
 
 # Attachments Plugin
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the SAP Object Store.
 
 ### Table of Contents
 
@@ -17,13 +17,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 ## Setup
 
-To enable attachments, simply add this self-configuring plugin package to your project:
-
-```sh
- npm add @cap-js/attachments
-```
-
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base, to add `Images` or `Attachments` types to the CDS models.
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base, to add `Attachments` type to the CDS models.
 Clone the repository and apply the step-by-step instructions:
 
 ```sh
@@ -32,16 +26,22 @@ cd incidents-app
 npm i
 ```
 
+To enable attachments, simply add this self-configuring plugin package to your project:
+
+```sh
+ npm add @cap-js/attachments
+```
+
 > [!Note]
 > To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
 
 
 ## Use Attachments Types
 
-All we need to do is to denote the respective asset elements with *type* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
+All we need to do is to denote the respective asset elements with *type* `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
 
 ```cds
-using { sap.capire.incidents as my } from '@capire/incidents/db/schema';
+using { sap.capire.incidents as my } from './schema';
 using { Attachments } from '@cap-js/attachments';
 
 extend my.Incidents with { attachments: Composition of many Attachments }
