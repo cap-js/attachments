@@ -68,7 +68,7 @@ We can try out the scenarios where the attachments contents are stored locally i
 
     Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
 
-3. The `Attachments` type has generated an out-of-the-box Attachments table (see 2) at the bottom of the Object page:
+3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 
     ![Customers with Image](./etc/facet.png)
 
@@ -97,7 +97,6 @@ For using SAP Object Store, you must already have a service instance with a buck
 ## Advanced Usage
 
 1. **Navigate to the object page** of the first open incident:
-
 Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
 
 2. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
@@ -108,7 +107,7 @@ Go to [Object page for incident **Solar panel broken**](http://localhost:4004/in
 3. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
 
 
-![Delete an attachment](./etc/upload.gif)
+    ![Delete an attachment](./etc/upload.gif)
 
 
 ## Contributing
