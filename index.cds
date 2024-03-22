@@ -17,10 +17,6 @@ aspect Attachments : managed, cuid, MediaData {
   note : String @title: 'Note'; 
 }
 
-entity sap.common.Images : cuid, MediaData {
-}
-type Image : Composition of sap.common.Images;
-
 // -- Fiori Annotations ----------------------------------------------------------
 
 annotate MediaData with @UI.MediaResource: { Stream: content } {
@@ -44,8 +40,4 @@ annotate Attachments with @UI:{
   ]
 } {
   content @Core : { Immutable, ContentDisposition.Filename: filename, ContentDisposition.Type: 'inline' }
-}
-
-annotate sap.common.Images with {
-  content @Core : { Immutable, ContentDisposition.Filename: filename }
 }
