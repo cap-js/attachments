@@ -75,7 +75,7 @@ We can try out the scenarios where the attachments contents are stored locally i
 
 ## Using SAP Object Store
 
-For using SAP Object Store, you must already have a service instance with a bucket which you can access. To access it, follow this setup.
+For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
 
 1. Log in to Cloud Foundry:
 
