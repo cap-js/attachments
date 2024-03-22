@@ -10,27 +10,22 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Use `Attachments`](#use-attachments)
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
-- [Advanced Usage](#advanced-usage)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
 
+
 ## Setup
 
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base, to add `Attachments` type to the CDS models.
-Clone the repository and apply the step-by-step instructions:
 
-```sh
-git clone https://github.com/cap-js/incidents-app
-cd incidents-app
-npm i
-```
 
 To enable attachments, simply add this self-configuring plugin package to your project:
 
 ```sh
  npm add @cap-js/attachments
 ```
+
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
 
 > [!Note]
 > To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
@@ -47,8 +42,6 @@ using { Attachments } from '@cap-js/attachments';
 extend my.Incidents with { attachments: Composition of many Attachments }
 ```
 
-...
-
 
 ## Test-drive Locally
 With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
@@ -61,18 +54,26 @@ We can try out the scenarios where the attachments contents are stored locally i
       cds watch
       ```
 
-2. **Navigate to the object page** of the closed incident:
+2. **Navigate to the object page** of the incident `Solar panel broken`:
 
-    Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
+    Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/app/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
 
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 
     ![Attachments Table](./etc/facet.png)
 
+4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
+
+
+    ![Upload an attachment](./etc/upload.gif)
+
+5. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
+
+
+    ![Delete an attachment](./etc/delete.gif)
+
 
 ## Using SAP Object Store
-
-## Preliminaries
 
 For using SAP Object Store, you must already have a service instance with a bucket which you can access. To access it, follow this setup.
 
@@ -89,22 +90,6 @@ For using SAP Object Store, you must already have a service instance with a buck
     ```sh
     cds bind attachments -2 <INSTANCE>:<SERVICE-KEY> --kind s3
     ```
-
-
-## Advanced Usage
-
-1. **Navigate to the object page** of the first open incident:
-Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
-
-2. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
-
-
-    ![Upload an attachment](./etc/upload.gif)
-
-3. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
-
-
-    ![Delete an attachment](./etc/delete.gif)
 
 
 ## Contributing
