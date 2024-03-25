@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, auto_merge_enabled]
+
+# Allow parallel jobs on `main`, so that each commit is tested. For PRs, run only the latest commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Node.js ${{ matrix.node }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        node: [20, 18]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: npm i
+      - run: npm run lint
+      - run: npm test
+        env:
+          FORCE_COLOR: true
