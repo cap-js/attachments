@@ -29,6 +29,8 @@ jobs:
 
       - run: npm i
       - run: npm run lint
+      - run: npm run clone-and-add-incidents
+      - run: npm run add-attachments
       - run: npm test
         env:
           FORCE_COLOR: true

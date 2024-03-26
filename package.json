@@ -10,7 +10,9 @@
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest attachments.test.js"
+    "test": "npx jest attachments.test.js",
+    "clone-and-add-incidents": "git clone https://github.com/cap-js/incidents-app.git && npm add ./incidents-app",
+    "add-attachments": "npm add ./"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",
