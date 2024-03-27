@@ -1,127 +1,105 @@
-# Attachments Plugin for SAP Cloud Application Programming Model (CAP)
+[![REUSE status](https://api.reuse.software/badge/github.com/cap-js/attachments)](https://api.reuse.software/info/github.com/cap-js/attachments)
 
-[![REUSE status](https://api.reuse.software/badge/github.com/cap-js/change-tracking)](https://api.reuse.software/info/github.com/cap-js/attachments)
+# Attachments Plugin
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) providing out-of-the box asset storage and handling by using a predefined *type* `Image` or *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the Document Service/Object Store.
-
-1. [Install the plugin: `npm add @cap-js/attachments`](#setup)
-2. [Add `Image` or `Attachments` types to your CDS models](#annotations)
-3. [Et voilà:](#attachments-view)
-
-![Upload an attachment](./etc/upload.gif)
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the SAP Object Store.
 
 ### Table of Contents
 
-- [Attachments Plugin for SAP Cloud Application Programming Model (CAP)](#attachments-plugin-for-sap-cloud-application-programming-model-cap)
-    - [Table of Contents](#table-of-contents)
-  - [Preliminaries](#preliminaries)
-  - [Setup](#setup)
-  - [Annotations](#annotations)
-  - [Test-drive locally](#test-drive-locally)
-  - [Contributing](#contributing)
-  - [Code of Conduct](#code-of-conduct)
-  - [Licensing](#licensing)
-
-
-
-## Preliminaries
-
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base to add attachments to. Clone the repository and apply the step-by-step instructions:
-
-```sh
-git clone https://github.com/cap-js/incidents-app
-cd incidents-app
-npm i
-```
-
-> [!Important]
-> To be able to use the Fiori *uploadTable* feature, you must include the following SAPUI5 version in _incidents-app/app/incidents/webapp/index.html_ at line 15:
-```diff
--        src="https://sapui5.hana.ondemand.com/1.120.0/resources/sap-ui-core.js"
-+        src="https://sapui5.hana.ondemand.com/1.121.0/resources/sap-ui-core.js"
-```
-
-> [!Note]
-> For running the *hybrid* scenario, you must first [create a _.cdsrc-private.json_](./xmpl/README.md#setup) once.
+- [Setup](#setup)
+- [Use `Attachments`](#use-attachments)
+- [Test-drive Locally](#test-drive-locally)
+- [Using SAP Object Store](#using-sap-object-store)
+- [Contributing](#contributing)
+- [Code of Conduct](#code-of-conduct)
+- [Licensing](#licensing)
 
 
 ## Setup
 
-To enable automatic asset handling, simply add this self-configuring plugin package to your project:
+
+
+To enable attachments, simply add this self-configuring plugin package to your project:
 
 ```sh
-npm add @cap-js/attachments
+ npm add @cap-js/attachments
 ```
 
-## Annotations
-
-All we need to do is to denote the respective asset elements with *type* `Image` or `Attachments`. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _srv/attachments.cds_:
-
-```cds
-using { sap.capire.incidents as my } from '@capire/incidents/db/schema';
-using { Image, Attachments } from '@cap-js/attachments';
-
-extend my.Incidents with { attachments: Composition of many Attachments }
-extend my.Customers with { avatar: Image }
-```
-
-...
-
-
-## Test-drive locally
-
-With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
-We can try out two difference scenarios, (i) the *default* scenario where the image/attachments contents are stored locally in the database and (ii) the *hybrid* scenario where the contents are stored in an AWS S3 bucket.
-
-1. **Start the server**:
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
 
 > [!Note]
-> To debug the plugin, start the command with `DEBUG=attachments`
+> To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
+
+
+## Use Attachments 
+
+To use Attachments, create an element with an `Attachments` type. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
+
+```cds
+using { sap.capire.incidents as my } from './schema';
+using { Attachments } from '@cap-js/attachments';
+
+extend my.Incidents with { attachments: Composition of many Attachments }
+```
+
+
+## Test-drive Locally
+With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
+We can try out the scenarios where the attachments contents are stored locally in the database.
+
+1. **Start the server**:
 
   - *Default* scenario (In memory database):
       ```sh
       cds watch
       ```
-  - *Hybrid* scenario (AWS S3):
-      ```sh
-      cds watch --profile hybrid
-      ```
-      You can verify that your service bindings setup was successful by checking for the following in your output:
 
-      ```
-      resolving cloud service bindings...
-      bound @cap-js/attachments to Cloud Foundry managed service attachments-sample:attachments-sample-key
-      ```
+2. **Navigate to the object page** of the incident `Solar panel broken`:
 
-2. **Navigate to the object page** of the closed incident:
+    Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/app/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
 
-    Go to [Object page for incident **Inverter not functional**](http://localhost:4004/incidents/#/Incidents(ID=3b23bb4b-4ac7-4a24-ac02-aa10cabd842c,IsActiveEntity=true))
+3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 
-3. The `Image` annotation enabled us to show the customer's avatar in the header next to their name (see 1), while the `Attachments` annotation has generated an out-of-the-box Attachments table (see 2) at the bottom of the Object page:
+    ![Attachments Table](./etc/facet.png)
 
-    ![Customers with Image](./etc/facet.png)
-
-4. **Navigate to the object page** of the first open incident:
-
-    Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
-
-    **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this my uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
+4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
 
 
     ![Upload an attachment](./etc/upload.gif)
 
+5. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
+
+
+    ![Delete an attachment](./etc/delete.gif)
+
+
+## Using SAP Object Store
+
+For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
+
+1. Log in to Cloud Foundry:
+
+    ```sh
+    cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME>
+    ```
+
+2.  To bind to the service continue with the steps below.
+
+    In the project directory, you can generate a new file _.cdsrc-private.json by running:
+
+    ```sh
+    cds bind attachments -2 <INSTANCE>:<SERVICE-KEY> --kind s3
+    ```
 
 
 ## Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
 
-
 ## Code of Conduct
 
 We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. By participating in this project, you agree to abide by its [Code of Conduct](CODE_OF_CONDUCT.md) at all times.
 
-
 ## Licensing
 
-Copyright 2023 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/attachments).
+Copyright 2024 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/attachmentstea).

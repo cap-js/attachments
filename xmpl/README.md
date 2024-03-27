@@ -1,31 +1,9 @@
 ### Attachments sample
 
-This repository contains a sample CDS model extensions to demonstrate the CDS plugin [@cap-js/attachments](https://github.com/cap-js/attachments) on the [Incidents Management](https://github.com/cap-js/incidents-app) reference app for the new reuse types `Attachments` and `Image`.
-
-### Setup
-
-For the AWS S3 Object store sample, we have already prepared a service instance with a bucket which you can access. To access it, follow this setup.
-
-1. Log in to Cloud Foundry:
-
-    ```sh
-    cf login -a https://api.cf.eu12.hana.ondemand.com -o cap-enablement-team -s samples
-    ```
-
-2.  If you have clone this repository the first time and did not bind to the service (no _.cdsrc-private.json_ file), continue with the steps below.
-    In this directory (_services/attachments/_), you can generate a new file _.cdsrc-private.json by running:
-
-    ```sh
-    cds bind attachments -2 attachments-sample:attachments-sample-key --kind s3
-    ```
+This repository contains a sample CDS model extensions to demonstrate the CDS plugin [@cap-js/attachments](https://github.com/cap-js/attachments) on the [Incidents Management](https://github.com/cap-js/incidents-app) reference app for the new reuse types `Attachments`.
 
 
 ### References
-
-#### Customer Avatars:
-- Image by <a href="https://www.freepik.com/free-vector/hand-drawn-people-avatars-without-faces-set_845583.htm#page=2&query=avatar&position=17&from_view=search&track=sph&uuid=eaae1468-1063-4520-912f-123ad077e855">Freepik</a>
-
-    <img src="./db/content/Customer%20Avatars.jpg" alt="avatars" style="width:400px;"/>
 
 #### Incident Attachments:
 - Image by <a href="https://www.freepik.com/free-ai-image/sun-energy-harnessed-sustainable-power-generation-generated-by-ai_41365754.htm#page=3&query=damaged%20solar%20panel&position=1&from_view=search&track=ais&uuid=a412b332-b062-46ec-b24d-fbc61e83c054">vecstock</a>
