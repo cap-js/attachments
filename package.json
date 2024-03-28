@@ -1,7 +1,11 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "repository": "cap-js/attachments",
+  "author": "SAP SE (https://www.sap.com)",
+  "homepage": "https://cap.cloud.sap/",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "cds-plugin.js",
   "files": [
     "index.cds",
