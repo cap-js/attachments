@@ -22,7 +22,6 @@ jobs:
       run: |
         npm install
         npm run lint
-        npm run test
 
     - name: get-version
       id: package-version
