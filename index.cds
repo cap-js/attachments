@@ -5,31 +5,31 @@ aspect MediaData @(_is_media_data) {
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
   mimeType : String @title: 'Media Type' default 'application/octet-stream';
   filename : String @title: 'Filename';
-  status :  String @title: 'Status' enum {
+  status   :  String @title: 'Status' enum {
     Unscanned;
     Scanning;
     Infected;
     Clean;
-    } default 'Unscanned';
+  } default 'Unscanned';
 }
 
 aspect Attachments : managed, cuid, MediaData {
-  note : String @title: 'Note'; 
+  note : String @title: 'Note';
 }
+
 
 // -- Fiori Annotations ----------------------------------------------------------
 
 annotate MediaData with @UI.MediaResource: { Stream: content } {
-  content @Core.MediaType: mimeType @odata.draft.skip; 
+  content  @Core.MediaType: mimeType @odata.draft.skip;
   mimeType @Core.IsMediaType;
   status @readonly;
 }
 
 annotate Attachments with @UI:{
-  HeaderInfo  : {
-      $Type : 'UI.HeaderInfoType',
-      TypeName : '{i18n>Attachment}',
-      TypeNamePlural : '{i18n>Attachments}',
+  HeaderInfo: {
+    TypeName: '{i18n>Attachment}',
+    TypeNamePlural: '{i18n>Attachments}',
   },
   LineItem: [
     {Value: content},
@@ -39,5 +39,7 @@ annotate Attachments with @UI:{
     {Value: note}
   ]
 } {
-  content @Core : { Immutable, ContentDisposition.Filename: filename, ContentDisposition.Type: 'inline' }
+  content
+    @Core.ContentDisposition: { Filename: filename, Type: 'inline' }
+    @Core.Immutable
 }
