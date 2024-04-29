@@ -10,7 +10,7 @@ aspect MediaData @(_is_media_data) {
     Scanning;
     Infected;
     Clean;
-    Flanned;
+    Failed;
   } default 'Unscanned';
 }
 
