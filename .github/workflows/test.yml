@@ -30,6 +30,7 @@ jobs:
       - run: npm i
       - run: npm run lint
       - run: git clone https://github.com/cap-js/incidents-app.git
+      - run: pwd
       - run: cp ../../tests/integration/content/attachments.cds incidents-app/srv
       - run: npm run test
         env:
