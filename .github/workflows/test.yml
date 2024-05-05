@@ -31,7 +31,8 @@ jobs:
       - run: npm run lint
       - run: cd ..
       - run: git clone https://github.com/cap-js/incidents-app.git
-      - run: cd ..
+      - run: pwd
+      - run: ls
       - run: cp attachments/tests/integration/content/attachments.cds incidents-app/db
       - run: cd incidents-app
       - run: npm install --save ../attachments
