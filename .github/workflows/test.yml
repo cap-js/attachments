@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - run: cd .. && git clone https://github.com/cap-js/incidents-app.git && npm i
+      - run: cd .. && git clone https://github.com/cap-js/incidents-app.git && cd incidents-app && npm i
       - run: cp ./tests/integration/content/attachments.cds ../incidents-app/db
       - run: cd ../incidents-app && npm install --save ../attachments
       - run: npm run test
