@@ -43,8 +43,12 @@
           "impl": "@cap-js/attachments/lib/aws-s3"
         }
       },
+      "attachments": {
+        "scan": true
+      },
       "[development]": {
         "attachments": {
+          "scan": false,
           "kind": "db"
         }
       },
