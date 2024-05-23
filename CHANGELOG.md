@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+
 ## Version 1.1.0
 
 ### Added
 
 - Attachments are scanned for malware using SAP Malware Scanning Service.
+
+### Fixed
+
+- Fixes for deployment
 
 ## Version 1.0.2
 

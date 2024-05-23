@@ -33,13 +33,15 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 
 ## Use Attachments 
 
-To use Attachments, create an element with an `Attachments` type. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
+To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
-using { sap.capire.incidents as my } from './schema';
 using { Attachments } from '@cap-js/attachments';
 
-extend my.Incidents with { attachments: Composition of many Attachments }
+entity Incidents {
+  // ...
+  attachments: Composition of many Attachments;
+}
 ```
 
 
