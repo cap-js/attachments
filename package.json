@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",
-    "@aws-sdk/lib-storage": "^3.515.0"
+    "@aws-sdk/lib-storage": "^3.515.0",
+    "@sap/xsenv": "^4.2.0"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^1.0.1",
@@ -45,8 +46,12 @@
           }
         }
       },
+      "attachments": {
+        "scan": true
+      },
       "[development]": {
         "attachments": {
+          "scan": false,
           "kind": "db"
         }
       },
