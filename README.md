@@ -99,6 +99,14 @@ For using SAP Malware Scanning Service, you must already have a service instance
     cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
     ```
 
+By default, except for development profile, malware scanning is enabled. You can configure malware scanning by setting:
+
+```json
+"attachments": {
+    "scan": true
+}
+```
+
 ## Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
