@@ -101,11 +101,11 @@ For using SAP Malware Scanning Service, you must already have a service instance
 
 By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
 
-```json
-"attachments": {
-    "scan": true
-}
-```
+    ```json
+    "attachments": {
+        "scan": true
+    }
+    ```
 
 ## Contributing
 
