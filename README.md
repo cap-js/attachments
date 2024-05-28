@@ -99,7 +99,7 @@ For using SAP Malware Scanning Service, you must already have a service instance
     cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
     ```
 
-By default, except for development profile, malware scanning is enabled. You can configure malware scanning by setting:
+By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
 
 ```json
 "attachments": {
