@@ -62,7 +62,8 @@
       },
       "[hybrid]": {
         "attachments": {
-          "kind": "s3"
+          "kind": "s3",
+          "scan": true
         }
       }
     }
