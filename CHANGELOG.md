@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 1.0.3
+## Version 1.1.1
+
+### Changed
+
+- Enabled malware scanning in hybrid profile by default.
+- Added a 10 sec delay before setting scan status to `Clean` if malware scanning is default.
+
+## Version 1.1.0
+
+### Added
+
+- Attachments are scanned for malware using SAP Malware Scanning Service.
 
 ### Fixed
 

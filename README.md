@@ -10,6 +10,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Use `Attachments`](#use-attachments)
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
+- [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -85,9 +86,26 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
     In the project directory, you can generate a new file _.cdsrc-private.json by running:
 
     ```sh
-    cds bind attachments -2 <INSTANCE>:<SERVICE-KEY> --kind s3
+    cds bind objectstore -2 <INSTANCE>:<SERVICE-KEY> --kind s3
     ```
 
+## Using SAP Malware Scanning Service
+
+For using SAP Malware Scanning Service, you must already have a service instance which you can access.
+
+1.  To bind to the service continue with the steps below.
+
+    ```sh
+    cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
+    ```
+
+By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
+
+```json
+"attachments": {
+    "scan": true
+}
+```
 
 ## Contributing
 
