@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Bug fixes for upload functionality in production
+- Bug fixes for upload functionality in production.
 
 ## Version 1.1.0
 
