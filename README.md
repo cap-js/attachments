@@ -11,6 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
+- [@attachments.UI.Facet.skipAnnotation](#attachmentsuifacetskipannotation)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -106,6 +107,23 @@ By default, malware scanning is enabled for all profiles except development prof
     "scan": true
 }
 ```
+
+## @attachments.UI.Facet.skipAnnotation
+This annotation allows developers to create their own custom facets, for example to control visibility of the plugin.
+By setting the `@attachments.UI.Facet.skipAnnotation` property to `true`, developers can hide the plugin from the UI.
+This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+
+### Example Usage 
+
+```
+entity Incidents {
+  // ...
+  @attachments.UI.Facet.skipAnnotation
+  attachments: Composition of many Attachments;
+}
+
+``` 
+In this example, the `@attachments.UI.Facet.skipAnnotation` is set to `true`, which means the plugin will be hidden by default.
 
 ## Contributing
 
