@@ -11,6 +11,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Enabled malware scanning in hybrid profile by default.
 - Added a 10 sec delay before setting scan status to `Clean` if malware scanning is default.
 
+## Version 1.1.1
+
+### Changed
+
+- Enabled malware scanning in hybrid profile by default.
+- Added a 10 sec delay before setting scan status to `Clean` if malware scanning is default.
+
 ### Fixed
 
 - Bug fixes for upload functionality in production.
