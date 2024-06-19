@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Reduced the delay of setting scan status to `Clean` if malware scanning is disabled to 5 sec.
 
+### Fixed
+
+- Bug fixes for event handlers in production.
+
 ## Version 1.1.1
 
 ### Changed
