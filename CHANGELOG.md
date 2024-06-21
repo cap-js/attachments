@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 1.1.2
 
+### Added
+
+- Content of files detected as `Infected` from malware scanning are now deleted.
+
 ### Changed
 
 - Reduced the delay of setting scan status to `Clean` if malware scanning is disabled to 5 sec.
