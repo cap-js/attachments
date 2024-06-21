@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Changed
 
+- Attachments aren't served if their scan status isn't `Clean`.
 - Reduced the delay of setting scan status to `Clean` if malware scanning is disabled to 5 sec.
 
 ### Fixed
