@@ -8,16 +8,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Content of files detected as `Infected` from malware scanning are now deleted.
+- Content of files detected as `Infected` from malware scanning service are now deleted.
 
 ### Changed
 
 - Attachments aren't served if their scan status isn't `Clean`.
-- Reduced the delay of setting scan status to `Clean` if malware scanning is disabled to 5 sec.
+- Reduced the delay of setting scan status to `Clean` to 5 sec, if malware scanning is disabled.
 
 ### Fixed
 
 - Bug fixes for event handlers in production.
+- Bug fix for attachment target condition.
 
 ## Version 1.1.1
 
