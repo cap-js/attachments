@@ -8,14 +8,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Changed
 
-- Attachments aren't served if their status isn't `Clean`.
+- Attachments aren't served if their scan status isn't `Clean`.
+- Reduced the delay of setting scan status to `Clean` if malware scanning is disabled to 5 sec.
+
+### Fixed
+
+- Bug fixes for event handlers in production.
 
 ## Version 1.1.1
 
 ### Changed
 
 - Enabled malware scanning in hybrid profile by default.
-- Added a 10 sec delay before setting scan status to `Clean` if malware scanning is default.
+- Added a 10 sec delay before setting scan status to `Clean` if malware scanning is disabled.
 
 ### Fixed
 
