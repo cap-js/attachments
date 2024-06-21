@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 1.1.2
 
+### Added
+
+- Content of files detected as `Infected` from malware scanning are now deleted.
+
 ### Changed
 
 - Attachments aren't served if their scan status isn't `Clean`.
