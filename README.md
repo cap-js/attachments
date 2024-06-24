@@ -29,7 +29,7 @@ To enable attachments, simply add this self-configuring plugin package to your p
 In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
 
 > [!Note]
-> To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
+> To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/1.122.0/^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
 
 ## Use Attachments 
