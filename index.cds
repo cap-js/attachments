@@ -5,11 +5,12 @@ aspect MediaData @(_is_media_data) {
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
   mimeType : String @title: 'Media Type' default 'application/octet-stream';
   filename : String @title: 'Filename';
-  status   :  String @title: 'Status' enum {
+  status   :  String @title: 'Scan Status' enum {
     Unscanned;
     Scanning;
     Infected;
     Clean;
+    Failed;
   } default 'Unscanned';
 }
 

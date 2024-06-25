@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "1.0.2",
+  "version": "1.1.2",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",
-    "@aws-sdk/lib-storage": "^3.515.0"
+    "@aws-sdk/lib-storage": "^3.515.0",
+    "@sap/xsenv": "^4.2.0"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^1.0.1",
@@ -31,7 +32,10 @@
     "jest": "^29.7.0"
   },
   "peerDependencies": {
-    "@sap/cds": "^7.6.4"
+    "@sap/cds": ">=7.6"
+  },
+  "engines": {
+    "node": "^17.0.0"
   },
   "cds": {
     "requires": {
@@ -40,11 +44,18 @@
           "impl": "@cap-js/attachments/lib/basic"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/lib/aws-s3"
+          "impl": "@cap-js/attachments/lib/aws-s3",
+          "vcap": {
+            "label": "objectstore"
+          }
         }
+      },
+      "attachments": {
+        "scan": true
       },
       "[development]": {
         "attachments": {
+          "scan": false,
           "kind": "db"
         }
       },
@@ -55,7 +66,8 @@
       },
       "[hybrid]": {
         "attachments": {
-          "kind": "s3"
+          "kind": "s3",
+          "scan": true
         }
       }
     }

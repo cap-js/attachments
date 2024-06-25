@@ -10,6 +10,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Use `Attachments`](#use-attachments)
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
+- [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -28,18 +29,20 @@ To enable attachments, simply add this self-configuring plugin package to your p
 In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
 
 > [!Note]
-> To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
+> To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
 
 ## Use Attachments 
 
-To use Attachments, create an element with an `Attachments` type. Following the [best practice of separation of concerns](https://cap.cloud.sap/docs/guides/domain-modeling#separation-of-concerns), we do so in a separate file _db/attachments.cds_:
+To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
-using { sap.capire.incidents as my } from './schema';
 using { Attachments } from '@cap-js/attachments';
 
-extend my.Incidents with { attachments: Composition of many Attachments }
+entity Incidents {
+  // ...
+  attachments: Composition of many Attachments;
+}
 ```
 
 
@@ -83,9 +86,26 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
     In the project directory, you can generate a new file _.cdsrc-private.json by running:
 
     ```sh
-    cds bind attachments -2 <INSTANCE>:<SERVICE-KEY> --kind s3
+    cds bind objectstore -2 <INSTANCE>:<SERVICE-KEY> --kind s3
     ```
 
+## Using SAP Malware Scanning Service
+
+For using SAP Malware Scanning Service, you must already have a service instance which you can access.
+
+1.  To bind to the service continue with the steps below.
+
+    ```sh
+    cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
+    ```
+
+By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
+
+```json
+"attachments": {
+    "scan": true
+}
+```
 
 ## Contributing
 
