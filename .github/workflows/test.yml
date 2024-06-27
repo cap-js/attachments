@@ -28,7 +28,9 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - run: npm i
-      - run: cd ../ && git clone https://github.com/cap-js/incidents-app.git 
+      #replicating calesi folder structure
+      - run: cd .. && mkdir plugins && mv attachments/ plugins/
+      - run: cd .. && git clone https://github.com/cap-js/incidents-app.git 
       - run: cd ../incidents-app && npm install --save ../attachments/
       - run: cd ../incidents-app && cp -r xmpls/attachments.cds ./db && npm i
       - run: npm run test
