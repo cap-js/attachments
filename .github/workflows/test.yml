@@ -32,9 +32,9 @@ jobs:
       - run: cd .. && git clone https://github.com/cap-js/incidents-app.git 
       - run: cd ../incidents-app && npm install --save ../attachments/
       - run: cd ../incidents-app && cp -r xmpls/attachments.cds ./db && npm i
-      - run: cd .. && mkdir plugins && mv attachments/ plugins/
-      - run: pwd && ls
-      - run: cd plugins/ && npm run test
+      - run: cd .. && mkdir plugins && cp attachments/ plugins/
+      - run: npm run test
         env:
           FORCE_COLOR: true
-      - run: rm incidents-app
+        working-directory: attachments/plugins/
+      - run: rm incidents-app && rm plugins
