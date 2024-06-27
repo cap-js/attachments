@@ -31,6 +31,8 @@ jobs:
       - run: git clone https://github.com/cap-js/incidents-app.git && cd incidents-app
       - run: cd incidents-app && npm install --save ../
       - run: cd incidents-app && cp -r xmpls/attachments.cds ./db && npm i
+      - run: ls
+      - run: cd incidents-app && pwd
       - run: npm run test
         env:
           FORCE_COLOR: true
