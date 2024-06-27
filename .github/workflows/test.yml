@@ -32,7 +32,7 @@ jobs:
       - run: cd .. && mkdir calesi
       - run: cd ../calesi && mkdir plugins && cd plugins && mkdir attachments
       - run: cp -r ./* ../calesi/plugins/attachments
-      - run: cd ../calesi && git clone https://github.com/cap-js/incidents-app.git && cd incidents-app && npm install --save ../attachments/ && cp -r xmpls/attachments.cds ./db && npm i
+      - run: cd ../calesi && git clone https://github.com/cap-js/incidents-app.git && cd incidents-app && npm install --save ../plugins/attachments/ && cp -r xmpls/attachments.cds ./db && npm i
       - run: cd ../calesi/plugins/attachments && npm run test
         env:
           FORCE_COLOR: true
