@@ -28,10 +28,11 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - run: npm i
+      - run: pwd
       - run: cd ../ && git clone https://github.com/cap-js/incidents-app.git 
       - run: cd ../incidents-app && npm install --save ../attachments/
       - run: cd ../incidents-app && cp -r xmpls/attachments.cds ./db && npm i
-      - run: cd .. && npm run test
+      - run: npm run test
         env:
           FORCE_COLOR: true
       - run: rm incidents-app
