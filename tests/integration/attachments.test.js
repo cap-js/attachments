@@ -1,5 +1,6 @@
 const cds = require("@sap/cds");
-const incidentsApp = require("path").resolve(__dirname, "./../../../../incidents-app");
+const path = require("path");
+const incidentsApp = path.resolve(__dirname, "./../../../../incidents-app") || path.resolve(__dirname, "./../../../incidents-app");
 console.log(incidentsApp);
 const { expect, axios, GET, POST, DELETE } = cds.test(incidentsApp);
 const { RequestSend } = require("../utils/api");
