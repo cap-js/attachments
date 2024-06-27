@@ -8,8 +8,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Changed
 
-- Improved error handling
+- Improved error handling.
 
+### Fixed
+
+- Minor bug fixes.
 
 ## Version 1.1.2
 
