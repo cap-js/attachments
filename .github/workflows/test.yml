@@ -37,5 +37,5 @@ jobs:
       - run: pwd && npm run test
         env:
           FORCE_COLOR: true
-        working-directory: attachments/plugins/
+        working-directory: ../plugins/attachments
       - run: rm incidents-app && rm plugins
