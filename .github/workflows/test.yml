@@ -33,6 +33,7 @@ jobs:
       - run: cd ../incidents-app && npm install --save ../attachments/
       - run: cd ../incidents-app && cp -r xmpls/attachments.cds ./db && npm i
       - run: cd .. && mkdir plugins && mv attachments/ plugins/
+      - run: pwd && ls
       - run: cd plugins/ && npm run test
         env:
           FORCE_COLOR: true
