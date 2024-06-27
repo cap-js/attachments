@@ -28,14 +28,12 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - run: npm i
-      #replicating calesi folder structure and then adding attachments
-      - run: cd .. && git clone https://github.com/cap-js/incidents-app.git 
-      - run: cd ../incidents-app && npm install --save ../attachments/
-      - run: cd ../incidents-app && cp -r xmpls/attachments.cds ./db && npm i
-      - run: pwd
-      - run: cd .. && mkdir plugins && mv attachments/ plugins/
-      - run: pwd && npm run test
+      #replicating calesi folder structure
+      - run: cd .. && mkdir calesi
+      - run: cd ../calesi && mkdir plugins && cd plugins && mkdir attachments
+      - run: cp ./* ../calesi/plugins/attachments
+      - run: cd ../calesi && git clone https://github.com/cap-js/incidents-app.git && cd incidents-app && npm install --save ../attachments/ && cp -r xmpls/attachments.cds ./db && npm i
+      - run: cd ../calesi/plugins/attachments && npm run test
         env:
           FORCE_COLOR: true
-        working-directory: ../plugins/attachments
-      - run: rm incidents-app && rm plugins
+      - run: rm calesi
