@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 1.1.4
+
+### Changed
+
+- Updated Node version restriction.
+
 ## Version 1.1.3
 
 ### Changed
