@@ -33,11 +33,11 @@ annotate Attachments with @UI:{
     TypeNamePlural: '{i18n>Attachments}',
   },
   LineItem: [
-    {Value: content},
-    {Value: status},
-    {Value: createdAt},
-    {Value: createdBy},
-    {Value: note}
+    {Value: content, @HTML5.CssDefaults: {width: '30%'}},
+    {Value: status, @HTML5.CssDefaults: {width: '10%'}},
+    {Value: createdAt, @HTML5.CssDefaults: {width: '20%'}},
+    {Value: createdBy, @HTML5.CssDefaults: {width: '15%'}},
+    {Value: note, @HTML5.CssDefaults: {width: '25%'}}
   ]
 } {
   content
