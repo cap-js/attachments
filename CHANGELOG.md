@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Updated Node version restriction.
+- Scan status is set to `clean` in development profile and to `unscanned` in hybrid/production profile, when malware scan is disabled.
+- When malware scan is disabled, uploaded attachment can be downloaded.
 
 ## Version 1.1.3
 
