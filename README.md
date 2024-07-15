@@ -91,7 +91,7 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
 
 ## Using SAP Malware Scanning Service
 
-For using SAP Malware Scanning Service, you must already have a service instance which you can access.
+For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access.
 
 1.  To bind to the service continue with the steps below.
 
