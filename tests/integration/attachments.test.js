@@ -1,7 +1,6 @@
 const cds = require("@sap/cds");
 const path = require("path");
 const incidentsApp = path.resolve(__dirname, "./../../../../incidents-app");
-console.log(incidentsApp);
 const { expect, axios, GET, POST, DELETE } = cds.test(incidentsApp);
 const { RequestSend } = require("../utils/api");
 const { createReadStream } = cds.utils.fs;
@@ -13,9 +12,12 @@ jest.setTimeout(5 * 60 * 1000);
 const utils = new RequestSend(POST);
 let sampleDocID = null;
 let incidentID = null;
+let db = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
+    cds.requires.db.kind = "sql"
+    db = await cds.connect.to("sql:my.db");
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
   });
