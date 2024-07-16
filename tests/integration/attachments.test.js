@@ -34,7 +34,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
-        createdBy: "alice",
+        createdBy: "alice"
       }
     );
 
