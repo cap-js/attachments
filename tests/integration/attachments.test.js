@@ -16,7 +16,7 @@ let db = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
-    cds.env.requires.db.kind = "sql"
+    //cds.env.requires.db.kind = "sql"
     db = await cds.connect.to("sql:my.db");
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
