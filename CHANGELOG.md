@@ -9,14 +9,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Set width for columns for Attachments table UI.
+- Scan status is set to `clean` in development profile and to `unscanned` in hybrid/production profile, when malware scan is disabled.
+- When malware scan is disabled, uploaded attachment can be downloaded.
 
 ## Version 1.1.4
 
 ### Changed
 
 - Updated Node version restriction.
-- Scan status is set to `clean` in development profile and to `unscanned` in hybrid/production profile, when malware scan is disabled.
-- When malware scan is disabled, uploaded attachment can be downloaded.
 
 ## Version 1.1.3
 
