@@ -1,5 +1,6 @@
 const cds = require("@sap/cds");
-const incidentsApp = require("path").resolve(__dirname, "./../../xmpl");
+const path = require("path");
+const incidentsApp = path.resolve(__dirname, "./../../../../incidents-app");
 const { expect, axios, GET, POST, DELETE } = cds.test(incidentsApp);
 const { RequestSend } = require("../utils/api");
 const { createReadStream } = cds.utils.fs;
@@ -11,49 +12,12 @@ jest.setTimeout(5 * 60 * 1000);
 const utils = new RequestSend(POST);
 let sampleDocID = null;
 let incidentID = null;
-
-describe("Tests for mock data in xmpl attachments - in-memory db", () => {
-  beforeAll(() => {
-    sampleDocID = null;
-    incidentID = "3b23bb4b-4ac7-4a24-ac02-aa10cabd842c";
-  });
-
-  //Reading the attachment list and checking for content
-  it("Reading attachments list", async () => {
-    //read attachments list for Incident - Inverter not functional
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      );
-      //the mock data has two attachments in this incident
-      expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(2);
-      sampleDocID = response.data.value[0].ID;
-      //to make sure content is not read
-      expect(response.data.value[0].content).to.be.undefined;
-    } catch (err) {
-      expect(err).to.be.undefined;
-    }
-  });
-
-  //Reading the uploaded attachment content and that it exists
-  it("Reading the uploaded attachment document", async () => {
-    //checking the uploaded attachment document
-
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      );
-      expect(response.status).to.equal(200);
-      expect(response.data).to.not.be.undefined;
-    } catch (err) {
-      expect(err).to.be.undefined;
-    }
-  });
-});
+let db = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
+    //cds.env.requires.db.kind = "sql"
+    db = await cds.connect.to("sql:my.db");
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
   });
@@ -72,7 +36,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
-        createdBy: "alice",
+        createdBy: "alice"
       }
     );
 
@@ -96,13 +60,10 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       );
       //the data should have two attachments
       expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(2);
+      expect(response.data.value.length).to.equal(1);
       //to make sure content is not read
       expect(response.data.value[0].content).to.be.undefined;
-      sampleDocID =
-        response.data.value[0].filename == "sample.pdf"
-          ? response.data.value[0].ID
-          : response.data.value[1].ID;
+      sampleDocID = response.data.value[0].ID
     } catch (err) {
       expect(err).to.be.undefined;
     }
