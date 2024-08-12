@@ -9,17 +9,21 @@ const { join } = cds.utils.path;
 axios.defaults.auth = { username: "alice" };
 jest.setTimeout(5 * 60 * 1000);
 
-const utils = new RequestSend(POST);
+let utils = null;
 let sampleDocID = null;
 let incidentID = null;
 let db = null;
+let attachmentsService = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
-    //cds.env.requires.db.kind = "sql"
+    cds.env.requires.db.kind = "sql"
+    cds.env.requires.attachments.kind = "db";
     db = await cds.connect.to("sql:my.db");
+    attachmentsService = await cds.connect.to("attachments");
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
+    utils = new RequestSend(POST);
   });
 
   //Draft mode uploading attachment
