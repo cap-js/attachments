@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 1.1.6
 
+### Added
+
+- Support for cds 8.
+
+### Fixed
+
+- Fix for adding note for attachments.
+
 ## Version 1.1.5
 
 ### Changed
