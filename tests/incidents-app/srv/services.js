@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { SELECT } = cds.ql
 
 class ProcessorService extends cds.ApplicationService {
   /** Registering custom event handlers */
