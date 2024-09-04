@@ -62,7 +62,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the data should have two attachments
+      //the data should have only one attachment
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(1);
       //to make sure content is not read
@@ -119,7 +119,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the data should have two attachments
+      //the data should have no attachments
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(0);
     } catch (err) {
