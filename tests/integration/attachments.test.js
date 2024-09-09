@@ -1,6 +1,7 @@
 const cds = require("@sap/cds");
-const incidentsApp = require("path").resolve(__dirname, "./../../xmpl");
-const { expect, axios, GET, POST, DELETE } = cds.test(incidentsApp);
+const path = require("path");
+const app = path.resolve(__dirname, "../incidents-app");
+const { expect, axios, GET, POST, DELETE } = cds.test(app);
 const { RequestSend } = require("../utils/api");
 const { createReadStream } = cds.utils.fs;
 const { join } = cds.utils.path;
@@ -8,54 +9,21 @@ const { join } = cds.utils.path;
 axios.defaults.auth = { username: "alice" };
 jest.setTimeout(5 * 60 * 1000);
 
-const utils = new RequestSend(POST);
+let utils = null;
 let sampleDocID = null;
 let incidentID = null;
-
-describe("Tests for mock data in xmpl attachments - in-memory db", () => {
-  beforeAll(() => {
-    sampleDocID = null;
-    incidentID = "3b23bb4b-4ac7-4a24-ac02-aa10cabd842c";
-  });
-
-  //Reading the attachment list and checking for content
-  it("Reading attachments list", async () => {
-    //read attachments list for Incident - Inverter not functional
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      );
-      //the mock data has two attachments in this incident
-      expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(2);
-      sampleDocID = response.data.value[0].ID;
-      //to make sure content is not read
-      expect(response.data.value[0].content).to.be.undefined;
-    } catch (err) {
-      expect(err).to.be.undefined;
-    }
-  });
-
-  //Reading the uploaded attachment content and that it exists
-  it("Reading the uploaded attachment document", async () => {
-    //checking the uploaded attachment document
-
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      );
-      expect(response.status).to.equal(200);
-      expect(response.data).to.not.be.undefined;
-    } catch (err) {
-      expect(err).to.be.undefined;
-    }
-  });
-});
+let db = null;
+let attachmentsService = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
+    cds.env.requires.db.kind = "sql";
+    cds.env.requires.attachments.kind = "db";
+    db = await cds.connect.to("sql:my.db");
+    attachmentsService = await cds.connect.to("attachments");
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
+    utils = new RequestSend(POST);
   });
 
   //Draft mode uploading attachment
@@ -94,15 +62,12 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the data should have two attachments
+      //the data should have only one attachment
       expect(response.status).to.equal(200);
-      expect(response.data.value.length).to.equal(2);
+      expect(response.data.value.length).to.equal(1);
       //to make sure content is not read
       expect(response.data.value[0].content).to.be.undefined;
-      sampleDocID =
-        response.data.value[0].filename == "sample.pdf"
-          ? response.data.value[0].ID
-          : response.data.value[1].ID;
+      sampleDocID = response.data.value[0].ID;
     } catch (err) {
       expect(err).to.be.undefined;
     }
@@ -145,6 +110,18 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         "ProcessorService",
         action
       );
+    } catch (err) {
+      expect(err).to.be.undefined;
+    }
+
+    //read attachments list for Incident
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+      );
+      //the data should have no attachments
+      expect(response.status).to.equal(200);
+      expect(response.data.value.length).to.equal(0);
     } catch (err) {
       expect(err).to.be.undefined;
     }
