@@ -21,14 +21,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     cds.env.requires.attachments.kind = "db";
     db = await cds.connect.to("sql:my.db");
     attachmentsService = await cds.connect.to("attachments");
+    cds.env.requires.attachments.scan = false;
+    cds.env.profiles = ["development"];
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
     utils = new RequestSend(POST);
   });
 
-  //Draft mode uploading attachment
-  it("Uploading attachment in draft mode", async () => {
-    //function to upload attachment
+  it("Uploading attachment in draft mode with scanning enabled", async () => {
     let action = await POST.bind(
       {},
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
@@ -45,7 +45,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     );
 
     try {
-      //trigger to upload attachment
       await utils.draftModeActions(
         "processor",
         "Incidents",
@@ -57,22 +56,18 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined;
     }
 
-    //read attachments list for Incident
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the data should have only one attachment
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(1);
-      //to make sure content is not read
       expect(response.data.value[0].content).to.be.undefined;
       sampleDocID = response.data.value[0].ID;
     } catch (err) {
       expect(err).to.be.undefined;
     }
 
-    //read attachment in active table
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
@@ -82,11 +77,38 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined;
     }
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data.value.length).to.equal(1);
+      expect(response.data.value[0].status).to.equal("Scanning"); // Initial status should be Scanning
+      sampleDocID = response.data.value[0].ID;
+    } catch (err) {
+      expect(err).to.be.undefined;
+    }
+
+    //Mocking scanning timer
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data.value.length).to.equal(1);
+      expect(response.data.value[0].status).to.equal("Clean"); 
+    } catch (err) {
+      expect(err).to.be.undefined;
+    }
   });
 
-  //Deleting the attachment
   it("Deleting the attachment", async () => {
-    //check the content of the uploaded attachment in main table
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
@@ -96,13 +118,11 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined;
     }
 
-    //delete attachment
     let action = await DELETE.bind(
       {},
       `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
     );
     try {
-      //trigger to delete attachment
       await utils.draftModeActions(
         "processor",
         "Incidents",
@@ -114,19 +134,16 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined;
     }
 
-    //read attachments list for Incident
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       );
-      //the data should have no attachments
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(0);
     } catch (err) {
       expect(err).to.be.undefined;
     }
 
-    //content should not be there
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
