@@ -78,8 +78,8 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
 
+    // Check Scanning status
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
@@ -89,13 +89,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(response.data.value[0].status).to.equal("Scanning"); // Initial status should be Scanning
       sampleDocID = response.data.value[0].ID;
     } catch (err) {
+      
       expect(err).to.be.undefined;
     }
 
-    //Mocking scanning timer
+    //Mocking scanning timer for at least 5 seconds
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    
+    //Check clean status
     try {
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
