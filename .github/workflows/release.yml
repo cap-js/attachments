@@ -22,6 +22,8 @@ jobs:
       run: |
         npm install
         npm run lint
+        cd tests/incidents-app && npm install
+        cd ../..
         npm run test
 
     - name: get-version

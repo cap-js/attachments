@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 1.1.7
+
+### Fixed
+
+- Fix for scenario where an aspect has a composition.
+
 ## Version 1.1.6
 
 ### Added
