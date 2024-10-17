@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 1.1.8
+
+### Changed
+
+- Included test cases for malware scanning within development profile.
+
 ## Version 1.1.7
 
 ### Fixed

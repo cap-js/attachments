@@ -21,13 +21,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     cds.env.requires.attachments.kind = "db";
     db = await cds.connect.to("sql:my.db");
     attachmentsService = await cds.connect.to("attachments");
+    cds.env.requires.attachments.scan = false;
+    cds.env.profiles = ["development"];
     sampleDocID = null;
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418";
     utils = new RequestSend(POST);
   });
-
   //Draft mode uploading attachment
-  it("Uploading attachment in draft mode", async () => {
+  it("Uploading attachment in draft mode with scanning enabled", async () => {
     //function to upload attachment
     let action = await POST.bind(
       {},
@@ -82,6 +83,36 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined;
     }
+
+
+    // Check Scanning status
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data.value.length).to.equal(1);
+      expect(response.data.value[0].status).to.equal("Scanning"); // Initial status should be Scanning
+      
+    } catch (err) {
+      
+      expect(err).to.be.undefined;
+    }
+
+    //Mocking scanning timer for at least 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    //Check clean status
+    try {
+      const response = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+      );
+      expect(response.status).to.equal(200);
+      expect(response.data.value.length).to.equal(1);
+      expect(response.data.value[0].status).to.equal("Clean"); 
+    } catch (err) {
+      expect(err).to.be.undefined;
+    }
   });
 
   //Deleting the attachment
@@ -95,7 +126,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined;
     }
-
     //delete attachment
     let action = await DELETE.bind(
       {},
