@@ -93,7 +93,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(1);
       expect(response.data.value[0].status).to.equal("Scanning"); // Initial status should be Scanning
-      sampleDocID = response.data.value[0].ID;
+      
     } catch (err) {
       
       expect(err).to.be.undefined;
