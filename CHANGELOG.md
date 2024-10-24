@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 1.1.8
 
+### Added
+
+- Added limit for file size .
+
 ### Changed
 
 - Included test cases for malware scanning within development profile.
