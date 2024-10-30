@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Included test cases for malware scanning within development profile.
 
+### Fixed
+
+- Fix for viewing stored attachment.
+
 ## Version 1.1.7
 
 ### Fixed
