@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Added limit for file size .
+- - **File Size Validation**: Introduced a new file size validation feature to ensure uploaded attachments comply with defined size limits.
+- This feature is compatible with SAPUI5 version `>= 1.131.0`.
 
 ### Changed
 
