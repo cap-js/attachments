@@ -34,6 +34,9 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 
 ## Use Attachments 
 
+> [!Note]
+> To be able to use the plugin, make sure *draft* is enabled for the entity.
+
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
