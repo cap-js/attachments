@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 1.1.8
 
+### Added
+
+- **File Size Validation**: Introduced a new file size validation feature to ensure uploaded attachments comply with defined size limits.
+- This feature is compatible with SAPUI5 version `>= 1.131.0`.
+
 ### Changed
 
 - Included test cases for malware scanning within development profile.
