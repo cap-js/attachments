@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fix for viewing stored attachment.
 
+### Removed
+
+- Removed `@sap/xsenv` from `malwareScanner.js` and used `cds.env.requires` properties to fetch crendentials.
+
 ## Version 1.1.7
 
 ### Fixed
