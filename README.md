@@ -40,7 +40,7 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
-using { Attachments } from '@cap-js/attachments';
+using { sap.attachments.Attachments } from '@cap-js/attachments';
 
 entity Incidents {
   // ...
