@@ -4,12 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 1.1.8
+## Version 1.1.9
 
 ### Added
 
 - **File Size Validation**: Introduced a new file size validation feature to ensure uploaded attachments comply with defined size limits.
 - This feature is compatible with SAPUI5 version `>= 1.131.0`.
+
+### Fixed
+
+- Fixed upload attachment bug after cds `8.7.0` update.
+
+## Version 1.1.8
 
 ### Changed
 
