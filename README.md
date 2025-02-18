@@ -30,10 +30,13 @@ To enable attachments, simply add this self-configuring plugin package to your p
 In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
 
 > [!Note]
-> To be able to use the Fiori *uploadTable* feature, you must ensure ^1.121.0 SAPUI5 version is updated in the application's _index.html_
+> To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
 
 ## Use Attachments 
+
+> [!Note]
+> To be able to use the plugin, make sure *draft* is enabled for the entity.
 
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
@@ -92,7 +95,7 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
 
 ## Using SAP Malware Scanning Service
 
-For using SAP Malware Scanning Service, you must already have a service instance which you can access.
+For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access.
 
 1.  To bind to the service continue with the steps below.
 
