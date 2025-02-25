@@ -110,6 +110,23 @@ By default, malware scanning is enabled for all profiles except development prof
 }
 ```
 
+## Visibility control for Attachments UI Facet generation
+
+By setting the `@attachments.disable_facet` property to `true`, developers can hide the plugin from the UI achieving visibility.
+This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+
+### Example Usage 
+
+```
+entity Incidents {
+  // ...
+  @attachments.disable_facet
+  attachments: Composition of many Attachments;
+}
+
+``` 
+In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
+
 ## Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
