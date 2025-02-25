@@ -4,10 +4,21 @@
   "dependencies": {
     "@cap-js/attachments": "*",
     "@capire/incidents": "*",
-    "@sap/cds": "*"
+    "@sap/cds": "*",
+    "@cap-js/hana": "^1"
   },
   "devDependencies": {
     "@cap-js/sqlite": "*"
   },
-  "private": true
+  "private": true,
+  "cds": {
+    "sql": {
+      "native_hana_associations": false
+    },
+    "requires": {
+      "[hybrid]": {
+        "db": "hana"
+      }
+    }
+  }
 }
