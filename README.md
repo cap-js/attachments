@@ -11,6 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
+- [Multitenancy](#multi-tenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -109,6 +110,10 @@ By default, malware scanning is enabled for all profiles except development prof
     "scan": true
 }
 ```
+
+## Multi-Tenancy
+
+The feature is ready for multitenancy scenarios utilizing a shared `object store` instance. Attachment URLs are prefixed with the tenant ID to ensure proper separation and identification of data across different tenants.
 
 ## Contributing
 
