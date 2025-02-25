@@ -4,12 +4,6 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 1.1.10
-
-### Fixed
-
-- Fixed the cqn for draftSaveHandler which was previously throwing syntax error with HANA bindings.
-
 ## Version 1.1.9
 
 ### Added
