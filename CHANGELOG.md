@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Check added for adding facets to support older versions of cds.
+- CDS version check added for rendering UI facets in older versions.
 
 ## Version 1.2.0
 
