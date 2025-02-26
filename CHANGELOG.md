@@ -4,11 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+
 ## Version 1.1.10
 
 ### Added
 
 - **Visibility Control**: Added visibility control for attachments plugin using `@attachments.disable_facet`.
+
+## Version 1.2.0
+
+### Added
+
+- Support for multi-tenant applications utilizing a shared `object store` instance.
+
 
 ## Version 1.1.9
 
