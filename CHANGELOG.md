@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Support for multi-tenant applications utilizing a shared `object store` instance.
 
+### Fixed
+
+- Fixed query syntax error for hana cloud bindings. 
+
 ## Version 1.1.9
 
 ### Added
