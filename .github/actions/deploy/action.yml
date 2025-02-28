@@ -1,0 +1,50 @@
+name: "Deploy to Cloud Foundry"
+description: "Logs into Cloud Foundry and deploys the application"
+inputs:
+  CF_API:
+    description: "Cloud Foundry API endpoint"
+    required: true
+  CF_USERNAME:
+    description: "Cloud Foundry username"
+    required: true
+  CF_PASSWORD:
+    description: "Cloud Foundry password"
+    required: true
+  CF_ORG:
+    description: "Cloud Foundry organization"
+    required: true
+  CF_SPACE:
+    description: "Cloud Foundry space"
+    required: true
+  CF_APP_NAME:
+    description: "Cloud Foundry application name"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install Cloud Foundry CLI
+      shell: bash
+      run: |
+        wget -q -O cf-cli.deb "https://packages.cloudfoundry.org/stable?release=debian64&version=latest&source=github"
+        sudo dpkg -i cf-cli.deb
+
+    - name: Authenticate with Cloud Foundry
+      shell: bash
+      run: |
+        cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
+
+    - name: Build MTA archive
+      shell: bash
+      run: mbt build -t gen --mtar mta.tar
+
+    - name: Deploy to Cloud Foundry
+      shell: bash
+      run: cf deploy gen/mta.tar
+
+    - name: Get Application URL
+      id: get-url
+      shell: bash
+      run: |
+        APP_URL=$(cf app ${{ inputs.CF_APP_NAME }} | grep routes: | awk '{print $2}')
+        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+

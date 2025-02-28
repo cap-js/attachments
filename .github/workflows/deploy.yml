@@ -1,0 +1,61 @@
+on:
+    push:
+      branches:
+        - main
+    pull_request:
+      types: [closed, labeled]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Incidents App Repository
+        run: git clone https://github.com/cap-js/incidents-app
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add SAP HANA for production
+        run: cds add hana --for production
+
+      - name: Configure XSUAA-based authentication
+        run: cds add xsuaa --for production
+
+      - name: Add Cloud MTA Build Tool
+        run: cds add mta
+
+      - name: Build application for production
+        run: cds build --production
+
+      - name: Deploy using custom action
+        uses: ./.github/actions/deploy-to-cf
+        with:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+          CF_APP_NAME: "incidents-app"
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const link = `https://${{ env.APP_URL }}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: `🚀 The application has been deployed to Cloud Foundry. You can access it [here](${link}).`
+            });
+  
