@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 
-## Version 1.1.10
+## Version 1.2.1
 
 ### Added
 
