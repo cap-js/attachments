@@ -18,8 +18,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",
-    "@aws-sdk/lib-storage": "^3.515.0",
-    "@sap/xsenv": "^4.2.0"
+    "@aws-sdk/lib-storage": "^3.515.0"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^1.0.1",
@@ -39,6 +38,11 @@
   },
   "cds": {
     "requires": {
+      "malwareScanner": {
+        "vcap": {
+            "label": "malware-scanner"
+          }
+      },
       "kinds": {
         "attachments-db": {
           "impl": "@cap-js/attachments/lib/basic"
