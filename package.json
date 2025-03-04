@@ -39,8 +39,6 @@
   "cds": {
     "requires": {
       "malwareScanner": {
-        "kind": "rest",
-        "impl": "@cap-js/attachments/lib/malwareScanner",
         "vcap": {
             "label": "malware-scanner"
           }
