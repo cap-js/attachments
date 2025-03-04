@@ -166,3 +166,49 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     }
   });
 });
+
+describe("Tests for attachments facet disable", () => {
+  beforeAll(async () => {
+    cds.env.requires.db.kind = "sql";
+    cds.env.requires.attachments.kind = "db";
+    db = await cds.connect.to("sql:my.db");
+    attachmentsService = await cds.connect.to("attachments");
+    cds.env.requires.attachments.scan = false;
+    cds.env.profiles = ["development"];
+    utils = new RequestSend(POST);
+  });
+
+  it("Checking attachments facet metadata when @attachments.disable_facet is disabled", async () => {
+    try {
+      const res = await GET(
+        `odata/v4/processor/$metadata?$format=json`
+      );
+      expect(res.status).to.equal(200);
+      const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"];
+      const attachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
+      const attachmentsFacetTarget = facets.some(facet => facet.Target === 'attachments/@UI.LineItem')
+      expect(attachmentsFacetLabel).to.be.true;
+      expect(attachmentsFacetTarget).to.be.true;  
+    } catch (err) {
+      expect(err).to.be.undefined;
+    }
+  });
+
+    it("Checking attachments facet when @attachments.disable_facet is enabled", async () => {
+      try {
+        const res = await GET(
+          `odata/v4/processor/$metadata?$format=json`
+        );
+        expect(res.status).to.equal(200);
+        const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"];
+        const attachments2FacetLabel = facets.some(facet => facet.Label === 'Attachments')
+
+        //Checking the facet metadata for attachments2 since its annotated with @attachments.disable_facet as enabled
+        const attachments2FacetTarget = facets.some(facet => facet.Target === 'attachments2/@UI.LineItem')
+        expect(attachments2FacetLabel).to.be.true;
+        expect(attachments2FacetTarget).to.be.false;
+        } catch (err) {
+        expect(err).to.be.undefined;
+      }
+    })
+  });
