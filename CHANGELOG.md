@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.0.0
+
+### Changed
+
+- Changed dependency from `@sap/xsenv` to `cds.env.requires` to fetch credentials for malware scanner service.
+
 ## Version 1.2.1
 
 ### Fixed
@@ -19,10 +25,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Fixed query syntax error for hana cloud bindings.
-
-### Changed
-
-- Changed dependency from `@sap/xsenv` to `cds.env.requires` to fetch credentials for malware scanner service.
 
 ## Version 1.1.9
 
