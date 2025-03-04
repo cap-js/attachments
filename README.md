@@ -49,6 +49,8 @@ entity Incidents {
 }
 ```
 
+> [!Note]
+> From version `2.0.0 the usage of attachments has changed like the above.
 
 ## Test-drive Locally
 With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
