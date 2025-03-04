@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Changed
 
-- Changed dependency from `@sap/xsenv` to `cds.env.requires` to fetch credentials for malware scanner service.
+- Removed `@sap/xsenv` dependency.
 
 ## Version 1.2.1
 
