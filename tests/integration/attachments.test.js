@@ -72,7 +72,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined;
     }
-// api call, table name 
     //read attachment in active table
     try {
       const response = await GET(
