@@ -38,6 +38,13 @@
   },
   "cds": {
     "requires": {
+      "malwareScanner": {
+        "kind": "rest",
+        "impl": "@cap-js/attachments/lib/malwareScanner",
+        "vcap": {
+            "label": "malware-scanner"
+          }
+      },
       "kinds": {
         "attachments-db": {
           "impl": "@cap-js/attachments/lib/basic"
