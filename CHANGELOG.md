@@ -18,7 +18,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Fixed query syntax error for hana cloud bindings. 
+- Fixed query syntax error for hana cloud bindings.
+
+### Changed
+
+- Changed dependency from `@sap/xsenv` to `cds.env.requires` to fetch credentials for malware scanner service.
 
 ## Version 1.1.9
 
@@ -40,10 +44,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Fix for viewing stored attachment.
-
-### Removed
-
-- Removed `@sap/xsenv` from `malwareScanner.js` and used `cds.env.requires` properties to fetch crendentials.
 
 ## Version 1.1.7
 
