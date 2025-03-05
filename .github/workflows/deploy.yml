@@ -37,7 +37,7 @@ jobs:
   
         - name: Install dependencies
           run: cd incidents-app && npm install
-     
+ 
         - name: Build application for production
           run: cd incidents-app && npx cds build --production
   
