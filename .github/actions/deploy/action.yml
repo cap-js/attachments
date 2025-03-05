@@ -22,11 +22,20 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Cloud Foundry CLI
+    - name: Install dependencies
       shell: bash
       run: |
-        wget -q -O cf-cli.deb "https://packages.cloudfoundry.org/stable?release=debian64&version=latest&source=github"
-        sudo dpkg -i cf-cli.deb
+        sudo apt-get update && sudo apt-get install -y libc6
+
+    - name: Download Cloud Foundry CLI
+      shell: bash
+      run: |
+        wget -O cf-cli.deb "https://packages.cloudfoundry.org/stable?release=debian64&version=latest&source=github"
+        ls -lh cf-cli.deb 
+
+    - name: Install Cloud Foundry CLI
+      shell: bash
+      run: sudo dpkg -i cf-cli.deb || sudo apt-get install -f -y
 
     - name: Authenticate with Cloud Foundry
       shell: bash
