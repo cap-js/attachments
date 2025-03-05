@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.0.0
+
+### Changed
+
+- Removed `@sap/xsenv` dependency.
+- Attachments usage changed to `using { sap.attachments.Attachments } from '@cap-js/attachments'`.
+
 ## Version 1.2.1
 
 ### Fixed
@@ -18,7 +25,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Fixed query syntax error for hana cloud bindings. 
+- Fixed query syntax error for hana cloud bindings.
 
 ## Version 1.1.9
 
