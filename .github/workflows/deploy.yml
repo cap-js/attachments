@@ -3,7 +3,7 @@ on:
       branches:
         - testBranch
     pull_request:
-      types: [closed, labeled]
+      types: [opened, reopened, closed, labeled]
 jobs:
     deploy:
       runs-on: ubuntu-latest
