@@ -41,7 +41,7 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
-using { Attachments } from '@cap-js/attachments';
+using { sap.attachments.Attachments } from '@cap-js/attachments';
 
 entity Incidents {
   // ...
@@ -49,6 +49,8 @@ entity Incidents {
 }
 ```
 
+> [! Important Note]
+> Starting from version 2.0.0, the usage of attachments has changed. In the updated version, it should be using { sap.attachments.Attachments }. Be sure to update your code to reflect this change for compatibility.
 
 ## Test-drive Locally
 With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.

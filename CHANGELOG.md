@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Removed `@sap/xsenv` dependency.
+- Attachments usage changed to `using { sap.attachments.Attachments } from '@cap-js/attachments'`.
 
 ### Added
 

@@ -1,4 +1,5 @@
 using { managed, cuid } from '@sap/cds/common';
+namespace sap.attachments;
 
 aspect MediaData @(_is_media_data) {
   url      : String;
