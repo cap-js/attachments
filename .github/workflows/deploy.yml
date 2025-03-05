@@ -4,6 +4,7 @@ on:
         - testBranch
     pull_request:
       types: [opened, reopened, closed, labeled]
+    workflow_dispatch:  # Enables manual trigger from GitHub UI
 jobs:
     deploy:
       runs-on: ubuntu-latest
