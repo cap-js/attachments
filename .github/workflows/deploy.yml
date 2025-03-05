@@ -39,19 +39,10 @@ jobs:
           run: cd incidents-app && npm install
 
         - name: Install CDS CLI
-          run: npm install -g @sap/cds
-    
-        - name: Add SAP HANA for production
-          run: cd incidents-app && cds add hana --for production
-  
-        - name: Configure XSUAA-based authentication
-          run: cd incidents-app && cds add xsuaa --for production
-  
-        - name: Add Cloud MTA Build Tool
-          run: cd incidents-app && cds add mta
-  
+         run: cd incidents-app && npm install @sap/cds
+     
         - name: Build application for production
-          run: cd incidents-app && cds build --production
+          run: cd incidents-app && npx cds build --production
   
         - name: Deploy using custom action
           uses: ./.github/actions/deploy
