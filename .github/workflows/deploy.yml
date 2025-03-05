@@ -1,7 +1,7 @@
 on:
     push:
       branches:
-        - main
+        - testBranch
     pull_request:
       types: [closed, labeled]
 jobs:
