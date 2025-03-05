@@ -37,9 +37,6 @@ jobs:
   
         - name: Install dependencies
           run: cd incidents-app && npm install
-
-        - name: Install CDS CLI
-         run: cd incidents-app && npm install @sap/cds
      
         - name: Build application for production
           run: cd incidents-app && npx cds build --production
