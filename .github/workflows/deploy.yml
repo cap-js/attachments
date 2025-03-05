@@ -37,7 +37,10 @@ jobs:
   
         - name: Install dependencies
           run: cd incidents-app && npm install
-  
+
+        - name: Install CDS CLI
+          run: npm install -g @sap/cds
+    
         - name: Add SAP HANA for production
           run: cd incidents-app && cds add hana --for production
   
