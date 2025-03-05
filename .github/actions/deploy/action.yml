@@ -30,8 +30,8 @@ runs:
     - name: Download Cloud Foundry CLI
       shell: bash
       run: |
-        wget --header="User-Agent: Mozilla/5.0" -O cf-cli.deb "https://packages.cloudfoundry.org/stable/cf-cli_8.5.0_x86-64.deb"
-        ls -lh cf-cli.deb
+        LATEST_CF_CLI=$(curl -s https://api.github.com/repos/cloudfoundry/cli/releases/latest | grep "browser_download_url.*cf-cli.*x86-64.deb" | cut -d '"' -f 4)
+        wget -O cf-cli.deb "$LATEST_CF_CLI"
 
     - name: Install Cloud Foundry CLI
       shell: bash
