@@ -68,7 +68,10 @@ runs:
     
     - name: Build MTA archive
       shell: bash
-      run: mbt build -t gen --mtar mta.tar
+      run:  |
+        cd incidents-app
+        ls -la
+        mbt build -t gen --mtar mta.tar
 
     - name: Deploy to Cloud Foundry
       shell: bash
