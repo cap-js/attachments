@@ -73,9 +73,17 @@ runs:
         ls -la
         mbt build -t gen --mtar mta.tar
 
+    - name: Install Cloud Foundry MultiApps Plugin
+      shell: bash
+      run: |
+        cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
+        cf plugins  # Verify installation
+
     - name: Deploy to Cloud Foundry
       shell: bash
-      run: cf deploy gen/mta.tar
+      run: |
+        cd incidents-app
+        cf deploy gen/mta.tar
 
     - name: Get Application URL
       id: get-url
