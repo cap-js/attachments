@@ -83,7 +83,7 @@ runs:
       shell: bash
       run: |
         cd incidents-app
-        echo "y" | cf undeploy capire.incidents --delete-services --delete-service-keys --no-confirm
+        cf undeploy capire.incidents --delete-services --delete-service-keys -f
 
     - name: Deploy to Cloud Foundry
       shell: bash
