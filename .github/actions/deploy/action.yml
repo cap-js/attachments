@@ -84,16 +84,16 @@ runs:
       run: |
         cd incidents-app
         if cf mta | grep -q "capire.incidents"; then
-          cf undeploy capire.incidents --delete-services --delete-service-keys -f
+          cf undeploy ${{inputs.CF_APP_NAME}} --delete-services --delete-service-keys -f
         else
-          echo "⚠️ MTA 'capire.incidents' not found. Skipping undeploy."
+          echo "⚠️ MTA for the app is not found. Skipping undeploy."
         fi
 
     - name: Deploy to Cloud Foundry
       shell: bash
       run: |
         cd incidents-app
-        echo "y" | cf deploy gen/mta.tar --no-confirm
+        cf deploy gen/mta.tar -f
 
     - name: Get Application URL
       id: get-url
