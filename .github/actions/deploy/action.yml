@@ -55,6 +55,11 @@ runs:
       run: |
         cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
 
+    - name: Install Multi-Target Application Build Tool (MBT)
+      shell: bash
+      run: |
+        npm install -g mbt
+    
     - name: Build MTA archive
       shell: bash
       run: mbt build -t gen --mtar mta.tar
