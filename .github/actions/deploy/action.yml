@@ -95,10 +95,3 @@ runs:
         cd incidents-app
         cf deploy gen/mta.tar -f
 
-    - name: Get Application URL
-      id: get-url
-      shell: bash
-      run: |
-        APP_URL=$(cf app ${{ inputs.CF_APP_NAME }} | grep routes: | awk '{print $2}')
-        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
-
