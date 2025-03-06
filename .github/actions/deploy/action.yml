@@ -79,11 +79,17 @@ runs:
         cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
         cf plugins  # Verify installation
 
+    - name: Undeploy existing application
+      shell: bash
+      run: |
+        cd incidents-app
+        cf undeploy ${{ inputs.CF_APP_NAME }} --delete-services --delete-service-keys
+
     - name: Deploy to Cloud Foundry
       shell: bash
       run: |
         cd incidents-app
-        cf deploy gen/mta.tar
+        echo "y" | cf deploy gen/mta.tar --no-confirm
 
     - name: Get Application URL
       id: get-url
