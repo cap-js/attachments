@@ -59,16 +59,16 @@ runs:
       shell: bash
       run: |
         npm install -g mbt
-    
-    - name: Build MTA archive
-      shell: bash
-      run: mbt build -t gen --mtar mta.tar
 
     - name: Check if mta.yaml Exists
       shell: bash
       working-directory: incidents-app
       run: |
         test -f mta.yaml && echo "✅ mta.yaml found!" || echo "⚠️ WARNING: mta.yaml NOT found!"
+    
+    - name: Build MTA archive
+      shell: bash
+      run: mbt build -t gen --mtar mta.tar
 
     - name: Deploy to Cloud Foundry
       shell: bash
