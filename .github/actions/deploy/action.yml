@@ -83,7 +83,11 @@ runs:
       shell: bash
       run: |
         cd incidents-app
-        cf undeploy capire.incidents --delete-services --delete-service-keys -f
+        if cf mta | grep -q "capire.incidents"; then
+          cf undeploy capire.incidents --delete-services --delete-service-keys -f
+        else
+          echo "⚠️ MTA 'capire.incidents' not found. Skipping undeploy."
+        fi
 
     - name: Deploy to Cloud Foundry
       shell: bash
