@@ -83,7 +83,7 @@ runs:
       shell: bash
       run: |
         cd incidents-app
-        cf undeploy ${{ inputs.CF_APP_NAME }} --delete-services --delete-service-keys
+        echo "y" | cf undeploy ${{ inputs.CF_APP_NAME }} --delete-services --delete-service-keys
 
     - name: Deploy to Cloud Foundry
       shell: bash
