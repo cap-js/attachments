@@ -200,12 +200,12 @@ describe("Tests for attachments facet disable", () => {
         );
         expect(res.status).to.equal(200);
         const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"];
-        const attachments2FacetLabel = facets.some(facet => facet.Label === 'Attachments')
+        const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
 
-        //Checking the facet metadata for attachments2 since its annotated with @attachments.disable_facet as enabled
-        const attachments2FacetTarget = facets.some(facet => facet.Target === 'attachments2/@UI.LineItem')
-        expect(attachments2FacetLabel).to.be.true;
-        expect(attachments2FacetTarget).to.be.false;
+        //Checking the facet metadata for hiddenAttachments since its annotated with @attachments.disable_facet as enabled
+        const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments/@UI.LineItem')
+        expect(hiddenAttachmentsFacetLabel).to.be.true;
+        expect(hiddenAttachmentsFacetTarget).to.be.false;
         } catch (err) {
         expect(err).to.be.undefined;
       }
