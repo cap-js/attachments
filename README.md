@@ -49,7 +49,7 @@ entity Incidents {
 }
 ```
 
-> [!Important Note]
+> [!IMPORTANT]
 > Starting from version 2.0.0, the usage of attachments has changed. In the updated version, it should be using { sap.attachments.Attachments }. Be sure to update your code to reflect this change for compatibility.
 
 ## Test-drive Locally
