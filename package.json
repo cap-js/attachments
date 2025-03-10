@@ -51,7 +51,10 @@
         }
       },
       "attachments": {
-        "scan": true
+        "scan": true,
+        "objectstore":{
+            "kind":"separate"
+          }
       },
       "[development]": {
         "attachments": {
@@ -61,7 +64,10 @@
       },
       "[production]": {
         "attachments": {
-          "kind": "s3"
+          "kind": "s3",
+          "objectstore":{
+            "kind":"separate"
+          }
         }
       },
       "[hybrid]": {
