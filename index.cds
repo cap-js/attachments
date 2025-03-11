@@ -4,7 +4,7 @@ namespace sap.attachments;
 aspect MediaData @(_is_media_data) {
   url      : String;
   content  : LargeBinary @title: 'Attachment'; // only for db-based services
-  mimeType : String @title: 'Media Type' default 'application/octet-stream';
+  mimeType : String default 'application/octet-stream' @title: 'Media Type';
   filename : String @title: 'Filename';
   status   :  String @title: 'Scan Status' enum {
     Unscanned;
