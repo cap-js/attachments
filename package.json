@@ -48,6 +48,9 @@
           "vcap": {
             "label": "objectstore"
           }
+        },
+        "service-manager":{
+          "vacp": "objectstore"
         }
       },
       "attachments": {
