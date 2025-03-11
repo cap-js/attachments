@@ -37,6 +37,11 @@ jobs:
   
         - name: Install dependencies
           run: cd incidents-app && npm install
+
+        - name: Add XSUAA and Hana service instances
+          run: |
+            cd incidents-app && npx cds add hana --for production
+            cd incidents-app && npx cds add xsuaa --for production
  
         - name: Build application for production
           run: cd incidents-app && npx cds build --production
