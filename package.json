@@ -50,7 +50,9 @@
           }
         },
         "service-manager":{
-          "vacp": "objectstore"
+          "vcap": {
+            "label": "service-manager"
+          }
         }
       },
       "attachments": {
