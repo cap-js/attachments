@@ -48,13 +48,13 @@
           "vcap": {
             "label": "objectstore"
           }
-        },
-        "servicemanager":{
+        }
+      },
+      "serviceManager":{
           "vcap": {
             "label": "service-manager"
           }
-        }
-      },
+        },
       "attachments": {
         "scan": true,
         "objectstore":{
