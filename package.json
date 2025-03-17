@@ -49,7 +49,7 @@
             "label": "objectstore"
           }
         },
-        "service-manager":{
+        "servicemanager":{
           "vcap": {
             "label": "service-manager"
           }
