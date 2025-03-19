@@ -11,6 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
+- [Multitenancy](#multi-tenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -32,7 +33,7 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 > To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
 
-## Use Attachments 
+## Use Attachments
 
 > [!Note]
 > To be able to use the plugin, make sure *draft* is enabled for the entity.
@@ -109,6 +110,29 @@ By default, malware scanning is enabled for all profiles except development prof
     "scan": true
 }
 ```
+
+
+## Visibility control for Attachments UI Facet generation
+
+By setting the `@attachments.disable_facet` property to `true`, developers can hide the plugin from the UI achieving visibility.
+This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+
+### Example Usage
+
+```cds
+entity Incidents {
+  // ...
+  @attachments.disable_facet
+  attachments: Composition of many Attachments;
+}
+```
+
+In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
+
+## Multi-Tenancy
+
+The feature is ready for multitenancy scenarios utilizing a shared `object store` instance. Attachment URLs are prefixed with the tenant ID to ensure proper separation and identification of data across different tenants.
+
 
 ## Contributing
 
