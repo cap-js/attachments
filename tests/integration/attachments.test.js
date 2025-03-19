@@ -12,15 +12,13 @@ jest.setTimeout(5 * 60 * 1000);
 let utils = null;
 let sampleDocID = null;
 let incidentID = null;
-let db = null;
-let attachmentsService = null;
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
     cds.env.requires.db.kind = "sql";
     cds.env.requires.attachments.kind = "db";
-    db = await cds.connect.to("sql:my.db");
-    attachmentsService = await cds.connect.to("attachments");
+    await cds.connect.to("sql:my.db");
+    await cds.connect.to("attachments");
     cds.env.requires.attachments.scan = false;
     cds.env.profiles = ["development"];
     sampleDocID = null;
@@ -92,9 +90,9 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(1);
       expect(response.data.value[0].status).to.equal("Scanning"); // Initial status should be Scanning
-      
+
     } catch (err) {
-      
+
       expect(err).to.be.undefined;
     }
 
@@ -108,7 +106,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       );
       expect(response.status).to.equal(200);
       expect(response.data.value.length).to.equal(1);
-      expect(response.data.value[0].status).to.equal("Clean"); 
+      expect(response.data.value[0].status).to.equal("Clean");
     } catch (err) {
       expect(err).to.be.undefined;
     }
@@ -157,7 +155,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
 
     //content should not be there
     try {
-      const response = await GET(
+      await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       );
     } catch (err) {
@@ -170,8 +168,8 @@ describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     cds.env.requires.db.kind = "sql";
     cds.env.requires.attachments.kind = "db";
-    db = await cds.connect.to("sql:my.db");
-    attachmentsService = await cds.connect.to("attachments");
+    await cds.connect.to("sql:my.db");
+    await cds.connect.to("attachments");
     cds.env.requires.attachments.scan = false;
     cds.env.profiles = ["development"];
     utils = new RequestSend(POST);
@@ -187,7 +185,7 @@ describe("Tests for attachments facet disable", () => {
       const attachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
       const attachmentsFacetTarget = facets.some(facet => facet.Target === 'attachments/@UI.LineItem')
       expect(attachmentsFacetLabel).to.be.true;
-      expect(attachmentsFacetTarget).to.be.true;  
+      expect(attachmentsFacetTarget).to.be.true;
     } catch (err) {
       expect(err).to.be.undefined;
     }
