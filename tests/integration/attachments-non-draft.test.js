@@ -1,7 +1,7 @@
 const cds = require("@sap/cds");
 const path = require("path");
 const app = path.resolve(__dirname, "../incidents-app-non-draft");
-const { expect, axios } = cds.test(app);
+const { expect, axios } = require("@cap-js/cds-test")(app);
 const { createReadStream } = cds.utils.fs;
 const { join } = cds.utils.path;
 
