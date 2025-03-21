@@ -60,23 +60,35 @@
           }
         },
       "attachments": {
-        "scan": true
+        "scan": true,
+        "objectStore": {
+          "kind": "shared"
+        }
       },
       "[development]": {
         "attachments": {
           "scan": false,
-          "kind": "db"
+          "kind": "db",
+          "objectStore": {
+            "kind": "shared"
+          }
         }
       },
       "[production]": {
         "attachments": {
-          "kind": "s3"
+          "kind": "s3",
+          "objectStore": {
+            "kind": "shared"
+          }
         }
       },
       "[hybrid]": {
         "attachments": {
           "kind": "s3",
-          "scan": true
+          "scan": true,
+          "objectStore": {
+            "kind": "shared"
+          }
         }
       }
     }
