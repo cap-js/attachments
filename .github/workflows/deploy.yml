@@ -54,7 +54,7 @@ jobs:
           run: cd incidents-app && cds add mta
   
         - name: Build application for production
-          run: cd incidents-app && cds build --production
+          run: cd incidents-app && npx cds build --production
   
         - name: Deploy using custom action
           uses: ./.github/actions/deploy

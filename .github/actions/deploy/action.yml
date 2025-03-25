@@ -22,29 +22,76 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Cloud Foundry CLI
+    - name: Install dependencies
       shell: bash
       run: |
-        wget -q -O cf-cli.deb "https://packages.cloudfoundry.org/stable?release=debian64&version=latest&source=github"
-        sudo dpkg -i cf-cli.deb
+        sudo apt-get update && sudo apt-get install -y libc6
+
+    - name: Installing Cloud Foundry CLI
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget tar
+
+    - name:  Download and install CF CLI (latest version)
+      shell: bash
+      run: |
+        wget "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=8.9.0&source=github-rel" -O cf-cli.tar.gz
+        tar -xvzf cf-cli.tar.gz
+
+    - name:  Move the cf binary to /usr/local/bin
+      shell: bash
+      run: |
+        sudo mv cf /usr/local/bin
+        sudo mv cf8 /usr/local/bin/
+
+    - name: Verify installation
+      shell: bash
+      run: |
+        cf --version
 
     - name: Authenticate with Cloud Foundry
       shell: bash
       run: |
         cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
 
+    - name: Install Multi-Target Application Build Tool (MBT)
+      shell: bash
+      run: |
+        npm install -g mbt
+
+    - name: Check if mta.yaml Exists
+      shell: bash
+      working-directory: incidents-app
+      run: |
+        test -f mta.yaml && echo "✅ mta.yaml found!" || echo "⚠️ WARNING: mta.yaml NOT found!"
+    
     - name: Build MTA archive
       shell: bash
-      run: mbt build -t gen --mtar mta.tar
+      run:  |
+        cd incidents-app
+        ls -la
+        mbt build -t gen --mtar mta.tar
+
+    - name: Install Cloud Foundry MultiApps Plugin
+      shell: bash
+      run: |
+        cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
+        cf plugins  # Verify installation
+
+    - name: Undeploy existing application
+      shell: bash
+      run: |
+        cd incidents-app
+        if cf mta | grep -q "capire.incidents"; then
+          cf undeploy ${{inputs.CF_APP_NAME}} --delete-services --delete-service-keys -f
+        else
+          echo "⚠️ MTA for the app is not found. Skipping undeploy."
+        fi
 
     - name: Deploy to Cloud Foundry
       shell: bash
-      run: cf deploy gen/mta.tar
-
-    - name: Get Application URL
-      id: get-url
-      shell: bash
       run: |
-        APP_URL=$(cf app ${{ inputs.CF_APP_NAME }} | grep routes: | awk '{print $2}')
-        echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+        cd incidents-app
+        cf deploy gen/mta.tar -f
 
