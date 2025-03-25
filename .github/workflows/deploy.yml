@@ -50,9 +50,6 @@ jobs:
         - name: Configure Workzone service  
           run: cd incidents-app && npx cds add workzone
 
-        - name: Add Cloud MTA Build Tool
-          run: cd incidents-app && npx cds add mta
-
         - name: Add app folder dependencies
           run: cd incidents-app/app/incidents && npm install
 
