@@ -42,16 +42,16 @@ jobs:
           run: npm install -g @sap/cds
     
         - name: Add SAP HANA for production
-          run: cd incidents-app && cds add hana --for production
+          run: cd incidents-app && npx cds add hana --for production
   
         - name: Configure XSUAA-based authentication
-          run: cd incidents-app && cds add xsuaa --for production
+          run: cd incidents-app && npx cds add xsuaa --for production
 
         - name: Configure Workzone service  
-          run: cd incidents-app && cds add workzone
+          run: cd incidents-app && npx cds add workzone
 
         - name: Add Cloud MTA Build Tool
-          run: cd incidents-app && cds add mta
+          run: cd incidents-app && npx cds add mta
   
         - name: Build application for production
           run: cd incidents-app && npx cds build --production
