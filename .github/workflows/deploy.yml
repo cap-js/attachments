@@ -13,7 +13,7 @@ jobs:
           uses: actions/checkout@v4
   
         - name: Clone Incidents App Repository
-          run: git clone --branch e2eTest --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
+          run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
   
         - name: Extract @cap-js/attachments version from PR
           if: github.event_name == 'pull_request'
@@ -46,7 +46,10 @@ jobs:
   
         - name: Configure XSUAA-based authentication
           run: cd incidents-app && cds add xsuaa --for production
-  
+
+        - name: Configure Workzone service  
+          run: cd incidents-app && cds add workzone
+
         - name: Add Cloud MTA Build Tool
           run: cd incidents-app && cds add mta
   
