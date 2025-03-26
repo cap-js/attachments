@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.1.0
+## Added
+-added Multitenancy for Attachments with shared and tenant specific instances
+
 ## Version 2.0.2
 
 ### Fixed
