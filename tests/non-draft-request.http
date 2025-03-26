@@ -1,56 +1,54 @@
 @host = http://localhost:4004
 @incidentId = 3b23bb4b-4ac7-4a24-ac02-aa10cabd842c
-@incidentId2 = 3a4ede72-244a-4f5f-8efa-b17e032d01ee
 
 #####
 #
 # ProcessorService
 #
 
+// Run the calls sequentially to avoid any conflicts
+
 ### Get list of all incidents
+# @name incidents
 GET {{host}}/odata/v4/processor/Incidents
 Authorization: Basic alice:wonderland
 
 ### Getting list of attachments for a particular incidents
-GET {{host}}/odata/v4/processor/Incidents(ID={{incidentId}})/attachments
+@incidentsID = {{incidents.response.body.value[2].ID}}
+# @name attachments
+GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
 Authorization: Basic alice:wonderland
 
-//Copy the ID of the attachment from the response of the above request
+//Copy the ID of the attachment from the response of the above request if not getting the ID from the response of the above request
 
 ### getting attachments content without draft mode
-GET {{host}}/odata/v4/processor/Incidents({{incidentId}})/attachments(up__ID={{incidentId}},ID=609108fd-1c19-4080-bb0a-ec6d4ca78ea6)/content
+@attachmentsID = {{attachments.response.body.value[1].ID}}
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})/content
 Authorization: Basic alice:wonderland
-
-### getting attachments content with draft mode for solar incident, do remember to replace the ID of the attachment
-GET {{host}}/odata/v4/processor/Incidents(3583f982-d7df-4aad-ab26-301d4a157cd7)/attachments(up__ID=3583f982-d7df-4aad-ab26-301d4a157cd7,ID=b1f12480-805c-48e4-915b-af9ce9d35c16)/content
-Authorization: Basic alice:wonderland
-
 
 ### deleting attachments content without draft mode, do not forget to replace the ID of the attachment
-DELETE {{host}}/odata/v4/processor/Incidents({{incidentId}})/attachments(up__ID={{incidentId}},ID=46d6582d-8acd-4990-8d68-c8928eb82325)
+DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})
 Authorization: Basic alice:wonderland
 
 
 ### creating attachments content with non draft mode for a particular incident
-POST {{host}}/odata/v4/processor/Incidents(ID={{incidentId}})/attachments
+# @name createAttachment
+POST {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments
 Authorization: Basic alice:wonderland
-Content-Type:application/json
+Content-Type: application/json
 
 {
-        "up__ID": "3583f982-d7df-4aad-ab26-301d4a157cd7",
-        "filename": "sample7.txt",
-        "content": "VGhpcyBpcyBhIGJhc2U2NCBlbmNvZGluZyB0ZXh0IGZpbGU=",
-        "mimeType": "application/txt"
+        "filename": "sample-1.jpg"
 }
 
-###Sending post for another incident
-POST {{host}}/odata/v4/processor/Incidents(ID={{incidentId2}})/attachments
+### Putting content in the attachment
+@attachmentsID2 = {{createAttachment.response.body.ID}}
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID2}})/content
 Authorization: Basic alice:wonderland
-Content-Type:application/json
+Content-Type: image/jpeg
 
-{
-        "up__ID": "3583f982-d7df-4aad-ab26-301d4a157cd7",
-        "filename": "sample2.jpeg",
-        "mimeType": "image/jpeg"
-}
+< ./integration/content/sample-1.jpg
 
+### fetching newly created attachment content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID2}})/content
+Authorization: Basic alice:wonderland
