@@ -17,6 +17,6 @@ module.exports = async function () {
     content: createReadStream (join(__dirname, 'content', filename)),
     createdAt: new Date (Date.now() - Math.random() * 30*24*60*60*1000),
     createdBy: 'alice',
-  })))
+  })), true)
 
 }
