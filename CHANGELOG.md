@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Added
 
-- Support for Multitenancy with tenant specific instances for object store.
+- Support for Multitenancy with tenant specific object store instances.
 
 ## Version 2.0.2
 
