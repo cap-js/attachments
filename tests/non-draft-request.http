@@ -1,10 +1,4 @@
 @host = http://localhost:4004
-@incidentId = 3b23bb4b-4ac7-4a24-ac02-aa10cabd842c
-
-#####
-#
-# ProcessorService
-#
 
 // Run the calls sequentially to avoid any conflicts
 
@@ -19,8 +13,6 @@ Authorization: Basic alice:wonderland
 GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
 Authorization: Basic alice:wonderland
 
-//Copy the ID of the attachment from the response of the above request if not getting the ID from the response of the above request
-
 ### getting attachments content without draft mode
 @attachmentsID = {{attachments.response.body.value[1].ID}}
 GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})/content
@@ -29,7 +21,6 @@ Authorization: Basic alice:wonderland
 ### deleting attachments content without draft mode, do not forget to replace the ID of the attachment
 DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})
 Authorization: Basic alice:wonderland
-
 
 ### creating attachments content with non draft mode for a particular incident
 # @name createAttachment

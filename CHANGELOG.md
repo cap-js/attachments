@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Support for non-draft enabled entities, including service request functionality for handling attachments.
+- Support for non-draft enabled entities, including OData service request functionality for handling attachments.
 
 ## Version 2.0.2
 

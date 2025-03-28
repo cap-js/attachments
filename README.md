@@ -137,31 +137,7 @@ The feature is ready for multitenancy scenarios utilizing a shared `object store
 ## Non-draft support
 
 The plugin supports attachment functionalities via OData requests with non-draft enabled entities.
-
-### Retrieve content of an attachment:
-```http
-GET {{host}}/{{serviceEndpoint}}/{{parentEntity}}({{ID=parentEntityID}})/attachments({{ID={{attachmentsID}}}})/content
-```
-
-### Create an attachment:
-1. Create an Attachment Record
-```http
-POST {{host}}/{{serviceEndpoint}}/{{parentEntity}}({{ID=parentEntityID}})/attachments
-```
-In the body of the request, include the filename of the file you're uploading.
-
-2. Upload the Content of the Attachment
-```http
-PUT {{host}}/{{serviceEndpoint}}/{{parentEntity}}({{ID=parentEntityID}})/attachments(ID={{attachmentsID2}})/content
-```
-Set the Content-Type header to match the content type of the file you're uploading.
-In the body of the request, include the content of the attachment. 
-
-### Delete an attachment:
-```http
-DELETE {{host}}/{{serviceEndpoint}}/{{parentEntity}}({{ID=parentEntityID}})/attachments({{ID={{attachmentsID}}}})
-```
-
+For reference: [non-draft-request.http](./tests/non-draft-request.http)
 
 ## Contributing
 
