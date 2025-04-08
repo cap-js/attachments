@@ -1,0 +1,66 @@
+name: Deploy Multitenant Incidents App
+
+on:
+  push:
+    branches:
+      - multitenant
+  workflow_dispatch:
+
+jobs:
+  deploy-mtx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Incidents App Repository
+        run: git clone --branch multitenant --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: cd incidents-app && npm install
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Add SAP HANA for production
+        run: cd incidents-app && npx cds add hana --for production
+
+      - name: Add multitenancy (MTX)
+        run: cd incidents-app && npx cds add multitenancy --for production && npm i
+
+      - name: Install the multitenancy module dependencies
+        run: cd incidents-app && cd mtx/sidecar && npm install
+
+      - name: Configure XSUAA-based authentication
+        run: cd incidents-app && npx cds add xsuaa --for production
+
+
+      - name: Add app folder dependencies
+        run: cd incidents-app/app/incidents && npm install
+
+      - name: Build MTX-based application
+        run: cd incidents-app && npx cds build --production
+
+      - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+          CF_APP_NAME: "incidents-app-mtx"
+
+      - name: Register SaaS Application (MTX)
+        run: |
+          cd incidents-app
+          npx cds saas-provision --url https://${{ secrets.APP_DOMAIN }}/${{ secrets.CF_SPACE }} --subscribed
+
+      - name: Confirm Deployment
+        run: echo "✅ Multitenant application deployed and registered successfully."
