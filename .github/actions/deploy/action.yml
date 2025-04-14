@@ -79,16 +79,6 @@ runs:
         cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
         cf plugins  # Verify installation
 
-    - name: Undeploy existing application
-      shell: bash
-      run: |
-        cd incidents-app
-        if cf mta | grep -q "capire.incidents"; then
-          cf undeploy ${{inputs.CF_APP_NAME}} --delete-services --delete-service-keys -f
-        else
-          echo "⚠️ MTA for the app is not found. Skipping undeploy."
-        fi
-
     - name: Deploy to Cloud Foundry
       shell: bash
       run: |
