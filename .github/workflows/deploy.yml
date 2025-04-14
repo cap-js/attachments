@@ -66,14 +66,6 @@ jobs:
       - name: Build application for production
         run: cd incidents-app && npx cds build --production
 
-      - name: Undeploy existing app if exists
-        run: |
-          cf api ${{ secrets.CF_API }} --skip-ssl-validation
-          cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
-          cf target -o ${{ secrets.CF_ORG }} -s ${{ secrets.CF_SPACE }}
-
-          echo "y" | cf undeploy capire.incidents --delete-services --delete-service-keys || echo "App not found or undeploy failed"
-
       - name: Deploy using custom action
         uses: ./.github/actions/deploy
         with:
