@@ -1,0 +1,12 @@
+name: Deploy Everything
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-singlretenant:
+    uses: ./.github/workflows/deploy.yml
+
+  deploy-multitenant:
+    needs: deploy-singlretenant
+    uses: ./.github/workflows/deploy-multitenant.yml
