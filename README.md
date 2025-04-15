@@ -11,7 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Multitenancy](#multi-tenancy)
+- [Multitenancy](#multitenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -137,10 +137,10 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 To enable separate object store instance for each tenant, follow these steps:
 
 1. **Add Dependency:**
-Include @cap-js/attachments in the package.json of both the application-level and mtx/sidecar-level dependencies.
+Include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar-level package.json.
 
 2. **Update Configuration:**
-Modify the package.json file by adding the following configuration to ensure a separate object store instance in production:
+Modify both the package.json file by adding the following configuration to ensure a separate object store instance in production:
 
 ```json
 "cds": {
