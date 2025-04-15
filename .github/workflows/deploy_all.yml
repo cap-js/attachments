@@ -95,6 +95,7 @@ jobs:
               body: `🚀 The application has been deployed to Cloud Foundry. You can access it [here](${link}).`
             });
   deploy-mtx:
+    needs: deploy-singletenant
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
