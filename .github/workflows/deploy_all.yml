@@ -1,12 +1,188 @@
-name: Deploy Everything
-
+name: Deploy Incidents App
 on:
+  push:
+    branches:
+      - testBranch
+  pull_request:
+    types: [opened, reopened, closed, labeled]
   workflow_dispatch:
 
 jobs:
-  deploy-singlretenant:
-    uses: ./.github/workflows/deploy.yml
+  deploy-singletenant:
+    name: Deploy Single Tenant App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Clone Incidents App Repository
+        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
 
-  deploy-multitenant:
-    needs: deploy-singlretenant
-    uses: ./.github/workflows/deploy-multitenant.yml
+      - name: Extract @cap-js/attachments version from PR
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          # Fetch PR changes using GitHub API
+          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
+              .[] | select(.filename == "package.json") | .patch' | 
+              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
+
+          if [[ -z "$VERSION" ]]; then
+            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
+          else
+            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+
+      - name: Install @cap-js/attachments with PR version (if updated)
+        if: env.ATTACHMENTS_VERSION != ''
+        run: |
+          cd incidents-app
+          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd incidents-app && npm install
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Add SAP HANA for production
+        run: cd incidents-app && npx cds add hana --for production
+
+      - name: Configure XSUAA-based authentication
+        run: cd incidents-app && npx cds add xsuaa --for production
+
+      - name: Configure Workzone service  
+        run: cd incidents-app && npx cds add workzone
+
+      - name: Add app folder dependencies
+        run: cd incidents-app/app/incidents && npm install
+
+      - name: Build application for production
+        run: cd incidents-app && npx cds build --production
+
+    
+
+      - name: Deploy using custom action
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+          CF_APP_NAME: "incidents-app"
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const link = `https://${{ env.APP_URL }}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: `🚀 The application has been deployed to Cloud Foundry. You can access it [here](${link}).`
+            });
+  deploy-mtx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Incidents App Repository
+        run: git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
+
+      - name: Extract @cap-js/attachments version from PR
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          # Fetch PR changes using GitHub API
+          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
+              .[] | select(.filename == "package.json") | .patch' | 
+              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
+
+          if [[ -z "$VERSION" ]]; then
+            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
+          else
+            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+
+      - name: Install @cap-js/attachments with PR version (if updated)
+        if: env.ATTACHMENTS_VERSION != ''
+        run: |
+          cd incidents-app
+          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd incidents-app && npm install
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Add SAP HANA for production
+        run: cd incidents-app && npx cds add hana --for production
+
+      - name: Configure XSUAA-based authentication
+        run: cd incidents-app && npx cds add xsuaa --for production
+
+      - name: Add app folder dependencies
+        run: cd incidents-app/app/incidents && npm install
+      
+      - name: Add multitenancy (MTX)
+        run: cd incidents-app && npx cds add multitenancy --for production && npm install
+
+      - name: Install the multitenancy module dependencies
+        run: cd incidents-app && cd mtx/sidecar && npm install && npm install @sap/xsenv
+
+      - name: Freeze npm dependencies
+        run: cd incidents-app && npm update --package-lock-only and npm update --package-lock-only --prefix mtx/sidecar
+
+      - name: Build MTX-based application
+        run: cd incidents-app && npx cds build --production
+
+      - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG }}
+          CF_SPACE: ${{ secrets.CF_SPACE }}
+          CF_APP_NAME: "incidents-app-mtx"
+
+      - name: Confirm Deployment
+        run: echo "✅ Multitenant application deployed and registered successfully."
+      
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const link = `https://${{ env.APP_URL }}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: `🚀 The application MTX has been deployed to Cloud Foundry.`
+            });
