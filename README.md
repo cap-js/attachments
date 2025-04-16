@@ -130,31 +130,30 @@ In this example, the `@attachments.disable_facet` is set to `true`, which means 
 
 ## Multitenancy
 
-The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances. To ensure proper data separation and identification across different tenants, attachment URLs are prefixed with the tenant ID. By default, the plugin utilizes a shared object store instance.
+The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances. 
+
+By default, the plugin uses a separate object store instance for each tenant to ensure complete data isolation.
 
 ### Tenant-Specific Object Store Instance
 
-To enable separate object store instance for each tenant, follow these steps:
+To use separate object store instances per tenant, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
 
-1. **Add Dependency:**
-Include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar-level package.json.
+### Shared Object Store Instance
 
-2. **Update Configuration:**
-Modify both the package.json file by adding the following configuration to ensure a separate object store instance in production:
+If you prefer a shared object store instance across tenants, you can configure it by updating the package.json as follows:
 
 ```json
 "cds": {
     "requires": {
-        "[production]": {
-            "attachments": {
-                "objectStore": {
-                    "kind": "separate"
-                }
+        "attachments": {
+            "objectStore": {
+                "kind": "shared"
             }
         }
     }
 }
 ```
+To ensure proper data separation and tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. 
 
 ## Contributing
 

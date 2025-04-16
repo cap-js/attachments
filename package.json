@@ -58,23 +58,20 @@
       "attachments": {
         "scan": true,
         "objectStore": {
-          "kind": "shared"
+          "kind": "separate"
         }
       },
       "[development]": {
         "attachments": {
           "scan": false,
-          "kind": "db",
-          "objectStore": {
-            "kind": "shared"
-          }
+          "kind": "db"
         }
       },
       "[production]": {
         "attachments": {
           "kind": "s3",
           "objectStore": {
-            "kind": "shared"
+            "kind": "separate"
           }
         }
       },
@@ -83,7 +80,7 @@
           "kind": "s3",
           "scan": true,
           "objectStore": {
-            "kind": "shared"
+            "kind": "separate"
           }
         }
       }
