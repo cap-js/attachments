@@ -154,13 +154,9 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     }
 
     //content should not be there
-    try {
-      await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      );
-    } catch (err) {
-      expect(err.code).to.equal("ERR_BAD_REQUEST");
-    }
+    await expect(GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )).to.be.rejectedWith(/404/);
   });
 });
 
