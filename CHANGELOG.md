@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Restored Attachments aspect on root namespace.
+- Support for `.mov` file extension.
 
 ## Version 2.0.1
 
