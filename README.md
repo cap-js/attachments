@@ -11,7 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Multitenancy](#multi-tenancy)
+- [Multitenancy](#multitenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -126,13 +126,34 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
-
 In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
 
-## Multi-Tenancy
+## Multitenancy
 
-The feature is ready for multitenancy scenarios utilizing a shared `object store` instance. Attachment URLs are prefixed with the tenant ID to ensure proper separation and identification of data across different tenants.
+The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances. 
 
+By default, the plugin uses a separate object store instance for each tenant to ensure complete data isolation.
+
+### Tenant-Specific Object Store Instance
+
+To use separate object store instances per tenant, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
+
+### Shared Object Store Instance
+
+If you prefer a shared object store instance across tenants, you can configure it by updating the package.json as follows:
+
+```json
+"cds": {
+    "requires": {
+        "attachments": {
+            "objectStore": {
+                "kind": "shared"
+            }
+        }
+    }
+}
+```
+To ensure proper data separation and tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. 
 
 ## Contributing
 
