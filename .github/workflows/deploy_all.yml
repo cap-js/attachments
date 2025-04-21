@@ -13,9 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
+        uses: actions/checkout@v4}
         
       - name: Clone Incidents App Repository
         run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
