@@ -1,22 +1,22 @@
 name: "Deploy to Cloud Foundry"
 description: "Logs into Cloud Foundry and deploys the application"
 inputs:
-  CF_API:
+  CF_API_ST:
     description: "Cloud Foundry API endpoint"
     required: true
-  CF_USERNAME:
+  CF_USERNAME_ST:
     description: "Cloud Foundry username"
     required: true
-  CF_PASSWORD:
+  CF_PASSWORD_ST:
     description: "Cloud Foundry password"
     required: true
-  CF_ORG:
+  CF_ORG_ST:
     description: "Cloud Foundry organization"
     required: true
-  CF_SPACE:
+  CF_SPACE_ST:
     description: "Cloud Foundry space"
     required: true
-  CF_APP_NAME:
+  CF_APP_NAME_ST:
     description: "Cloud Foundry application name"
     required: true
 runs:
