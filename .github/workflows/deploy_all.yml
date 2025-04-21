@@ -4,7 +4,7 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, reopened, closed, labeled]
+    types: [opened, reopened, closed, labeled, synchronize]
   workflow_dispatch:
 
 jobs:
