@@ -1,22 +1,22 @@
 name: "Deploy to Cloud Foundry"
 description: "Logs into Cloud Foundry and deploys the application"
 inputs:
-  CF_API:
+  CF_API_ST:
     description: "Cloud Foundry API endpoint"
     required: true
-  CF_USERNAME:
+  CF_USERNAME_ST:
     description: "Cloud Foundry username"
     required: true
-  CF_PASSWORD:
+  CF_PASSWORD_ST:
     description: "Cloud Foundry password"
     required: true
-  CF_ORG:
+  CF_ORG_ST:
     description: "Cloud Foundry organization"
     required: true
-  CF_SPACE:
+  CF_SPACE_ST:
     description: "Cloud Foundry space"
     required: true
-  CF_APP_NAME:
+  CF_APP_NAME_ST:
     description: "Cloud Foundry application name"
     required: true
 runs:
@@ -53,14 +53,9 @@ runs:
     - name: Authenticate with Cloud Foundry
       shell: bash
       run: |
-        export CF_API="${{ inputs.CF_API }}"
-        export CF_USERNAME="${{ inputs.CF_USERNAME }}"
-        export CF_PASSWORD="${{ inputs.CF_PASSWORD }}"
-        export CF_ORG="${{ inputs.CF_ORG }}"
-        export CF_SPACE="${{ inputs.CF_SPACE }}"
-        echo "::debug::CF_API=${{ inputs.CF_API }}
-        echo "::debug::CF_USERNAME=${{ inputs.CF_USERNAME }}
-        cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
+        echo "::debug::CF_API=${{ inputs.CF_API_ST }}
+        echo "::debug::CF_USERNAME=${{ inputs.CF_USERNAME _ST}}
+        cf login -a ${{ inputs.CF_API_ST }} -u ${{ inputs.CF_USERNAME_ST }} -p ${{ inputs.CF_PASSWORD_ST }} -o ${{ inputs.CF_ORG_ST }} -s ${{ inputs.CF_SPACE_ST }}
 
     - name: Install Multi-Target Application Build Tool (MBT)
       shell: bash

@@ -71,12 +71,12 @@ jobs:
       - name: Deploy using custom action
         uses: ./.github/actions/deploy
         with:
-          CF_API: ${{ secrets.CF_API }}
-          CF_USERNAME: ${{ secrets.CF_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
-          CF_ORG: ${{ secrets.CF_ORG }}
-          CF_SPACE: ${{ secrets.CF_SPACE }}
-          CF_APP_NAME: "incidents-testing-app"
+          CF_API_ST: ${{ secrets.CF_API_ST }}
+          CF_USERNAME_ST: ${{ secrets.CF_USERNAME_ST }}
+          CF_PASSWORD_ST: ${{ secrets.CF_PASSWORD_ST }}
+          CF_ORG_ST: ${{ secrets.CF_ORG_ST }}
+          CF_SPACE_ST: ${{ secrets.CF_SPACE_ST }}
+          CF_APP_NAME_ST: "incidents-testing-app"
 
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
