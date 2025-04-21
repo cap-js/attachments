@@ -53,7 +53,7 @@ runs:
     - name: Authenticate with Cloud Foundry
       shell: bash
       run: |
-        cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
+        cf login -a ${{ inputs.CF_API_ST }} -u ${{ inputs.CF_USERNAME_ST }} -p ${{ inputs.CF_PASSWORD_ST }} -o ${{ inputs.CF_ORG_ST }} -s ${{ inputs.CF_SPACE_ST }}
 
     - name: Install Multi-Target Application Build Tool (MBT)
       shell: bash
