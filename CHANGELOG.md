@@ -6,16 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 2.1.0
 
-## Added
+### Added
 
-- Support for Multitenancy with tenant specific object store instances.
+- Support for multitenancy with tenant specific object store instances as the default option.
+
+### Fixed
+
+- Support for `.mov` file extension.
 
 ## Version 2.0.2
 
 ### Fixed
 
 - Restored Attachments aspect on root namespace.
-- Support for `.mov` file extension.
 
 ## Version 2.0.1
 
