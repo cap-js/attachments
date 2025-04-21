@@ -59,6 +59,8 @@ runs:
         export CF_ORG="${{ inputs.CF_ORG_ST }}"
         export CF_SPACE="${{ inputs.CF_SPACE_ST }}"
         echo "Logging in to CF with API: $CF_API"
+        echo "::debug::CF_API=${{ inputs.CF_API_ST }}
+        echo "::debug::CF_USERNAME=${{ inputs.CF_USERNAME_ST }}
         cf login -a ${{ inputs.CF_API_ST }} -u ${{ inputs.CF_USERNAME_ST }} -p ${{ inputs.CF_PASSWORD_ST }} -o ${{ inputs.CF_ORG_ST }} -s ${{ inputs.CF_SPACE_ST }}
 
     - name: Install Multi-Target Application Build Tool (MBT)
