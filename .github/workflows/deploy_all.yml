@@ -162,11 +162,11 @@ jobs:
       - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
         uses: ./.github/actions/deploy
         with:
-          CF__ST: ${{ secrets.CF_API }}
-          CF_USERNAME_ST: ${{ secrets.CF_USERNAME }}
-          CF_PASSWORD_ST: ${{ secrets.CF_PASSWORD }}
-          CF_ORG_ST: ${{ secrets.CF_ORG }}
-          CF_SPACE_ST: ${{ secrets.CF_SPACE }}
+          CF__ST: ${{ secrets.CF_API_ST }}
+          CF_USERNAME_ST: ${{ secrets.CF_USERNAME_ST }}
+          CF_PASSWORD_ST: ${{ secrets.CF_PASSWORD_ST }}
+          CF_ORG_ST: ${{ secrets.CF_ORG_ST }}
+          CF_SPACE_ST: ${{ secrets.CF_SPACE_ST }}
           CF_APP_NAME_ST: "incidents-testing-app-mtx"
 
       - name: Confirm Deployment
