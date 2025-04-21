@@ -2,7 +2,7 @@ name: Deploy Incidents App
 on:
   push:
     branches:
-      - testBranch
+      - main
   pull_request:
     types: [opened, reopened, closed, labeled]
   workflow_dispatch:
