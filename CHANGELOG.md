@@ -4,12 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.1.0
+
+### Added
+
+- Support for multitenancy with tenant specific object store instances as the default option.
+
+### Fixed
+
+- Support for `.mov` file extension.
+
 ## Version 2.0.2
 
 ### Fixed
 
 - Restored Attachments aspect on root namespace.
-- Support for `.mov` file extension.
 
 ## Version 2.0.1
 
