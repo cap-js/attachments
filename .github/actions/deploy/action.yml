@@ -80,10 +80,13 @@ runs:
         cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
         cf plugins  # Verify installation
 
-    - name: Undeploy existing app if exists
+    - name: Undeploy existing apps if exists
       shell: bash
       run: |
-        echo "y" | cf undeploy incidents-testing --delete-services --delete-service-keys || echo "App not found or undeploy failed"
+        for APP in incidents-testing incidents-testingMTX; do
+        echo "🔍 Attempting to undeploy $APP"
+        echo "y" | cf undeploy "$APP" --delete-services --delete-service-keys || echo "⚠️ $APP not found or undeploy failed"
+        done
 
     - name: Deploy to Cloud Foundry
       shell: bash
