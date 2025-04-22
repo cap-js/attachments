@@ -91,7 +91,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: pr.number,
-              body: `🚀 The application has been deployed to Cloud Foundry. You can access it [here](${link}).`
+              body: `🚀 The application has been deployed to Cloud Foundry.`
             });
   deploy-mtx:
     name: Deploy Multitenant App
