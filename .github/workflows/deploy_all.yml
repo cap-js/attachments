@@ -19,29 +19,29 @@ jobs:
       - name: Clone Incidents App Repository
         run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
 
-      - name: Extract @cap-js/attachments version from PR
+      - name: Apply all PR file changes to cloned incidents-app
         if: github.event_name == 'pull_request'
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
-
-          # Fetch PR changes using GitHub API
-          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
-              .[] | select(.filename == "package.json") | .patch' | 
-              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
-
-          if [[ -z "$VERSION" ]]; then
-            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
-          else
-            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
-          fi
-
-      - name: Install @cap-js/attachments with PR version (if updated)
-        if: env.ATTACHMENTS_VERSION != ''
-        run: |
+          TOKEN=${{ secrets.GITHUB_TOKEN }}
+      
+          echo "Fetching full patch for PR #$PR_NUMBER..."
+      
+          # Download full patch of the PR
+          curl -s -L -H "Authorization: token $TOKEN" \
+            "https://patch-diff.githubusercontent.com/raw/$REPO/pull/$PR_NUMBER.patch" \
+            -o pr-changes.patch
+      
           cd incidents-app
-          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+      
+          echo "Applying patch to incidents-app..."
+          patch -p1 < ../pr-changes.patch || {
+            echo "❌ Patch failed. Exiting."
+            exit 1
+          }
+      
+          echo "✅ All PR changes applied to incidents-app."
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
