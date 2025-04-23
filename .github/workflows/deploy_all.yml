@@ -34,7 +34,7 @@ jobs:
             -o pr-changes.patch
 
           cd incidents-app
-          
+
           echo "Checking for patchable files inside node_modules/@cap-js/attachments..."
           if grep -q "@cap-js/attachments" ../pr-changes.patch; then
             cd node_modules/@cap-js/attachments
@@ -45,14 +45,6 @@ jobs:
           else
             echo "ℹ️ No relevant changes found for @cap-js/attachments. Skipping patch."
           fi
-
-          echo "Applying patch to node_modules..."
-          cd incidents-app/node_modules/@cap-js/attachments
-          patch --batch --forward -p1 < ../../pr-changes.patch || {
-            echo "❌ Patch failed. Exiting."
-            exit 1
-          }
-          echo "✅ All PR changes applied to node_modules/@cap-js/attachments."
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
