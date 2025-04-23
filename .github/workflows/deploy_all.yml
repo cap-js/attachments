@@ -36,7 +36,7 @@ jobs:
           cd incidents-app
       
           echo "Applying patch to incidents-app..."
-          patch -p1 < ../pr-changes.patch || {
+          patch --batch --forward -p1 < ../pr-changes.patch || {
             echo "❌ Patch failed. Exiting."
             exit 1
           }
