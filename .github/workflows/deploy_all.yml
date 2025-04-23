@@ -33,7 +33,19 @@ jobs:
             "https://patch-diff.githubusercontent.com/raw/$REPO/pull/$PR_NUMBER.patch" \
             -o pr-changes.patch
 
-            //apply patch to the incidents-app cap-js/attachments folder in node_modules
+          cd incidents-app
+          
+          echo "Checking for patchable files inside node_modules/@cap-js/attachments..."
+          if grep -q "@cap-js/attachments" ../pr-changes.patch; then
+            cd node_modules/@cap-js/attachments
+            echo "Attempting to apply patch..."
+            patch --batch --forward -p1 < ../../../pr-changes.patch || {
+              echo "⚠️ Patch failed or not applicable. Skipping."
+            }
+          else
+            echo "ℹ️ No relevant changes found for @cap-js/attachments. Skipping patch."
+          fi
+
           echo "Applying patch to node_modules..."
           cd incidents-app/node_modules/@cap-js/attachments
           patch --batch --forward -p1 < ../../pr-changes.patch || {
