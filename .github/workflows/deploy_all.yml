@@ -16,40 +16,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Clone Incidents App Repository
-        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app
+      - name: Clone Incidents App Repository and install dependencies
+        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git && cd incidents-app && npm install
 
-      - name: Extract @cap-js/attachments version from PR
+      - name: Use PR branch version of @cap-js/attachments
         if: github.event_name == 'pull_request'
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-
-          # Fetch PR changes using GitHub API
-          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
-              .[] | select(.filename == "package.json") | .patch' | 
-              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "")
-
-          if [[ -z "$VERSION" ]]; then
-            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
-          else
-            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
-          fi
-
-      - name: Install @cap-js/attachments with PR version (if updated)
-        if: env.ATTACHMENTS_VERSION != ''
-        run: |
           cd incidents-app
-          npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+          BRANCH_NAME=${{ github.head_ref }}  # The PR branch name
+          echo "Using @cap-js/attachments branch: $BRANCH_NAME"
+      
+          # Update the dependency in package.json
+          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
+      
+          # Install the updated dependency
+          npm install
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: cd incidents-app && npm install
 
       - name: Install CDS CLI
         run: npm install -g @sap/cds
