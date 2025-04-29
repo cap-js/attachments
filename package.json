@@ -52,7 +52,7 @@
             "label": "service-manager"
           }
         },
-      "attachmentsCredentials":{
+      "objectStore":{
         "vcap": {
           "label": "objectstore"
         }
