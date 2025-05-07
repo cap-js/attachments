@@ -44,10 +44,7 @@
           "impl": "@cap-js/attachments/lib/basic"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/lib/aws-s3",
-          "vcap": {
-            "label": "objectstore"
-          }
+          "impl": "@cap-js/attachments/lib/aws-s3"
         }
       },
       "serviceManager":{
@@ -55,6 +52,11 @@
             "label": "service-manager"
           }
         },
+      "objectStore":{
+        "vcap": {
+          "label": "objectstore"
+        }
+      },
       "attachments": {
         "scan": true,
         "objectStore": {

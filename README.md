@@ -139,6 +139,9 @@ For multitenant applications, make sure to include `@cap-js/attachments` in the 
 
 ### Shared Object Store Instance
 
+> [!Note]
+> Ensure the shared object store instance is bound to the `mtx` application module before deployment.
+
 To configure a shared object store instance, modify both the package.json files as follows:
 
 ```json
