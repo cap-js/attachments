@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - MTX: Support for deleting tenant-specific objects from S3 upon tenant unsubscription in shared mode.
 
+### Fixed
+
+- Deleted attachments are now removed from S3 when a draft is discarded or deleted.
+
 ## Version 2.1.0
 
 ### Added
