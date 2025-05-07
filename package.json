@@ -5,7 +5,7 @@
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "main": "cds-plugin.js",
   "files": [
     "index.cds",
@@ -44,10 +44,7 @@
           "impl": "@cap-js/attachments/lib/basic"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/lib/aws-s3",
-          "vcap": {
-            "label": "objectstore"
-          }
+          "impl": "@cap-js/attachments/lib/aws-s3"
         }
       },
       "serviceManager":{
@@ -55,6 +52,11 @@
             "label": "service-manager"
           }
         },
+      "objectStore":{
+        "vcap": {
+          "label": "objectstore"
+        }
+      },
       "attachments": {
         "scan": true,
         "objectStore": {
