@@ -5,7 +5,6 @@ This repository contains a GitHub Actions workflow for deploying the **Incidents
 - **Multitenant (MTX)**
 
 ---
-
 ## ⚙️ How the Pipeline Works
 
 The pipeline is triggered by:
