@@ -10,7 +10,7 @@ on:
 jobs:
   deploy-singletenant:
     name: Deploy Single Tenant App
-    if: github.event.label.name == 'deploy-ST'
+    if: github.event.action == 'labeled' && github.event.label.name == 'deploy-ST'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -82,7 +82,7 @@ jobs:
             });
   deploy-mtx:
     name: Deploy Multitenant App
-    if: github.event.label.name == 'deploy-MTX'
+    if: github.event.action == 'labeled' && github.event.label.name == 'deploy-MTX'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
