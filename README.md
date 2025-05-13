@@ -11,7 +11,6 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Non-draft support](#non-draft-support)
 - [Multitenancy](#multi-tenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
@@ -128,11 +127,6 @@ entity Incidents {
 }
 ```
 In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
-
-## Non-draft support
-
-The plugin supports attachment functionalities via OData requests with non-draft enabled entities.
-For reference: [non-draft-request.http](./tests/non-draft-request.http)
 
 ## Multitenancy
 
