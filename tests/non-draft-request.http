@@ -15,11 +15,11 @@ Authorization: Basic alice:wonderland
 
 ### getting attachments content without draft mode
 @attachmentsID = {{attachments.response.body.value[1].ID}}
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
 Authorization: Basic alice:wonderland
 
 ### deleting attachments content without draft mode, do not forget to replace the ID of the attachment
-DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})
+DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
 Authorization: Basic alice:wonderland
 
 ### creating attachments content with non draft mode for a particular incident
@@ -34,12 +34,12 @@ Content-Type: application/json
 
 ### Putting content in the attachment
 @attachmentsID2 = {{createAttachment.response.body.ID}}
-PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID2}})/content
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID2}})/content
 Authorization: Basic alice:wonderland
 Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
 ### fetching newly created attachment content
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID2}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID2}})/content
 Authorization: Basic alice:wonderland
