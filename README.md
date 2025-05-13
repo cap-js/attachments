@@ -11,8 +11,8 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Multitenancy](#multi-tenancy)
 - [Non-draft support](#non-draft-support)
+- [Multitenancy](#multi-tenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -127,17 +127,41 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
-
 In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
-
-## Multi-Tenancy
-
-The feature is ready for multitenancy scenarios utilizing a shared `object store` instance. Attachment URLs are prefixed with the tenant ID to ensure proper separation and identification of data across different tenants.
 
 ## Non-draft support
 
 The plugin supports attachment functionalities via OData requests with non-draft enabled entities.
 For reference: [non-draft-request.http](./tests/non-draft-request.http)
+
+## Multitenancy
+
+The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
+
+> [!Note]
+> Starting from version 2.1.0, separate mode for object store instances is the default setting for multitenancy. Currently, only the `S3-standard` plan of the object store offering is supported.
+
+For multitenant applications, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
+
+### Shared Object Store Instance
+
+> [!Note]
+> Ensure the shared object store instance is bound to the `mtx` application module before deployment.
+
+To configure a shared object store instance, modify both the package.json files as follows:
+
+```json
+"cds": {
+    "requires": {
+        "attachments": {
+            "objectStore": {
+                "kind": "shared"
+            }
+        }
+    }
+}
+```
+To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. 
 
 ## Contributing
 

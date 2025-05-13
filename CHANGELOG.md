@@ -4,11 +4,22 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.1.1
+
+### Added
+
+- MTX: Support for deleting tenant-specific objects from S3 upon tenant unsubscription in shared mode.
+- Support for non-draft enabled entities, including OData service request functionality for handling attachments.
+
 ## Version 2.1.0
 
 ### Added
 
-- Support for non-draft enabled entities, including OData service request functionality for handling attachments.
+- Support for multitenancy with tenant specific object store instances as the default option.
+
+### Fixed
+
+- Support for `.mov` file extension.
 
 ## Version 2.0.2
 
