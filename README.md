@@ -11,7 +11,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Test-drive Locally](#test-drive-locally)
 - [Using SAP Object Store](#using-sap-object-store)
 - [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Multitenancy](#multitenancy)
+- [Multitenancy](#multi-tenancy)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
@@ -36,7 +36,7 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 ## Use Attachments
 
 > [!Note]
-> To be able to use the plugin, make sure *draft* is enabled for the entity.
+> To be able to use the plugin with Fiori elements UI, make sure *draft* is enabled for the entity.
 
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
