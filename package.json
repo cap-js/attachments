@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest"
+    "test": "npx jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.400.0",

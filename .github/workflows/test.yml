@@ -23,5 +23,4 @@ jobs:
     - run: npm i -g @sap/cds-dk
     - run: npm i
     - run: cd tests/incidents-app && npm i
-    - run: cd tests/incidents-app-non-draft && npm i
     - run: npm run test
