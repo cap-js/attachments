@@ -1,0 +1,224 @@
+name: Deploy Incidents App
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  deploy-singletenant:
+    name: Deploy Single Tenant App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug event details
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Head Ref: ${{ github.head_ref }}"
+          echo "Secrets available: CF_API_ST=${{ secrets.CF_API_ST != '' && 'set' || 'not set' }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Clone Incidents App Repository
+        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git
+
+      - name: Install dependencies
+        working-directory: incidents-app
+        run: npm install
+
+      - name: Use PR branch version of @cap-js/attachments
+        if: github.event_name == 'pull_request'
+        working-directory: incidents-app
+        run: |
+          BRANCH_NAME=${{ github.head_ref }}
+          echo "Using @cap-js/attachments branch: $BRANCH_NAME"
+      
+          # Update the dependency in package.json
+          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
+      
+          # Install the updated dependency
+          npm install
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Configure application features
+        working-directory: incidents-app
+        run: npx cds add hana,xsuaa,workzone --for production
+
+      - name: Add app folder dependencies
+        working-directory: incidents-app/app/incidents
+        run: npm install
+
+      - name: Build application for production
+        working-directory: incidents-app
+        run: npx cds build --production
+
+      - name: Deploy using custom action
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets.CF_API_ST }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME_ST }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD_ST }}
+          CF_ORG: ${{ secrets.CF_ORG_ST }}
+          CF_SPACE: ${{ secrets.CF_SPACE_ST }}
+          CF_APP_NAME: "incidents-testing"
+
+      - name: Get app URL from Cloud Foundry
+        shell: bash
+        run: |
+          cf install-plugin -r CF-Community "html5-plugin" -f  
+          APP_NAME="incidents-testing"
+          APP_URL=$(cf html5-list -di incidents-testing-destination -u | awk 'NR>4 {print $NF}' | sed 's|^https\?://||')
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+          echo "Retrieved APP_URL: $APP_URL"
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const link = `https://${{ env.APP_URL }}`;
+            if (!link.includes("Failed")) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${link}`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ Failed to retrieve the single-tenant application URL.`
+              });
+            }
+
+  deploy-mtx:
+    name: Deploy Multitenant App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Incidents App Repository
+        run: git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git
+
+      - name: Extract @cap-js/attachments version from PR
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          # Fetch PR changes using GitHub API
+          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
+              .[] | select(.filename == "package.json") | .patch' | 
+              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "") || echo ""
+          if [[ -z "$VERSION" ]]; then
+            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
+          else
+            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
+          fi
+
+      - name: Install @cap-js/attachments with PR version (if updated)
+        if: env.ATTACHMENTS_VERSION != ''
+        working-directory: incidents-app
+        run: npm install @cap-js/attachments@$ATTACHMENTS_VERSION
+
+      - name: Install dependencies
+        working-directory: incidents-app
+        run: npm install
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Configure application features
+        working-directory: incidents-app
+        run: npx cds add hana,xsuaa,multitenancy --for production
+
+      - name: Install multitenancy dependencies
+        working-directory: incidents-app
+        run: npm install
+
+      - name: Add app folder dependencies
+        working-directory: incidents-app/app/incidents
+        run: npm install
+
+      - name: Install multitenancy module dependencies
+        working-directory: incidents-app/mtx/sidecar
+        run: npm install && npm install @sap/xsenv
+
+      - name: Freeze npm dependencies
+        working-directory: incidents-app
+        run: |
+          npm update --package-lock-only
+          npm update --package-lock-only --prefix mtx/sidecar
+
+      - name: Build MTX-based application
+        working-directory: incidents-app
+        run: npx cds build --production
+
+      - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets.CF_API_MT }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME_MT }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD_MT }}
+          CF_ORG: ${{ secrets.CF_ORG_MT }}
+          CF_SPACE: ${{ secrets.CF_SPACE_MT }}
+          CF_APP_NAME: "incidents-testing-mtx"
+
+      - name: Get app URL from Cloud Foundry
+        shell: bash
+        run: |
+          APP_NAME="incidents-testing-mtx"
+          APP_URL=$(cf html5-list -di incidents-testing-destination -u | grep "$APP_NAME" | awk '{print $2}' || echo "Failed to retrieve APP_URL")
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+          echo "Retrieved APP_URL: $APP_URL"
+
+      - name: Confirm Deployment
+        run: echo "✅ Multitenant application deployed and registered successfully."
+
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const link = `https://${{ env.APP_URL }}`;
+            if (!link.includes("Failed")) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 The multitenant application has been deployed to Cloud Foundry: ${link}`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ Failed to retrieve the multitenant application URL.`
+              });
+            }
