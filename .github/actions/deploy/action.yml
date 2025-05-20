@@ -22,32 +22,15 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install dependencies
-      shell: bash
-      run: |
-        sudo apt-get update && sudo apt-get install -y libc6
-
-    - name: Installing Cloud Foundry CLI
+    - name: Install dependencies and Cloud Foundry CLI (v8.9.0)
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y wget tar
-
-    - name:  Download and install CF CLI (latest version)
-      shell: bash
-      run: |
+        sudo apt-get install -y libc6 wget tar
         wget "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=8.9.0&source=github-rel" -O cf-cli.tar.gz
         tar -xvzf cf-cli.tar.gz
-
-    - name:  Move the cf binary to /usr/local/bin
-      shell: bash
-      run: |
-        sudo mv cf /usr/local/bin
+        sudo mv cf /usr/local/bin/
         sudo mv cf8 /usr/local/bin/
-
-    - name: Verify installation
-      shell: bash
-      run: |
         cf --version
 
     - name: Authenticate with Cloud Foundry
@@ -58,8 +41,7 @@ runs:
 
     - name: Install Multi-Target Application Build Tool (MBT)
       shell: bash
-      run: |
-        npm install -g mbt
+      run: npm install -g mbt
 
     - name: Check if mta.yaml Exists
       shell: bash
@@ -69,27 +51,24 @@ runs:
     
     - name: Build MTA archive
       shell: bash
-      run:  |
-        cd incidents-app
-        ls -la
-        mbt build -t gen --mtar mta.tar
+      working-directory: incidents-app
+      run: mbt build -t gen --mtar mta.tar
 
     - name: Install Cloud Foundry MultiApps Plugin
       shell: bash
       run: |
         cf install-plugin -f https://github.com/cloudfoundry-incubator/multiapps-cli-plugin/releases/latest/download/multiapps-plugin.linux64
-        cf plugins  # Verify installation
+        cf plugins
 
     - name: Undeploy existing apps if exists
       shell: bash
       run: |
         for APP in incidents-testing incidents-testingMTX; do
-        echo "🔍 Attempting to undeploy $APP"
-        echo "y" | cf undeploy "$APP" --delete-services --delete-service-keys || echo "⚠️ $APP not found or undeploy failed"
+          echo "🔍 Attempting to undeploy $APP"
+          echo "y" | cf undeploy "$APP" --delete-services --delete-service-keys || echo "⚠️ $APP not found or undeploy failed"
         done
 
     - name: Deploy to Cloud Foundry
       shell: bash
-      run: |
-        cd incidents-app
-        cf deploy gen/mta.tar -f
+      working-directory: incidents-app
+      run: cf deploy gen/mta.tar -f
