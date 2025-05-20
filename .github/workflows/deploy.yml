@@ -188,14 +188,6 @@ jobs:
           CF_SPACE: ${{ secrets.CF_SPACE_MT }}
           CF_APP_NAME: "incidents-testing-mtx"
 
-      - name: Get app URL from Cloud Foundry
-        shell: bash
-        run: |
-          APP_NAME="incidents-testing-mtx"
-          APP_URL=$(cf html5-list -di incidents-testing-destination -u | grep "$APP_NAME" | awk '{print $2}' || echo "Failed to retrieve APP_URL")
-          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
-          echo "Retrieved APP_URL: $APP_URL"
-
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
 
