@@ -13,6 +13,10 @@ jobs:
   deploy-singletenant:
     name: Deploy Single Tenant App
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - name: Debug event details
         run: |
@@ -111,6 +115,10 @@ jobs:
   deploy-mtx:
     name: Deploy Multitenant App
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
