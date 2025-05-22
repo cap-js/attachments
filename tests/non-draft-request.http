@@ -1,0 +1,46 @@
+@host = http://localhost:4004
+@auth = Basic YWxpY2U6d29uZGVybGFuZA==
+
+// Send the requests sequentially to avoid any conflicts
+
+### Get list of all incidents
+# @name incidents
+GET {{host}}/odata/v4/processor/Incidents
+Authorization: {{auth}}
+
+### Get list of attachments for a particular incident
+@incidentsID = {{incidents.response.body.value[2].ID}}
+# @name attachments
+GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
+Authorization: {{auth}}
+
+### Get attachments content 
+@attachmentsID = {{attachments.response.body.value[1].ID}}
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
+Authorization: {{auth}}
+
+### Delete attachment
+DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
+Authorization: {{auth}}
+
+### Creating attachment (metadata request)
+# @name createAttachment
+POST {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+        "filename": "sample-1.jpg"
+}
+
+### Put attachment content (content request)
+@newAttachmentID = {{createAttachment.response.body.ID}}
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+Authorization: {{auth}}
+Content-Type: image/jpeg
+
+< ./integration/content/sample-1.jpg
+
+### Fetching newly created attachment content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+Authorization: {{auth}}
