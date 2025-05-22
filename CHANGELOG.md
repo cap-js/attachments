@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 2.1.2
 
-### Added
+### Fixed
 
- - [BETA] Support for non-draft enabled entities, including OData service request functionality for handling attachments.
+- Bug fixes.
 
 ## Version 2.1.1
 
