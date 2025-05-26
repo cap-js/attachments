@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-  pull_request_target:
+  pull_request:
     branches:
       - main
     types: [opened, reopened, synchronize]
@@ -92,7 +92,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ secrets.GH_PAT_Token }}
           script: |
             const pr = context.payload.pull_request;
             const link = `https://${{ env.APP_URL }}`;
