@@ -95,14 +95,35 @@ jobs:
           github-token: ${{ secrets.GH_PAT_Token }}
           script: |
             const pr = context.payload.pull_request;
-            const link = `https://${{ env.APP_URL }}`;
-            if (!link.includes("Failed")) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${link}`
-              });
+            let url = process.env.APP_URL;
+
+            if (url && !url.includes("Failed")) {
+              try {
+                // Ensure URL starts with https://
+                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                  url = `https://${url}`;
+                }
+
+                // Parse and replace 'cpp' with 'launchpad' in the hostname
+                const parsed = new URL(url);
+                parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
+
+                const modifiedLink = parsed.toString();
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${modifiedLink}`
+                });
+              } catch (error) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ Failed to parse and construct the application URL. Error: ${error.message}`
+                });
+              }
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -111,7 +132,6 @@ jobs:
                 body: `⚠️ Failed to retrieve the single-tenant application URL.`
               });
             }
-
   deploy-mtx:
     name: Deploy Multitenant App
     runs-on: ubuntu-latest
@@ -203,7 +223,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ secrets.GH_PAT_Token }}
           script: |
             const pr = context.payload.pull_request;
             const message = "🚀 The multitenant application has been deployed to Cloud Foundry.";
