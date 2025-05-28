@@ -88,21 +88,41 @@ jobs:
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "Retrieved APP_URL: $APP_URL"
 
-      - name: Add comment to PR
+      - name: Add comment to PR (Single-Tenant)
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT_Token }}
           script: |
             const pr = context.payload.pull_request;
-            const link = `https://${{ env.APP_URL }}`;
-            if (!link.includes("Failed")) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${link}`
-              });
+            let url = process.env.APP_URL;
+
+            if (url && !url.includes("Failed")) {
+              try {
+                // Replace 'cpp' with 'launchpad' in the hostname
+                const parsed = new URL(url);
+                parsed.hostname = parsed.hostname.replace('cpp', 'launchpad');
+
+                // Drop the path after the app base if needed (keep only hostname + pathname prefix)
+                const parts = parsed.pathname.split('/');
+                const cleanedPath = parts.length >= 2 ? `/${parts[1]}` : '';
+                
+                const modifiedLink = `${parsed.protocol}//${parsed.hostname}${cleanedPath}`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${modifiedLink}`
+                });
+              } catch (error) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ Failed to parse and construct the application URL.`
+                });
+              }
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -111,7 +131,6 @@ jobs:
                 body: `⚠️ Failed to retrieve the single-tenant application URL.`
               });
             }
-
   deploy-mtx:
     name: Deploy Multitenant App
     runs-on: ubuntu-latest
@@ -199,26 +218,18 @@ jobs:
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
 
-      - name: Add comment to PR
+      - name: Add comment to PR (Multitenant)
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT }}
           script: |
             const pr = context.payload.pull_request;
-            const link = `https://${{ env.APP_URL }}`;
-            if (!link.includes("Failed")) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: `🚀 The multitenant application has been deployed to Cloud Foundry: ${link}`
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: `⚠️ Failed to retrieve the multitenant application URL.`
-              });
-            }
+            const message = "🚀 The multitenant application has been deployed to Cloud Foundry.";
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: message
+            });
