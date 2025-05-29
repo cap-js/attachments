@@ -79,6 +79,21 @@ jobs:
           CF_SPACE: ${{ secrets.CF_SPACE_ST }}
           CF_APP_NAME: "incidents-testing"
 
+      - name: Verify deployed app status
+        run: |
+          echo "🔍 Listing all apps..."
+          cf apps
+          APP_NAME="incidents-testing-srv"
+          echo "🔍 Verifying status of app: $APP_NAME"
+          STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
+          echo "App Instance Status: $STATUS"
+          if [[ "$STATUS" != "running" ]]; then
+            echo "❌ Deployment failed or app is not running!"
+            exit 1
+          else
+            echo "✅ App is running successfully."
+          fi
+
       - name: Get app URL from Cloud Foundry
         shell: bash
         run: |
@@ -215,6 +230,23 @@ jobs:
           CF_ORG: ${{ secrets.CF_ORG_MT }}
           CF_SPACE: ${{ secrets.CF_SPACE_MT }}
           CF_APP_NAME: "incidents-testing-mtx"
+      
+      - name: Verify MTX deployment apps status
+        run: |
+          echo "🔍 Listing all apps..."
+          cf apps
+          declare -a apps=("incidents-testingMTX-mtx" "incidents-testingMTX-testing-srv")
+          for APP_NAME in "${apps[@]}"; do
+            echo "🔍 Verifying status of app: $APP_NAME"
+            STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
+            echo "App Instance Status for $APP_NAME: $STATUS"
+            if [[ "$STATUS" != "running" ]]; then
+              echo "❌ Deployment failed or $APP_NAME is not running!"
+              exit 1
+            else
+              echo "✅ $APP_NAME is running successfully."
+            fi
+          done
 
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
