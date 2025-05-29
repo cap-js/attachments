@@ -126,18 +126,38 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             let url = process.env.APP_URL;
+
             if (url && !url.includes("Failed")) {
-              if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                url = `https://${url}`;
+              try {
+                // Ensure it starts with https://
+                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                  url = `https://${url}`;
+                }
+
+                const parsed = new URL(url);
+                parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
+
+                // Ensure URL ends with /index.html
+                if (!parsed.pathname.endsWith('/index.html')) {
+                  parsed.pathname = parsed.pathname.replace(/\/?$/, '/index.html');
+                }
+
+                const finalUrl = parsed.toString();
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🚀 The single-tenant application has been deployed: ${finalUrl}`
+                });
+              } catch (error) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ Failed to parse and construct the application URL. Error: ${error.message}`
+                });
               }
-              const parsed = new URL(url);
-              parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: `🚀 The single-tenant application has been deployed: ${parsed.toString()}`
-              });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
