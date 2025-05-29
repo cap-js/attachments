@@ -218,19 +218,3 @@ jobs:
 
       - name: Confirm Deployment
         run: echo "✅ Multitenant application deployed and registered successfully."
-
-      - name: Add comment to PR (Multitenant)
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_PAT_Token }}
-          script: |
-            const pr = context.payload.pull_request;
-            const message = "🚀 The multitenant application has been deployed to Cloud Foundry.";
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: message
-            });
