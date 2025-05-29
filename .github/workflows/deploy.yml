@@ -1,149 +1,143 @@
 name: Deploy Incidents App
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
     types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 jobs:
-  deploy-singletenant:
-    name: Deploy Single Tenant App
+  deploy:
+    name: Deploy ${{ matrix.tenant }} App
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tenant: [singletenant, multitenant]
     permissions:
       contents: read
       issues: write
       pull-requests: write
     steps:
-      - name: Debug event details
-        run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Head Ref: ${{ github.head_ref }}"
-          echo "Secrets available: CF_API_ST=${{ secrets.CF_API_ST != '' && 'set' || 'not set' }}"
-
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Clone Incidents App Repository
-        run: git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git
+        run: |
+          if [[ "${{ matrix.tenant }}" == "singletenant" ]]; then
+            git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git
+          else
+            git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git
+          fi
 
       - name: Install dependencies
         working-directory: incidents-app
         run: npm install
 
-      - name: Use PR branch version of @cap-js/attachments
-        if: github.event_name == 'pull_request'
-        working-directory: incidents-app
-        run: |
-          BRANCH_NAME=${{ github.head_ref }}
-          echo "Using @cap-js/attachments branch: $BRANCH_NAME"
-      
-          # Update the dependency in package.json
-          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
-            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
-      
-          # Install the updated dependency
-          npm install
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install CDS CLI
         run: npm install -g @sap/cds
 
       - name: Configure application features
         working-directory: incidents-app
-        run: npx cds add hana,xsuaa,workzone --for production
+        run: |
+          if [[ "${{ matrix.tenant }}" == "singletenant" ]]; then
+            npx cds add hana,xsuaa,workzone --for production
+          else
+            npx cds add hana,xsuaa,multitenancy --for production
+          fi
 
-      - name: Add app folder dependencies
-        working-directory: incidents-app/app/incidents
-        run: npm install
+      - name: Install additional dependencies
+        working-directory: incidents-app
+        run: |
+          npm install
+          npm install --prefix app/incidents
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            npm install --prefix mtx/sidecar
+            npm install @sap/xsenv --prefix mtx/sidecar
+          fi
 
-      - name: Build application for production
+      - name: Freeze npm dependencies (multitenant only)
+        if: matrix.tenant == 'multitenant'
+        working-directory: incidents-app
+        run: |
+          npm update --package-lock-only
+          npm update --package-lock-only --prefix mtx/sidecar
+
+      - name: Build application
         working-directory: incidents-app
         run: npx cds build --production
 
-      - name: Deploy using custom action
+      - name: Deploy to SAP BTP Cloud Foundry
         uses: ./.github/actions/deploy
         with:
-          CF_API: ${{ secrets.CF_API_ST }}
-          CF_USERNAME: ${{ secrets.CF_USERNAME_ST }}
-          CF_PASSWORD: ${{ secrets.CF_PASSWORD_ST }}
-          CF_ORG: ${{ secrets.CF_ORG_ST }}
-          CF_SPACE: ${{ secrets.CF_SPACE_ST }}
-          CF_APP_NAME: "incidents-testing"
+          CF_API: ${{ secrets[format('CF_API_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_USERNAME: ${{ secrets[format('CF_USERNAME_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_PASSWORD: ${{ secrets[format('CF_PASSWORD_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_APP_NAME: ${{ matrix.tenant == 'singletenant' && 'incidents-testing' || 'incidents-testing-mtx' }}
 
-      - name: Verify deployed app status
+      - name: Verify app status
         run: |
           echo "🔍 Listing all apps..."
           cf apps
-          APP_NAME="incidents-testing-srv"
-          echo "🔍 Verifying status of app: $APP_NAME"
-          STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
-          echo "App Instance Status: $STATUS"
-          if [[ "$STATUS" != "running" ]]; then
-            echo "❌ Deployment failed or app is not running!"
-            exit 1
+          if [[ "${{ matrix.tenant }}" == "singletenant" ]]; then
+            APP_NAME="incidents-testing-srv"
+            STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
+            echo "Status: $STATUS"
+            if [[ "$STATUS" != "running" ]]; then
+              echo "❌ $APP_NAME is not running!"; exit 1
+            fi
           else
-            echo "✅ App is running successfully."
+            declare -a apps=("incidents-testingMTX-mtx" "incidents-testingMTX-testing-srv")
+            for APP_NAME in "${apps[@]}"; do
+              STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
+              echo "$APP_NAME status: $STATUS"
+              if [[ "$STATUS" != "running" ]]; then
+                echo "❌ $APP_NAME is not running!"; exit 1
+              fi
+            done
           fi
 
-      - name: Get app URL from Cloud Foundry
+      - name: Get app URL from Cloud Foundry (singletenant)
+        if: matrix.tenant == 'singletenant'
         shell: bash
         run: |
-          cf install-plugin -r CF-Community "html5-plugin" -f  
+          cf install-plugin -r CF-Community "html5-plugin" -f
           APP_NAME="incidents-testing"
           APP_URL=$(cf html5-list -di incidents-testing-destination -u | awk 'NR>4 {print $NF}' | sed 's|^https\?://||')
-          
           if [ -z "$APP_URL" ]; then
-            echo "❌ Failed to retrieve APP_URL from 'cf html5-list'."
-            exit 1
+            echo "❌ Failed to retrieve APP_URL from 'cf html5-list'."; exit 1
           fi
-          
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
           echo "✅ Retrieved APP_URL: $APP_URL"
-      - name: Add comment to PR
-        if: github.event_name == 'pull_request'
+
+      - name: Comment PR with app URL (singletenant)
+        if: matrix.tenant == 'singletenant' && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT_Token }}
           script: |
             const pr = context.payload.pull_request;
             let url = process.env.APP_URL;
-
             if (url && !url.includes("Failed")) {
-              try {
-                // Ensure URL starts with https://
-                if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                  url = `https://${url}`;
-                }
-
-                // Parse and replace 'cpp' with 'launchpad' in the hostname
-                const parsed = new URL(url);
-                parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
-
-                const modifiedLink = parsed.toString();
-
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  body: `🚀 The single-tenant application has been deployed to Cloud Foundry: ${modifiedLink}`
-                });
-              } catch (error) {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  body: `⚠️ Failed to parse and construct the application URL. Error: ${error.message}`
-                });
+              if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = `https://${url}`;
               }
+              const parsed = new URL(url);
+              parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 The single-tenant application has been deployed: ${parsed.toString()}`
+              });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -152,106 +146,3 @@ jobs:
                 body: `⚠️ Failed to retrieve the single-tenant application URL.`
               });
             }
-  deploy-mtx:
-    name: Deploy Multitenant App
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Clone Incidents App Repository
-        run: git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git
-
-      - name: Extract @cap-js/attachments version from PR
-        if: github.event_name == 'pull_request'
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-      
-          # Fetch PR changes using GitHub API
-          VERSION=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/files" | jq -r '
-              .[] | select(.filename == "package.json") | .patch' | 
-              grep -oP '(?<=\+.*"@cap-js/attachments": ")[^"]*' || echo "") || echo ""
-          if [[ -z "$VERSION" ]]; then
-            echo "No updated @cap-js/attachments version found in PR. Skipping installation."
-          else
-            echo "ATTACHMENTS_VERSION=$VERSION" >> $GITHUB_ENV
-          fi
-
-      - name: Install @cap-js/attachments with PR version (if updated)
-        if: env.ATTACHMENTS_VERSION != ''
-        working-directory: incidents-app
-        run: npm install @cap-js/attachments@$ATTACHMENTS_VERSION
-
-      - name: Install dependencies
-        working-directory: incidents-app
-        run: npm install
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install CDS CLI
-        run: npm install -g @sap/cds
-
-      - name: Configure application features
-        working-directory: incidents-app
-        run: npx cds add hana,xsuaa,multitenancy --for production
-
-      - name: Install multitenancy dependencies
-        working-directory: incidents-app
-        run: npm install
-
-      - name: Add app folder dependencies
-        working-directory: incidents-app/app/incidents
-        run: npm install
-
-      - name: Install multitenancy module dependencies
-        working-directory: incidents-app/mtx/sidecar
-        run: npm install && npm install @sap/xsenv
-
-      - name: Freeze npm dependencies
-        working-directory: incidents-app
-        run: |
-          npm update --package-lock-only
-          npm update --package-lock-only --prefix mtx/sidecar
-
-      - name: Build MTX-based application
-        working-directory: incidents-app
-        run: npx cds build --production
-
-      - name: Deploy to SAP BTP Cloud Foundry (Multitenant)
-        uses: ./.github/actions/deploy
-        with:
-          CF_API: ${{ secrets.CF_API_MT }}
-          CF_USERNAME: ${{ secrets.CF_USERNAME_MT }}
-          CF_PASSWORD: ${{ secrets.CF_PASSWORD_MT }}
-          CF_ORG: ${{ secrets.CF_ORG_MT }}
-          CF_SPACE: ${{ secrets.CF_SPACE_MT }}
-          CF_APP_NAME: "incidents-testing-mtx"
-      
-      - name: Verify MTX deployment apps status
-        run: |
-          echo "🔍 Listing all apps..."
-          cf apps
-          declare -a apps=("incidents-testingMTX-mtx" "incidents-testingMTX-testing-srv")
-          for APP_NAME in "${apps[@]}"; do
-            echo "🔍 Verifying status of app: $APP_NAME"
-            STATUS=$(cf app "$APP_NAME" | awk '/^#0/ { print $2 }')
-            echo "App Instance Status for $APP_NAME: $STATUS"
-            if [[ "$STATUS" != "running" ]]; then
-              echo "❌ Deployment failed or $APP_NAME is not running!"
-              exit 1
-            else
-              echo "✅ $APP_NAME is running successfully."
-            fi
-          done
-
-      - name: Confirm Deployment
-        run: echo "✅ Multitenant application deployed and registered successfully."
