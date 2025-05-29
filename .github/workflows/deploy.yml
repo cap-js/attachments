@@ -100,9 +100,14 @@ jobs:
           cf install-plugin -r CF-Community "html5-plugin" -f  
           APP_NAME="incidents-testing"
           APP_URL=$(cf html5-list -di incidents-testing-destination -u | awk 'NR>4 {print $NF}' | sed 's|^https\?://||')
+          
+          if [ -z "$APP_URL" ]; then
+            echo "❌ Failed to retrieve APP_URL from 'cf html5-list'."
+            exit 1
+          fi
+          
           echo "APP_URL=$APP_URL" >> $GITHUB_ENV
-          echo "Retrieved APP_URL: $APP_URL"
-
+          echo "✅ Retrieved APP_URL: $APP_URL"
       - name: Add comment to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
