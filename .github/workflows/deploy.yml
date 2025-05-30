@@ -148,7 +148,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: pr.number,
-                  body: `🚀 The single-tenant application has been deployed: ${finalUrl}`
+                  body: `🚀 The single-tenant application has been deployed successfully ( add role collections to view the UI): ${finalUrl}`
                 });
               } catch (error) {
                 await github.rest.issues.createComment({
