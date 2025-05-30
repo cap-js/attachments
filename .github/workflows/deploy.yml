@@ -52,6 +52,12 @@ jobs:
             npx cds add hana,xsuaa,multitenancy --for production
           fi
 
+      - name: Fix xs-app.json destination (singletenant only)
+        if: matrix.tenant == 'singletenant'
+        working-directory: incidents-app/app/incidents
+        run: |
+          jq '(.routes[] | select(.destination == "srv-api")).destination = "incidents-testing-srv-api"' xs-app.json > tmp.json && mv tmp.json xs-app.json
+
       - name: Install additional dependencies
         working-directory: incidents-app
         run: |
