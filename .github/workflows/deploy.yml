@@ -34,6 +34,28 @@ jobs:
       - name: Install dependencies
         working-directory: incidents-app
         run: npm install
+      - name: Use PR branch version of @cap-js/attachments
+        if: github.event_name == 'pull_request'
+        working-directory: incidents-app
+        run: |
+          BRANCH_NAME=${{ github.head_ref }}
+          echo "🔄 Using @cap-js/attachments branch: $BRANCH_NAME"
+
+          # Override in app-level package.json
+          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
+
+          # Also override in mtx/sidecar if multitenant
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+              '.dependencies["@cap-js/attachments"] = $url' mtx/sidecar/package.json > tmp.json && mv tmp.json mtx/sidecar/package.json
+          fi
+
+          # Install updated dependencies
+          npm install
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            npm install --prefix mtx/sidecar
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
