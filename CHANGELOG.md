@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.1.3
+
+### Added
+
+- Support for the `standard` plan of the SAP Object Store in multitenant mode. The plugin now attempts to use the `standard` plan and falls back to the deprecated `s3-standard` plan if needed.
+
+### Fixed
+
+- Improved error handling and runtime crashes.
+
 ## Version 2.1.2
 
 ### Fixed
