@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 
 - Support for the `standard` plan of the SAP Object Store in multitenant mode. The plugin now attempts to use the `standard` plan and falls back to the deprecated `s3-standard` plan if needed.
+- Add support for MTLS authentication via Service Manager.
 
 ### Fixed
 
