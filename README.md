@@ -38,6 +38,8 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 > [!Note]
 > To be able to use the plugin with Fiori elements UI, make sure *draft* is enabled for the entity.
 
+> The plugin currently supports file uploads up to **400 MB** in size per attachment.
+
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
@@ -134,7 +136,8 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
-> As of the version 2.1.3, both the `standard` and `S3-standard` plans of the SAP Object Store offering are supported.
+> As of version 2.2.0, both the `standard` and `S3-standard` plans of the SAP Object Store offering are supported.  
+> **Important:** The `S3-standard` plan is no longer available for new subscriptions. For new object store instances, use the `standard` plan.
 
 For multitenant applications, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
 
