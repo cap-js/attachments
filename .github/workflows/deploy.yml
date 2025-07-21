@@ -1,0 +1,160 @@
+name: Deploy Incidents App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.tenant }} App
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tenant: [singletenant, multitenant]
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Incidents App Repository
+        run: |
+          if [[ "${{ matrix.tenant }}" == "singletenant" ]]; then
+            git clone --branch attachmentsE2E --single-branch https://github.com/cap-js/incidents-app.git
+          else
+            git clone --branch attachmentsE2EMTX --single-branch https://github.com/cap-js/incidents-app.git
+          fi
+
+      - name: Install dependencies
+        working-directory: incidents-app
+        run: npm install
+      - name: Use PR branch version of @cap-js/attachments
+        if: github.event_name == 'pull_request'
+        working-directory: incidents-app
+        run: |
+          BRANCH_NAME=${{ github.head_ref }}
+          echo "🔄 Using @cap-js/attachments branch: $BRANCH_NAME"
+
+          # Override in app-level package.json
+          jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+            '.dependencies["@cap-js/attachments"] = $url' package.json > tmp.json && mv tmp.json package.json
+
+          # Also override in mtx/sidecar if multitenant
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            jq --arg url "git+https://github.com/cap-js/attachments.git#$BRANCH_NAME" \
+              '.dependencies["@cap-js/attachments"] = $url' mtx/sidecar/package.json > tmp.json && mv tmp.json mtx/sidecar/package.json
+          fi
+
+          # Install updated dependencies
+          npm install
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            npm install --prefix mtx/sidecar
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install CDS CLI
+        run: npm install -g @sap/cds
+
+      - name: Configure application features
+        working-directory: incidents-app
+        run: |
+          if [[ "${{ matrix.tenant }}" == "singletenant" ]]; then
+            npx cds add hana,xsuaa,workzone --for production
+          else
+            npx cds add hana,xsuaa,multitenancy --for production
+          fi
+
+      - name: Fix xs-app.json destination (singletenant only)
+        if: matrix.tenant == 'singletenant'
+        working-directory: incidents-app/app/incidents
+        run: |
+          jq '(.routes[] | select(.destination == "srv-api")).destination = "incidents-testing-srv-api"' xs-app.json > tmp.json && mv tmp.json xs-app.json
+
+      - name: Install additional dependencies
+        working-directory: incidents-app
+        run: |
+          npm install
+          npm install --prefix app/incidents
+          if [[ "${{ matrix.tenant }}" == "multitenant" ]]; then
+            npm install --prefix mtx/sidecar
+            npm install @sap/xsenv --prefix mtx/sidecar
+          fi
+
+      - name: Freeze npm dependencies (multitenant only)
+        if: matrix.tenant == 'multitenant'
+        working-directory: incidents-app
+        run: |
+          npm update --package-lock-only
+          npm update --package-lock-only --prefix mtx/sidecar
+
+      - name: Build application
+        working-directory: incidents-app
+        run: npx cds build --production
+
+      - name: Deploy to SAP BTP Cloud Foundry
+        uses: ./.github/actions/deploy
+        with:
+          CF_API: ${{ secrets[format('CF_API_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_USERNAME: ${{ secrets[format('CF_USERNAME_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_PASSWORD: ${{ secrets[format('CF_PASSWORD_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.tenant == 'singletenant' && 'ST' || 'MT')] }}
+          CF_APP_NAME: ${{ matrix.tenant == 'singletenant' && 'incidents-testing' || 'incidents-testing-mtx' }}
+
+        if: matrix.tenant == 'singletenant' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT_Token }}
+          script: |
+            const pr = context.payload.pull_request;
+            let url = process.env.APP_URL;
+
+            if (url && !url.includes("Failed")) {
+              try {
+                // Ensure it starts with https://
+                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                  url = `https://${url}`;
+                }
+
+                const parsed = new URL(url);
+                parsed.hostname = parsed.hostname.replace('.cpp.', '.launchpad.');
+
+                // Ensure URL ends with /index.html
+                if (!parsed.pathname.endsWith('/index.html')) {
+                  parsed.pathname = parsed.pathname.replace(/\/?$/, '/index.html');
+                }
+
+                const finalUrl = parsed.toString();
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🚀 The single-tenant application has been deployed successfully ( add role collections to view the UI): ${finalUrl}`
+                });
+              } catch (error) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ Failed to parse and construct the application URL. Error: ${error.message}`
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ Failed to retrieve the single-tenant application URL.`
+              });
+            }
