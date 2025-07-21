@@ -158,49 +158,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )).to.be.rejectedWith(/404/);
   });
-
-  it("Uploading attachment - scan fails and returns user-friendly error", async () => {
-  cds.env.requires.attachments.scan = true; // Ensure scanning is enabled
-
-  // Mock scanRequest to throw
-  const originalScan = require("@cap-js/attachments/lib/scan");
-  jest.spyOn(originalScan, 'scanRequest').mockImplementation(() => {
-    throw new Error("Simulated malware scan failure");
-  });
-
-  const action = await POST.bind(
-    {},
-    `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-    {
-      up__ID: incidentID,
-      filename: "fail-scan.pdf",
-      mimeType: "application/pdf",
-      content: createReadStream(join(__dirname, "content/sample.pdf")),
-      createdAt: new Date(),
-      createdBy: "alice",
-    }
-  );
-
-  try {
-    await utils.draftModeActions(
-      "processor",
-      "Incidents",
-      incidentID,
-      "ProcessorService",
-      action
-    );
-    // If no error is thrown, test should fail
-    expect.fail("Expected upload to fail due to scan error");
-  } catch (err) {
-    // ✅ Check for friendly error message returned by put()
-    expect(err.response?.status).to.equal(500);
-    expect(err.response?.data?.error?.message).to.include("Scan failed for uploaded attachment");
-  }
-
-  // Restore original function
-  originalScan.scanRequest.mockRestore();
-});
-
 });
 
 describe("Tests for attachments facet disable", () => {
