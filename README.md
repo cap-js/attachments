@@ -134,7 +134,7 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
-> As of the version 2.1.3, both the `standard` and `S3-standard` plans of the SAP Object Store offering are supported.
+> As of the version 2.2.0, both the `standard` and `S3-standard` plans of the SAP Object Store offering are supported.
 
 For multitenant applications, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
 
