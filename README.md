@@ -40,7 +40,6 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 
 > The plugin currently supports file uploads up to **400 MB** in size per attachment.
 
-
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
 
 ```cds
