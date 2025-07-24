@@ -130,6 +130,17 @@ entity Incidents {
 ```
 In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
 
+## Non-Draft Upload Example
+
+For scenarios where the entity is not draft-enabled, see [`tests/non-draft-request.http`](./tests/non-draft-request.http) for sample `.http` requests to perform metadata creation and content upload.
+
+The typical sequence includes:
+
+1. **POST** to create attachment metadata  
+2. **PUT** to upload file content using the ID returned
+
+> This is useful for non-draft-enabled entity sets. Make sure to replace `{{host}}`, `{{auth}}`, and IDs accordingly.
+
 ## Multitenancy
 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
