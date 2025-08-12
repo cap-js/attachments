@@ -16,7 +16,7 @@ Authorization: {{auth}}
 
 ### Get attachments content 
 @attachmentsID = {{attachments.response.body.value[1].ID}}
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
 Authorization: {{auth}}
 
 ### Delete attachment
@@ -35,12 +35,12 @@ Content-Type: application/json
 
 ### Put attachment content (content request)
 @newAttachmentID = {{createAttachment.response.body.ID}}
-PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
 Authorization: {{auth}}
 Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
 ### Fetching newly created attachment content
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
 Authorization: {{auth}}
