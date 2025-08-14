@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.2.1
+
+### Fixed
+
+- Ensured content is correctly stored and retrievable in non-draft mode.
+
 ## Version 2.2.0
 
 ### Added
