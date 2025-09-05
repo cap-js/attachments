@@ -8,22 +8,8 @@
 GET {{host}}/odata/v4/processor/Incidents
 Authorization: {{auth}}
 
-### Get list of attachments for a particular incident
-@incidentsID = {{incidents.response.body.value[2].ID}}
-# @name attachments
-GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
-Authorization: {{auth}}
-
-### Get attachments content 
-@attachmentsID = {{attachments.response.body.value[1].ID}}
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
-Authorization: {{auth}}
-
-### Delete attachment
-DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
-Authorization: {{auth}}
-
 ### Creating attachment (metadata request)
+@incidentsID = {{incidents.response.body.value[2].ID}}
 # @name createAttachment
 POST {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments
 Authorization: {{auth}}
@@ -33,14 +19,45 @@ Content-Type: application/json
         "filename": "sample-1.jpg"
 }
 
-### Put attachment content (content request)
+### Put attachment content (content request) XXXX
 @newAttachmentID = {{createAttachment.response.body.ID}}
-PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
 Authorization: {{auth}}
 Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
-### Fetching newly created attachment content
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID=${incidentID},ID=${attachmentID})/content
+### Fetching newly created attachment content XXXX
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+Authorization: {{auth}}
+
+### Get list of attachments for a particular incident
+# @name attachments
+GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
+Authorization: {{auth}}
+
+### Get attachments content
+@attachmentsID = {{attachments.response.body.value[0].ID}}
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
+Authorization: {{auth}}
+
+### Get attachments content with up__ID included
+@incidentID = {{attachments.response.body.value[0].up__ID}}
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
+Authorization: {{auth}}
+
+### Fetching newly created attachment content with up__ID included
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
+Authorization: {{auth}}
+
+### Put attachment content (content request) with up__ID included
+@newAttachmentID = {{createAttachment.response.body.ID}}
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
+Authorization: {{auth}}
+Content-Type: image/jpeg
+
+< ./integration/content/sample-1.jpg
+
+### Delete attachment
+DELETE {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
 Authorization: {{auth}}
