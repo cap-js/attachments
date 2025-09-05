@@ -19,7 +19,7 @@ Content-Type: application/json
         "filename": "sample-1.jpg"
 }
 
-### Put attachment content (content request) XXXX
+### Put attachment content (content request)
 @newAttachmentID = {{createAttachment.response.body.ID}}
 PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
 Authorization: {{auth}}
@@ -27,7 +27,7 @@ Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
-### Fetching newly created attachment content XXXX
+### Fetching newly created attachment content
 GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
 Authorization: {{auth}}
 
