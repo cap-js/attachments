@@ -13,9 +13,9 @@ async function commentAnnotation(filePath, linesToComment) {
 
     const modifiedData = lines.join('\n');
     await fs.writeFile(filePath, modifiedData, 'utf8');
-    console.log(`File ${filePath} updated successfully.`);
+    process.stdout.write(`File ${filePath} updated successfully.`);
   } catch (err) {
-    console.error(`Error processing file ${filePath}:`, err);
+    process.stdout.write(`Error processing file ${filePath}:`, err);
     throw err;
   }
 }
@@ -33,9 +33,9 @@ async function uncommentAnnotation(filePath, linesToUncomment) {
 
     const modifiedData = lines.join('\n');
     await fs.writeFile(filePath, modifiedData, 'utf8');
-    console.log(`File ${filePath} updated successfully.`);
+    process.stdout.write(`File ${filePath} updated successfully.`);
   } catch (err) {
-    console.error(`Error processing file ${filePath}:`, err);
+    process.stdout.write(`Error processing file ${filePath}:`, err);
     throw err;
   }
 }
