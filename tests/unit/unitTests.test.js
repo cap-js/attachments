@@ -44,8 +44,8 @@ beforeEach(() => {
     }),
     update: jest.fn(() => Promise.resolve()),
     deleteInfectedAttachment: jest.fn(() => Promise.resolve()),
-    getStatus: jest.fn(() => { console.log('getStatus called'); return Promise.resolve('Clean'); }),
-    put: jest.fn(() => { console.log('put called'); return Promise.resolve(); }),
+    getStatus: jest.fn(() => { process.stdout.write('getStatus called'); return Promise.resolve('Clean'); }),
+    put: jest.fn(() => { process.stdout.write('put called'); return Promise.resolve(); }),
   };
   cds.env = { requires: { malwareScanner: { credentials: {} }, attachments: { scan: true } }, profiles: [] };
   global.fetch = jest.fn(() => Promise.resolve({
