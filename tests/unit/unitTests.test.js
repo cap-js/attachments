@@ -3,11 +3,36 @@ let mockAttachmentsSrv, key, req = {};
 jest.mock('@sap/cds', () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
   debug: jest.fn(),
+  log: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    _debug: true
+  })),
   Service: class {},
-    connect: { 
+    connect: {
     to: () => Promise.resolve(mockAttachmentsSrv)
   },
   env: { requires: {} }
+}));
+
+// Mock the logger
+jest.mock('../../lib/logger', () => ({
+  logConfig: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+    configValidation: jest.fn(),
+    tokenFetch: jest.fn(),
+    s3Operation: jest.fn(),
+    fileOperation: jest.fn(),
+    malwareScan: jest.fn(),
+    processStep: jest.fn(),
+    withSuggestion: jest.fn()
+  }
 }));
 
 global.fetch = jest.fn(() => Promise.resolve({
@@ -16,15 +41,15 @@ global.fetch = jest.fn(() => Promise.resolve({
 
 jest.mock('axios');
 
-jest.mock('../../lib/malwareScanner', () => ({
-  ...jest.requireActual('../../lib/malwareScanner'),
-  getCredentials: jest.fn(() => ({
-    uri: 'scanner.example.com',
-    username: 'user',
-    password: 'pass'
-  })),
-  streamToString: jest.fn(() => Promise.resolve('file-content'))
-}));
+// Mock individual functions used in malwareScanner since it imports logger
+jest.doMock('../../lib/malwareScanner', () => {
+  const original = jest.requireActual('../../lib/malwareScanner');
+  return {
+    ...original,
+    // Override streamToString to return a simple string
+    streamToString: jest.fn(() => Promise.resolve('test-file-content'))
+  };
+});
 
 const { scanRequest } = require('../../lib/malwareScanner');
 const { getObjectStoreCredentials, fetchToken } = require('../../lib/helper');
@@ -47,9 +72,22 @@ beforeEach(() => {
     getStatus: jest.fn(() => { process.stdout.write('getStatus called'); return Promise.resolve('Clean'); }),
     put: jest.fn(() => { process.stdout.write('put called'); return Promise.resolve(); }),
   };
-  cds.env = { requires: { malwareScanner: { credentials: {} }, attachments: { scan: true } }, profiles: [] };
+  cds.env = {
+    requires: {
+      malwareScanner: {
+        credentials: {
+          uri: 'scanner.example.com',
+          username: 'user',
+          password: 'pass'
+        }
+      },
+      attachments: { scan: true }
+    },
+    profiles: []
+  };
   global.fetch = jest.fn(() => Promise.resolve({
-    json: () => Promise.resolve({ malwareDetected: false })
+    json: () => Promise.resolve({ malwareDetected: false }),
+    status: 200
   }));
   key = { ID: 'test-id' };
   req = {};
@@ -70,7 +108,8 @@ describe('scanRequest', () => {
   it('should update status to "Infected" and delete content if malware detected', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
-        json: () => Promise.resolve({ malwareDetected: true })
+        json: () => Promise.resolve({ malwareDetected: true }),
+        status: 200
       })
     );
     await scanRequest({ name: 'Attachments' }, key, req);
@@ -85,10 +124,13 @@ describe('scanRequest', () => {
   });
 
   it('should handle missing credentials gracefully', async () => {
-    const Attachments = {};
-    const key = {};
-    cds.env = { requires: {} };
-    await expect(scanRequest(Attachments, key)).rejects.toThrow('SAP Malware Scanning service is not bound.');
+    const Attachments = { name: 'TestAttachments' };
+    const key = { ID: 'test-id' };
+    cds.env = { requires: {}, profiles: [] };
+
+    // The function should not throw but should update status to Failed
+    await scanRequest(Attachments, key);
+    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' });
   });
 });
 
@@ -99,10 +141,25 @@ describe('getObjectStoreCredentials', () => {
     expect(creds.id).toBe('test-cred');
   });
 
-  it('should handle error gracefully', async () => {
+  it('should return null when tenant ID is missing', async () => {
+    const creds = await getObjectStoreCredentials(null, 'url', 'token');
+    expect(creds).toBeNull();
+  });
+
+  it('should return null when sm_url is missing', async () => {
+    const creds = await getObjectStoreCredentials('tenant', null, 'token');
+    expect(creds).toBeNull();
+  });
+
+  it('should return null when token is missing', async () => {
+    const creds = await getObjectStoreCredentials('tenant', 'url', null);
+    expect(creds).toBeNull();
+  });
+
+  it('should handle error gracefully and return null', async () => {
     axios.get.mockRejectedValue(new Error('fail'));
     const creds = await getObjectStoreCredentials('tenant', 'url', 'token');
-    expect(creds).toBeUndefined();
+    expect(creds).toBeNull();
   });
 });
 
@@ -111,6 +168,14 @@ describe('fetchToken', () => {
     axios.post.mockResolvedValue({ data: { access_token: 'test-token' } });
     const token = await fetchToken('url', 'clientId', 'clientSecret');
     expect(token).toBe('test-token');
+  });
+
+  it('should throw when client ID is missing', async () => {
+    await expect(fetchToken('url', null, 'clientSecret')).rejects.toThrow('Client ID is required for token fetching');
+  });
+
+  it('should throw when neither client secret nor certificate is provided', async () => {
+    await expect(fetchToken('url', 'clientId', null)).rejects.toThrow('Invalid credentials provided for token fetching');
   });
 
   it('should handle error and throw', async () => {

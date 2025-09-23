@@ -1,3 +1,21 @@
+// Mock the logger before importing the module
+jest.mock('../../lib/logger', () => ({
+  logConfig: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+    configValidation: jest.fn(),
+    tokenFetch: jest.fn(),
+    s3Operation: jest.fn(),
+    fileOperation: jest.fn(),
+    malwareScan: jest.fn(),
+    processStep: jest.fn(),
+    withSuggestion: jest.fn()
+  }
+}));
+
 const { validateAttachmentSize } = require('../../lib/plugin');
 
 describe('validateAttachmentSize', () => {
