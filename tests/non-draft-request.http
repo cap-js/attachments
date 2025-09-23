@@ -27,7 +27,7 @@ Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
-###
+### Get newly created attachment metadata
 GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
 Authorization: {{auth}}
 
