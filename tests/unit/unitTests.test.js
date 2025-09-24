@@ -17,20 +17,6 @@ jest.mock('@sap/cds', () => ({
   env: { requires: {} }
 }));
 
-// Mock the logger
-jest.mock('../../lib/logger', () => ({
-  logConfig: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    verbose: jest.fn(),
-    configValidation: jest.fn(),
-    processStep: jest.fn(),
-    withSuggestion: jest.fn()
-  }
-}));
-
 global.fetch = jest.fn(() => Promise.resolve({
   json: () => Promise.resolve({ malwareDetected: false })
 }));
