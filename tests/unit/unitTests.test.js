@@ -10,8 +10,8 @@ jest.mock('@sap/cds', () => ({
     debug: jest.fn(),
     _debug: true
   })),
-  Service: class {},
-    connect: {
+  Service: class { },
+  connect: {
     to: () => Promise.resolve(mockAttachmentsSrv)
   },
   env: { requires: {} }
@@ -26,10 +26,6 @@ jest.mock('../../lib/logger', () => ({
     debug: jest.fn(),
     verbose: jest.fn(),
     configValidation: jest.fn(),
-    tokenFetch: jest.fn(),
-    s3Operation: jest.fn(),
-    fileOperation: jest.fn(),
-    malwareScan: jest.fn(),
     processStep: jest.fn(),
     withSuggestion: jest.fn()
   }

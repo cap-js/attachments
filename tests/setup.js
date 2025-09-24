@@ -7,10 +7,6 @@ jest.doMock('../lib/logger', () => ({
     debug: jest.fn(),
     verbose: jest.fn(),
     configValidation: jest.fn(),
-    tokenFetch: jest.fn(),
-    s3Operation: jest.fn(),
-    fileOperation: jest.fn(),
-    malwareScan: jest.fn(),
     processStep: jest.fn(),
     withSuggestion: jest.fn()
   },
@@ -21,10 +17,6 @@ jest.doMock('../lib/logger', () => ({
     debug: jest.fn(),
     verbose: jest.fn(),
     logConfigValidation: jest.fn(),
-    logTokenFetch: jest.fn(),
-    logS3Operation: jest.fn(),
-    logFileOperation: jest.fn(),
-    logMalwareScan: jest.fn(),
     logProcessStep: jest.fn(),
     logWithSuggestion: jest.fn()
   }

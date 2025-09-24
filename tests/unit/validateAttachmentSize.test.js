@@ -7,10 +7,6 @@ jest.mock('../../lib/logger', () => ({
     debug: jest.fn(),
     verbose: jest.fn(),
     configValidation: jest.fn(),
-    tokenFetch: jest.fn(),
-    s3Operation: jest.fn(),
-    fileOperation: jest.fn(),
-    malwareScan: jest.fn(),
     processStep: jest.fn(),
     withSuggestion: jest.fn()
   }
@@ -29,23 +25,23 @@ describe('validateAttachmentSize', () => {
   });
 
   it('should pass validation for a file size under 400 MB', () => {
-    req.headers['content-length'] = '51200765'; 
+    req.headers['content-length'] = '51200765';
 
-    validateAttachmentSize(req); 
+    validateAttachmentSize(req);
 
     expect(req.reject).not.toHaveBeenCalled();
   });
 
   it('should reject for a file size over 400 MB', () => {
-    req.headers['content-length'] = '20480000000'; 
+    req.headers['content-length'] = '20480000000';
 
-    validateAttachmentSize(req); 
+    validateAttachmentSize(req);
 
     expect(req.reject).toHaveBeenCalledWith(403, 'File Size limit exceeded beyond 400 MB.');
   });
 
   it('should reject when content-length header is missing', () => {
-    validateAttachmentSize(req); 
+    validateAttachmentSize(req);
 
     expect(req.reject).toHaveBeenCalledWith(403, 'Invalid Content Size');
   });
