@@ -1,6 +1,6 @@
 class RequestSend {
   constructor(post) {
-    this.post = post;
+    this.post = post
   }
   async draftModeActions(
     serviceName,
@@ -17,29 +17,29 @@ class RequestSend {
           {
             PreserveChanges: true,
           }
-        );
+        )
       } catch (err) {
-        return err;
+        return err
       }
     }
     try {
-      await action();
+      await action()
       await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftPrepare`,
         {
           SideEffectsQualifier: "",
         }
-      );
+      )
       await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftActivate`,
         {}
-      );
+      )
     } catch (err) {
-      return err;
+      return err
     }
   }
 }
 
 module.exports = {
   RequestSend,
-};
+}
