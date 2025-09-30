@@ -116,7 +116,7 @@ By default, malware scanning is enabled for all profiles except development prof
 
 ## Visibility control for Attachments UI Facet generation
 
-By setting the `@attachments.disable_facet` property to `true`, developers can hide the plugin from the UI achieving visibility.
+By setting the `@UI.Hidden` property to `true`, developers can hide the plugin from the UI achieving visibility.
 This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
 
 ### Example Usage
@@ -124,11 +124,11 @@ This feature is particularly useful in scenarios where the visibility of the plu
 ```cds
 entity Incidents {
   // ...
-  @attachments.disable_facet
+  @UI.Hidden
   attachments: Composition of many Attachments;
 }
 ```
-In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
+In this example, the `@UI.Hidden` is set to `true`, which means the plugin will be hidden by default. You can also use dynamic expressions which are then added to the facet.
 
 ## Non-Draft Upload Example
 

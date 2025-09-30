@@ -171,7 +171,7 @@ describe("Tests for attachments facet disable", () => {
     utils = new RequestSend(POST)
   })
 
-  it("Checking attachments facet metadata when @attachments.disable_facet is disabled", async () => {
+  it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
     try {
       const res = await GET(
         `odata/v4/processor/$metadata?$format=json`
@@ -188,20 +188,42 @@ describe("Tests for attachments facet disable", () => {
   })
 
   it("Checking attachments facet when @attachments.disable_facet is enabled", async () => {
-    try {
-      const res = await GET(
-        `odata/v4/processor/$metadata?$format=json`
-      )
-      expect(res.status).to.equal(200)
-      const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
-      const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
+    const res = await GET(
+      `odata/v4/processor/$metadata?$format=json`
+    )
+    expect(res.status).to.equal(200)
+    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
+    const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
 
-      //Checking the facet metadata for hiddenAttachments since its annotated with @attachments.disable_facet as enabled
-      const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments/@UI.LineItem')
-      expect(hiddenAttachmentsFacetLabel).to.be.true
-      expect(hiddenAttachmentsFacetTarget).to.be.false
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    //Checking the facet metadata for hiddenAttachments since its annotated with @attachments.disable_facet as enabled
+    const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments/@UI.LineItem')
+    expect(hiddenAttachmentsFacetLabel).to.be.true
+    expect(hiddenAttachmentsFacetTarget).to.be.false
+  })
+
+  it("Checking attachments facet when @UI.Hidden is enabled", async () => {
+    const res = await GET(
+      `odata/v4/processor/$metadata?$format=json`
+    )
+    expect(res.status).to.equal(200)
+    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
+    const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
+
+    const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments2/@UI.LineItem')
+    expect(hiddenAttachmentsFacetLabel).to.be.true
+    expect(hiddenAttachmentsFacetTarget).to.be.true
+    expect(hiddenAttachmentsFacetTarget['@UI.Hidden']).to.be.true
+  })
+
+  it("Attachments facet is not added when its manually added by the developer", async () => {
+    const res = await GET(
+      `odata/v4/processor/$metadata?$format=json`
+    )
+    expect(res.status).to.equal(200)
+    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Customers"]["@UI.Facets"]
+
+    const attachmentFacets = facets.filter(facet => facet.Target === 'attachments/@UI.LineItem')
+    expect(attachmentFacets.length).toEqual(1)
+    expect(attachmentFacets[0].Label).toEqual('My custom attachments')
   })
 })
