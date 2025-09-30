@@ -130,6 +130,21 @@ entity Incidents {
 ```
 In this example, the `@UI.Hidden` is set to `true`, which means the plugin will be hidden by default. You can also use dynamic expressions which are then added to the facet.
 
+
+```cds
+entity Incidents {
+  // ...
+  status : Integer enum {
+    submitted =  1;
+    fulfilled =  2;
+    shipped   =  3;
+    canceled  = -1;
+  };
+  @UI.Hidden : (status = #canceled ? true : false)
+  attachments: Composition of many Attachments;
+}
+```
+
 ## Non-Draft Upload Example
 
 For scenarios where the entity is not draft-enabled, see [`tests/non-draft-request.http`](./tests/non-draft-request.http) for sample `.http` requests to perform metadata creation and content upload.
