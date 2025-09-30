@@ -209,10 +209,10 @@ describe("Tests for attachments facet disable", () => {
     const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
     const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
 
-    const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments2/@UI.LineItem')
+    const hiddenAttachmentsFacetTarget = facets.find(facet => facet.Target === 'hiddenAttachments2/@UI.LineItem')
     expect(hiddenAttachmentsFacetLabel).to.be.true
-    expect(hiddenAttachmentsFacetTarget).to.be.true
-    expect(hiddenAttachmentsFacetTarget['@UI.Hidden']).to.be.true
+    expect(!!hiddenAttachmentsFacetTarget).to.be.true
+    expect(hiddenAttachmentsFacetTarget['@UI.Hidden']).to.equal(true)
   })
 
   it("Attachments facet is not added when its manually added by the developer", async () => {
@@ -223,7 +223,7 @@ describe("Tests for attachments facet disable", () => {
     const facets = res.data.ProcessorService.$Annotations["ProcessorService.Customers"]["@UI.Facets"]
 
     const attachmentFacets = facets.filter(facet => facet.Target === 'attachments/@UI.LineItem')
-    expect(attachmentFacets.length).toEqual(1)
-    expect(attachmentFacets[0].Label).toEqual('My custom attachments')
+    expect(attachmentFacets.length).to.equal(1)
+    expect(attachmentFacets[0].Label).to.equal('My custom attachments')
   })
 })
