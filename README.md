@@ -152,7 +152,7 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
 
 ### Malware Scanner
 
-The malware scanner is used in the AttachmentService to scan attachments. 
+The malware scanner is used in the `AttachmentService` to scan attachments. 
 
 For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access and run the following command:
     ```sh
@@ -250,12 +250,9 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 > As of version 2.2.0, both the `standard` and `S3-standard` plans of the SAP Object Store offering are supported.  
 > **Important:** The `S3-standard` plan is no longer available for new subscriptions. For new object store instances, use the `standard` plan.
 
-For multitenant applications, make sure to include `@cap-js/attachments` in the dependencies of both the application-level and mtx/sidecar package.json files.
+For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and mtx/sidecar package.json files.
 
 ### Shared Object Store Instance
-
-> [!Note]
-> Ensure the shared object store instance is bound to the `mtx` application module before deployment.
 
 To configure a shared object store instance, modify both the package.json files as follows:
 
@@ -270,7 +267,7 @@ To configure a shared object store instance, modify both the package.json files 
     }
 }
 ```
-To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. 
+To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. Be sure the shared object store instance is bound to the `mtx` application module before deployment.
 
 
 ### Object Stores
