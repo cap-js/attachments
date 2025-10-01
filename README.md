@@ -2,59 +2,63 @@
 
 # Attachments Plugin
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an *aspect* `Attachments`. It also provides a CAP-level, easy to use integration of the SAP Object Store.
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an [*aspect*](https://cap.cloud.sap/docs/cds/cdl#aspects) called `Attachments`. It also provides a CAP-level, easy-to-use integration of the [SAP Object Store](http://help.sap.com/docs/object-store/object-store-service-on-sap-btp/what-is-object-storeC).
 
 ### Table of Contents
 
-- [Setup](#setup)
-- [Use `Attachments`](#use-attachments)
-- [Test-drive Locally](#test-drive-locally)
-- [Using SAP Object Store](#using-sap-object-store)
-- [Using SAP Malware Scanning service](#using-sap-malware-scanning-service)
-- [Multitenancy](#multi-tenancy)
-- [Contributing](#contributing)
-- [Code of Conduct](#code-of-conduct)
-- [Licensing](#licensing)
+<!-- TOC -->
+
+* [Quick Start](#quick-start)
+* [Local Walk-Through](#local-walk-through)
+* [Usage](#usage)
+  * [Package Setup](#package-setup)
+  * [Changes in the CDS Models](#changes-in-the-cds-models)
+  * [Storage Targets](#storage-targets)
+  * [Malware Scanner](#malware-scanner)
+  * [Outbox](#outbox) ?
+  * [Restore Endpoint](#restore-endpoint) ?
+    * [Motivation](#motivation)
+    * [HTTP Endpoint](#http-endpoint)
+    * [Security](#security)
+  * [Visibility Control](#visibility-control-for-attachments-ui-facet-generation)
+  * [Non-Draft Uploading](non-draft-upload)
+* [Releases](#releases) ?
+* [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
+* [Architecture Overview](#architecture-overview)
+  * [Design](#design) ?
+  * [Multitenancy](#multitenancy)
+  * [Object Stores](#object-stores) ?
+  * [Model Texts](#model-texts) ?
+* [Support, Feedback, Contributing ](#support-feedback-and-contributing)
+* [Code of Conduct](#code-of-conduct)
+* [Licensing](#licensing)
 
 
-## Setup
+## Quick Start
 
+For a quick setup with in-memory storage: 
 
-
-To enable attachments, simply add this self-configuring plugin package to your project:
-
+- The plugin is self-configuring as described in [Package Setup]. To enable attachments, simply add the plugin package to your project:  
 ```sh
  npm add @cap-js/attachments
-```
-
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application, to add `Attachments` type to the CDS model.
-
-> [!Note]
-> To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
-
-
-## Use Attachments
-
-> [!Note]
-> To be able to use the plugin with Fiori elements UI, make sure *draft* is enabled for the entity.
-
-> The plugin currently supports file uploads up to **400 MB** in size per attachment.
-
-To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
-
+ ```
+- To use Attachments, simply extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](changes-in-the-cds-models) for more details): 
 ```cds
 using { Attachments } from '@cap-js/attachments';
 
-entity Incidents {
-  // ...
-  attachments: Composition of many Attachments;
+entity Entity {  
+  // ...  
+  attachments: Composition of many Attachments;  
 }
 ```
 
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. 
 
-## Test-drive Locally
-With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action.
-We can try out the scenarios where the attachments contents are stored locally in the database.
+For object store integration, see [Object Stores](#object-stores).
+
+
+## Local Walk-Through
+With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action by extending the Incidents Entity in the schema.cds file. We can try out the scenarios where the attachments contents are stored locally in the database.
 
 1. **Start the server**:
 
@@ -70,14 +74,65 @@ We can try out the scenarios where the attachments contents are stored locally i
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
 
-4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf):
+4. **Upload a file** by going into Edit mode and either by clicking the **Upload** button above the Attachments table or by draging and droping the file into the Attachments table direcly. Then click the **Save** button to have that file stored in the dedicated resource (database, S3 bucket, etc.). The PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf) can be used as an example:
 <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
 
-6. **Delete a file** by going into Edit mode and selecting the file(s) and by using the **Delete** button on the Attachments table. Then click the **Save** button to have that file deleted from the resource (database, S3 bucket, etc.). We demonstrate this by deleting the previously uploaded PDF file: `Solar Panel Report.pdf`
+6. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
 <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
 
+## Usage
 
-## Using SAP Object Store
+### Package Setup
+
+The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
+
+```cds
+“devDependencies”: { 
+    “@cap-js/attachments”: ${latest-version}, 
+    //... 
+}
+```
+
+This is done automatically by running `npm add @cap-js/attachments`. With this, the aspect Attachments can be used in the application's CDS model. 
+
+
+### Changes in the CDS Models
+
+To use the aspect `Attachments` on an existing entity, the corresponding entity needs to either include attachments as an element in the model definition or be extended in a CDS file in the `srv` module. In the quick start, the former was done, adding an element to the model definition: 
+```cds
+using { Attachments } from '@cap-js/attachments';  
+
+entity Entity {  
+  // ...  
+  attachments: Composition of many Attachments;  
+} 
+```
+ 
+The entity Incidents can also be extended in the `srv` module, as seen in the following example:  
+```cds
+using { Attachments } from '@cap-js/attachments'; 
+
+extend my.Incidents with { 
+  attachments: Composition of many Attachments; 
+} 
+  
+service ProcessorService { 
+  entity Incidents as projection on my.Incidents 
+}
+```
+
+Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that *draft* is enabled for the entity using `@odata.draft.enabled`. 
+
+
+### Storage Targets
+
+By default, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
+
+Other available storage targets: 
+- AWS 
+- Local file system as a storage backend (only for testing scenarios) 
+
+When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
 
 For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
 
@@ -95,31 +150,53 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
     cds bind objectstore -2 <INSTANCE>:<SERVICE-KEY> --kind s3
     ```
 
-## Using SAP Malware Scanning Service
+### Malware Scanner
 
-For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access.
+The malware scanner is used in the AttachmentService to scan attachments. 
 
-1.  To bind to the service continue with the steps below.
-
+For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access and run the following command:
     ```sh
     cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
     ```
 
 By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
-
 ```json
 "attachments": {
     "scan": true
 }
 ```
 
+If there is no malware scanner available, the attachments are automatically marked as Clean. 
 
-## Visibility control for Attachments UI Facet generation
+Scan status codes: 
+- Clean: Only attachments with the status Clean are accessible. 
+- Scanning: Immediately after upload, the attachment is marked as Scanning. Depending on processing speed, it may already appear as Clean when the page is reloaded. 
+- Unscanned: Attachment is still unscanned. 
+- Failed: Scanning failed. 
+- Infected: The attachment is infected. 
 
-By setting the `@attachments.disable_facet` property to `true`, developers can hide the plugin from the UI achieving visibility.
-This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+> [!Note]
+> The plugin currently supports file uploads up to 400 MB in size per attachment. 
 
-### Example Usage
+
+### Outbox 
+
+In this plugin the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is used to mark attachments as deleted. When using this plugin, the persistent outbox is enabled by default. In the capire documentation of the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is it described how to overwrite the default outbox configuration. 
+
+If the default is used, nothing must be done. 
+
+
+### Restore Endpoint
+
+The attachment service has an event `RESTORE_ATTACHMENTS`.
+This event can be called with a timestamp to restore externally stored attachments.
+
+
+### Visibility Control for Attachments UI Facet Generation
+
+By setting the `@attachments.disable_facet` property to `true`, developers can hide the visibility of the plugin in the UI. This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+
+#### Example Usage
 
 ```cds
 entity Incidents {
@@ -130,20 +207,43 @@ entity Incidents {
 ```
 In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
 
-## Non-Draft Upload Example
+### Non-Draft Upload
 
-For scenarios where the entity is not draft-enabled, see [`tests/non-draft-request.http`](./tests/non-draft-request.http) for sample `.http` requests to perform metadata creation and content upload.
+For scenarios where the entity is not draft-enabled, see the sample [`tests/non-draft-request.http`](./tests/non-draft-request.http) to perform `.http` requests for metadata creation and content upload.
 
 The typical sequence includes:
 
 1. **POST** to create attachment metadata  
 2. **PUT** to upload file content using the ID returned
 
-> This is useful for non-draft-enabled entity sets. Make sure to replace `{{host}}`, `{{auth}}`, and IDs accordingly.
+> Make sure to replace `{{host}}`, `{{auth}}`, and IDs accordingly.
 
-## Multitenancy
+## Releases
+
+- The plugin is released to [WHERE?].
+- See the [changelog](./CHANGELOG.md) for the latest changes.
+
+## Minimum UI5 and CAP NodeJS Version
+
+| Component | Minimum Version |
+|-----------|-----------------|
+| CAP Node  | 3.10.3          |
+| UI5       | 1.136.0         |
+
+To be able to use the Fiori `uploadTable` feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's `index.html`
+
+
+## Architecture Overview
+### Design
+- [Design Details](./doc/Design.md)
+- [Process of Creating, Reading and Deleting an Attachment](./doc/Processes.md)
+
+### Multitenancy
 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
+
+- When using SAP HANA as the storage target, multitenancy support depends on the consuming application. In most cases, multitenancy is achieved by using a dedicated schema for each tenant, providing strong data isolation at the database level.
+- When using an [object store](storage-targets/cds-feature-attachments-oss) as the storage target, true multitenancy is not yet implemented (as of version 1.2.1). In this case, all blobs are stored in a single bucket, and tenant data is not separated.
 
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
@@ -172,7 +272,136 @@ To configure a shared object store instance, modify both the package.json files 
 ```
 To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. 
 
-## Contributing
+
+### Object Stores
+
+This artifact uses the an Object Store as the storage target instead of the underlying database.
+
+Then, the attachment is not stored in the underlying database; instead, it is saved in the respective Object Store, and only a reference to the file is kept in the database, as defined in the [CDS model](../../cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/attachments.cds#L20).
+
+To do this, replace the `cds-feature-attachments` dependency in the `pom.xml` with:
+
+```xml
+<dependency>
+    <groupId>com.sap.cds</groupId>
+    <artifactId>cds-feature-attachments-oss</artifactId>
+    <version>${latest-version}</version>
+</dependency>
+```
+
+A valid Object Store service binding is required for this, typically one provisioned through SAP BTP. See [Local development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
+
+#### Local development
+
+For local development, bind to an Object Store service using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry):
+
+```bash
+cds bind <service-instance-name>
+```
+
+This will create an entry in the `.cdsrc-private.json` file with the service binding configuration. Then start the application with:
+
+```bash
+cds bind --exec mvn spring-boot:run
+```
+
+If such a binding is not available, use the underlying database as the storage target instead of an Object Store, so use the dependency `cds-feature-attachments` (not `cds-feature-attachments-oss`).
+
+#### Deployment to Cloud Foundry
+The corresponding entry in the [mta-file](https://cap.cloud.sap/docs/guides/deployment/to-cf#add-mta-yaml) possibly looks like:
+
+```
+_schema-version: '0.1'
+ID: consuming-app
+version: 1.0.0
+description: "App consuming the attachments plugin with an object store"
+parameters:
+  ...
+modules:
+  - name: consuming-app-srv
+# ------------------------------------------------------------
+    type: java
+    path: srv
+    parameters:
+      ...
+    properties:
+      ...
+    build-parameters:
+      ...
+    requires:
+      - name: consuming-app-hdi-container
+      - name: consuming-app-uaa
+      - name: cf-logging
+      - name: **object-store-service**
+...
+resources:
+  ...
+  - name: **object-store-service**
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: objectstore
+      service-plan: standard
+```
+
+
+##### Tests
+
+The unit tests in this module do not need a binding to the respective object stores, run them with `mvn clean install`.
+
+The integration tests need a binding to a real object store. Run them with `mvn clean install -Pintegration-tests-oss`.
+To set the binding, provide the following environment variables:
+- AWS_S3_BUCKET
+- AWS_S3_REGION
+- AWS_S3_ACCESS_KEY_ID
+- AWS_S3_SECRET_ACCESS_KEY
+
+##### Implementation details
+
+This artifact provides custom handlers for events from the [AttachmentService](../../cds-feature-attachments/src/main/java/com/sap/cds/feature/attachments/service/AttachmentService.java).
+
+##### Supported Storage Backends
+
+- **AWS S3**
+
+##### Multitenancy
+
+Multitenancy is not directly supported. All attachments are stored in a flat structure within the provided bucket, which might be shared across tenants.
+
+
+### Model Texts
+
+In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [35 languages](https://github.com/cap-java/cds-feature-attachments/tree/main/cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.
+
+The following table gives an overview of the fields and the i18n codes:
+
+| Field Name | i18n Code             |
+|------------|-----------------------|
+| `content`  | `attachment_content`  |
+| `mimeType` | `attachment_mimeType` |
+| `fileName` | `attachment_fileName` |
+| `status`   | `attachment_status`   |
+| `note`     | `attachment_note`     |
+
+In addition to the field names, header information (`@UI.HeaderInfo`) are also annotated:
+
+| Header Info      | i18n Code     |  
+|------------------|---------------|
+| `TypeName`       | `attachment`  |
+| `TypeNamePlural` | `attachments` |
+
+
+## Monitoring & Logging
+
+To configure logging for the attachments plugin, add the following line to the `/srv/src/main/resources/application.yaml` of the consuming application:
+```
+logging:
+  level:
+    ...
+    '[com.sap.cds.feature.attachments]': DEBUG
+...
+```
+
+## Support, Feedback, and Contributing 
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
 
