@@ -272,9 +272,7 @@ To ensure tenant identification when using a shared object store instance, the p
 
 ### Object Stores
 
-This artifact uses the an Object Store as the storage target instead of the underlying database.
-
-Then, the attachment is not stored in the underlying database; instead, it is saved in the respective Object Store, and only a reference to the file is kept in the database, as defined in the [CDS model](../../cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/attachments.cds#L20).
+The attachment is not stored in the underlying database; instead, it is saved in the respective Object Store, and only a reference to the file is kept in the database, as defined in the [CDS model](../../cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/attachments.cds#L20).
 
 To do this, replace the `cds-feature-attachments` dependency in the `pom.xml` with:
 
