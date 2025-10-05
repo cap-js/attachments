@@ -9,10 +9,10 @@ context sap.attachments {
 
   aspect MediaData @(_is_media_data) {
     url      : String;
-    content  : LargeBinary @title: 'Attachment'; // only for db-based services
-    mimeType : String default 'application/octet-stream' @title: 'Media Type';
-    filename : String @title: 'Filename';
-    status   : String @title: 'Scan Status' enum {
+    content  : LargeBinary @title: '{i18n>Attachment}'; // only for db-based services
+    mimeType : String default 'application/octet-stream' @title: '{i18n>MediaType}';
+    filename : String @title: '{i18n>Filename}';
+    status   : String @title: '{i18n>ScanStatus}' enum {
       Unscanned;
       Scanning;
       Infected;
@@ -22,7 +22,7 @@ context sap.attachments {
   }
 
   aspect Attachments : cuid, managed, MediaData {
-    note : String @title: 'Note';
+    note : String @title: '{i18n>Note}';
   }
 
 
