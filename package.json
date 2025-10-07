@@ -10,6 +10,7 @@
   "files": [
     "index.cds",
     "lib",
+    "db",
     "srv"
   ],
   "scripts": {
