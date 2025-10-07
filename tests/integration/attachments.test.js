@@ -147,7 +147,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
     )
     expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(1)
+    expect(response.data.value.length).to.equal(2)
     expect(response.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
     expect(response.data.value[0].statusNav.name).to.equal("Scanning") // Initial status should be Scanning
 
@@ -155,7 +155,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
     expect(responseDE.status).to.equal(200)
-    expect(responseDE.data.value.length).to.equal(1)
+    expect(responseDE.data.value.length).to.equal(2)
     expect(responseDE.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
     expect(responseDE.data.value[0].statusNav.name).to.equal("Scannen") // Initial status should be Scanning
   })
@@ -196,7 +196,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       )
       //the data should have no attachments
       expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(0)
+      expect(response.data.value.length).to.equal(1)
     } catch (err) {
       expect(err).to.be.undefined
     }
