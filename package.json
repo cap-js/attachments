@@ -32,7 +32,7 @@
     "@sap/cds": ">=8"
   },
   "engines": {
-    "node": ">=17.0.0"
+    "node": ">=18.0.0"
   },
   "cds": {
     "requires": {
