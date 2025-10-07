@@ -10,7 +10,7 @@ context sap.attachments {
     url      : String;
     content  : LargeBinary @title: '{i18n>Attachment}'; // only for db-based services
     mimeType : String default 'application/octet-stream' @title: '{i18n>MediaType}';
-    filename : String @title: '{i18n>Filename}';
+    filename : String @title: '{i18n>FileName}';
     status   : String @title: '{i18n>ScanStatus}' default 'Unscanned' @Common.Text : statusNav.name @Common.TextArrangement : #TextOnly;
     statusNav : Association to one ScanStates on statusNav.code = status;
   }
