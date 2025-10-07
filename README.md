@@ -16,10 +16,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
 
-
 ## Setup
-
-
 
 To enable attachments, simply add this self-configuring plugin package to your project:
 
@@ -32,12 +29,15 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 > [!Note]
 > To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
+> [!Note]
+> The plugin supports cds 8 & 9
 
 ## Use Attachments
 
 > [!Note]
 > To be able to use the plugin with Fiori elements UI, make sure *draft* is enabled for the entity.
 
+> [!Note]
 > The plugin currently supports file uploads up to **400 MB** in size per attachment.
 
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
