@@ -134,7 +134,7 @@ Other available storage targets:
 
 When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
 
-For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
+For using SAP Object Store, you must already have an SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
 
 1. Log in to Cloud Foundry:
 
@@ -142,7 +142,7 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
     cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME>
     ```
 
-2.  To bind to the service continue with the steps below.
+2.  To bind to the service, continue with the steps below.
 
     In the project directory, you can generate a new file _.cdsrc-private.json by running:
 
