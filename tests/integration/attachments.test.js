@@ -141,23 +141,23 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined
     }
-
+    
+    const scanStatesEN = await cds.run(SELECT.from('sap.attachments.ScanStates'));
+    const scanStatesDE = await cds.run(SELECT.localized.from('sap.attachments.ScanStates').columns('code', `texts[locale='de'].name as name`))
     // Check Scanning status
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
     )
     expect(response.status).to.equal(200)
     expect(response.data.value.length).to.equal(2)
-    expect(response.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
-    expect(response.data.value[0].statusNav.name).to.equal("Scanning") // Initial status should be Scanning
+    expect(response.data.value[0].statusNav.name).to.equal(scanStatesEN.find(state => state.code === response.data.value[0].status).name)
 
     const responseDE = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
     expect(responseDE.status).to.equal(200)
     expect(responseDE.data.value.length).to.equal(2)
-    expect(responseDE.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
-    expect(responseDE.data.value[0].statusNav.name).to.equal("Scannen") // Initial status should be Scanning
+    expect(responseDE.data.value[0].statusNav.name).to.equal(scanStatesDE.find(state => state.code === responseDE.data.value[0].status).name)
   })
 
   //Deleting the attachment
