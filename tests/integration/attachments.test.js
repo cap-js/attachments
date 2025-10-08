@@ -3,7 +3,12 @@ const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { uploadDraftAttachment } = require("../utils/testUtils")
+const { 
+  uploadDraftAttachment, 
+  cleanupDraftAttachments, 
+  waitForScanning,
+  validateAttachmentStructure 
+} = require("../utils/testUtils")
 
 axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
@@ -19,23 +24,24 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     await cds.connect.to("attachments")
     cds.env.requires.attachments.scan = false
     cds.env.profiles = ["development"]
-    sampleDocID = null
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
     utils = new RequestSend(POST)
   })
 
   beforeEach(async () => {
-    // Clear Attachments
-    await clearAttachments();
+    // Clean up any existing attachments before each test
+    await cleanupDraftAttachments(utils, GET, DELETE, incidentID)
   })
 
   afterEach(async () => {
-    // Clear Attachments
-    await clearAttachments();
+    // Clean up after each test
+    await cleanupDraftAttachments(utils, GET, DELETE, incidentID)
   })
 
+  //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
-    let incidentID = null
+    let sampleDocID = null
+
     try {
       // Upload attachment using helper function
       sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
@@ -98,10 +104,12 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined
     }
-  });
+  })
 
+  //Deleting the attachment
   it("Deleting the attachment", async () => {
-    let incidentID = null;
+    let sampleDocID = null
+
     try {
       // First upload an attachment to delete
       sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
