@@ -344,7 +344,7 @@ resources:
 
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the comman `rm -rf node_modules` should be used before installation.
 
-The integration tests need a binding to a real object store. Run them with `npm install -Pintegration-tests-oss`.
+The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, provide the following environment variables:
 - AWS_S3_BUCKET
 - AWS_S3_REGION
