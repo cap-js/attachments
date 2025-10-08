@@ -37,7 +37,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 For a quick setup with in-memory storage: 
 
-- The plugin is self-configuring as described in [Package Setup]. To enable attachments, simply add the plugin package to your project:  
+- The plugin is self-configuring as described in [Package Setup](#package-setup). To enable attachments, simply add the plugin package to your project:  
 ```sh
  npm add @cap-js/attachments
  ```
@@ -45,7 +45,7 @@ For a quick setup with in-memory storage:
 ```cds
 using { Attachments } from '@cap-js/attachments';
 
-entity Entity {  
+entity Incidents {  
   // ...  
   attachments: Composition of many Attachments;  
 }
@@ -120,7 +120,7 @@ service ProcessorService {
 }
 ```
 
-Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that *draft* is enabled for the entity using `@odata.draft.enabled`. 
+Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. 
 
 
 ### Storage Targets
@@ -138,7 +138,7 @@ For using SAP Object Store, you must already have an SAP Object Store service in
 1. Log in to Cloud Foundry:
 
     ```sh
-    cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME>
+    cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
     ```
 
 2.  To bind to the service, continue with the steps below.
@@ -158,7 +158,7 @@ For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serv
     cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
     ```
 
-By default, malware scanning is enabled for all profiles except development profile. You can configure malware scanning by setting:
+By default, malware scanning is enabled for all profiles unless no storage provider has been specified. You can configure malware scanning by setting:
 ```json
 "attachments": {
     "scan": true
@@ -175,7 +175,7 @@ Scan status codes:
 - Infected: The attachment is infected. 
 
 > [!Note]
-> The plugin currently supports file uploads up to 400 MB in size per attachment. 
+> The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). 
 
 
 ### Outbox 
@@ -287,19 +287,7 @@ To ensure tenant identification when using a shared object store instance, the p
 
 ### Object Stores
 
-The attachment is not stored in the underlying database; instead, it is saved in the respective Object Store, and only a reference to the file is kept in the database, as defined in the [CDS model](../../cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/attachments.cds#L20).
-
-To do this, replace the `cds-feature-attachments` dependency in the `pom.xml` with:
-
-```xml
-<dependency>
-    <groupId>com.sap.cds</groupId>
-    <artifactId>cds-feature-attachments-oss</artifactId>
-    <version>${latest-version}</version>
-</dependency>
-```
-
-A valid Object Store service binding is required for this, typically one provisioned through SAP BTP. See [Local development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
+A valid Object Store service binding is required, typically one provisioned through SAP BTP. See [Local development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
 
 #### Local development
 
@@ -312,10 +300,8 @@ cds bind <service-instance-name>
 This will create an entry in the `.cdsrc-private.json` file with the service binding configuration. Then start the application with:
 
 ```bash
-cds bind --exec mvn spring-boot:run
+cds watch --profile hybrid
 ```
-
-If such a binding is not available, use the underlying database as the storage target instead of an Object Store, so use the dependency `cds-feature-attachments` (not `cds-feature-attachments-oss`).
 
 #### Deployment to Cloud Foundry
 The corresponding entry in the [mta-file](https://cap.cloud.sap/docs/guides/deployment/to-cf#add-mta-yaml) possibly looks like:
@@ -330,7 +316,7 @@ parameters:
 modules:
   - name: consuming-app-srv
 # ------------------------------------------------------------
-    type: java
+    type: nodejs
     path: srv
     parameters:
       ...
@@ -356,27 +342,18 @@ resources:
 
 ##### Tests
 
-The unit tests in this module do not need a binding to the respective object stores, run them with `mvn clean install`.
+The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the comman `rm -rf node_modules` should be used before installation.
 
-The integration tests need a binding to a real object store. Run them with `mvn clean install -Pintegration-tests-oss`.
+The integration tests need a binding to a real object store. Run them with `npm install -Pintegration-tests-oss`.
 To set the binding, provide the following environment variables:
 - AWS_S3_BUCKET
 - AWS_S3_REGION
 - AWS_S3_ACCESS_KEY_ID
 - AWS_S3_SECRET_ACCESS_KEY
 
-##### Implementation details
-
-This artifact provides custom handlers for events from the [AttachmentService](../../cds-feature-attachments/src/main/java/com/sap/cds/feature/attachments/service/AttachmentService.java).
-
 ##### Supported Storage Backends
 
 - **AWS S3**
-
-##### Multitenancy
-
-Multitenancy is not directly supported. All attachments are stored in a flat structure within the provided bucket, which might be shared across tenants.
-
 
 ### Model Texts
 
