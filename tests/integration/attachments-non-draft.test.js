@@ -7,11 +7,8 @@ const {
   uncommentAnnotation,
 } = require("../utils/modify-annotation")
 const {
-  createAttachmentMetadata,
-  uploadAttachmentContent,
   waitForScanning,
-  validateAttachmentStructure,
-} = require("../utils/testUtils")
+} = require("../utils/testUtils").default
 
 const servicesCdsPath = path.resolve(
   __dirname,
@@ -156,3 +153,68 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     }
   })
 })
+
+/**
+ * Helper functions for attachment testing
+ */
+
+/**
+ * Creates attachment metadata for non-draft mode
+ * @param {Object} axios - Axios instance
+ * @param {string} incidentId - Incident ID
+ * @param {string} filename - Filename for the attachment
+ * @returns {Promise<string>} - Attachment ID
+ */
+async function createAttachmentMetadata(axios, incidentId, filename = "sample.pdf") {
+  const response = await axios.post(
+    `/odata/v4/processor/Incidents(${incidentId})/attachments`,
+    { filename: filename },
+    { headers: { "Content-Type": "application/json" } }
+  )
+  return response.data.ID
+}
+
+/**
+ * Uploads attachment content for non-draft mode
+ * @param {Object} axios - Axios instance
+ * @param {string} incidentId - Incident ID
+ * @param {string} attachmentId - Attachment ID
+ * @param {string} contentPath - Path to content file
+ * @returns {Promise<Object>} - Axios response
+ */
+async function uploadAttachmentContent(axios, incidentId, attachmentId, contentPath = 'content/sample.pdf') {
+  const fileContent = fs.readFileSync(path.join(__dirname, '..', 'integration', contentPath))
+  const response = await axios.put(
+    `/odata/v4/processor/Incidents(${incidentId})/attachments(up__ID=${incidentId},ID=${attachmentId})/content`,
+    fileContent,
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": fileContent.length
+      }
+    }
+  )
+  return response
+}
+
+/**
+ * Validates attachment response structure
+ * @param {Object} attachment - Attachment object from API response
+ * @param {string} expectedFilename - Expected filename
+ * @param {string} expectedStatus - Expected status
+ * @param {string} incidentId - Expected incident ID
+ */
+function validateAttachmentStructure(attachment, expectedFilename, expectedStatus, incidentId) {
+  if (attachment.up__ID !== incidentId) {
+    throw new Error(`Expected up__ID to be ${incidentId}, got ${attachment.up__ID}`)
+  }
+  if (attachment.filename !== expectedFilename) {
+    throw new Error(`Expected filename to be ${expectedFilename}, got ${attachment.filename}`)
+  }
+  if (attachment.status !== expectedStatus) {
+    throw new Error(`Expected status to be ${expectedStatus}, got ${attachment.status}`)
+  }
+  if (attachment.content !== undefined) {
+    throw new Error("Content should not be included in list responses")
+  }
+}

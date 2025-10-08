@@ -4,7 +4,7 @@ const app = path.resolve(__dirname, "../incidents-app")
 const { test } = cds.test()
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { uploadDraftAttachment, waitForScanning } = require("../utils/testUtils")
+const { waitForScanning } = require("../utils/testUtils").default
 
 axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
@@ -25,10 +25,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   })
 
   afterAll(async () => {
-    // Clean up test data
-    await test.data.reset()
-    // Close CDS connections for this test suite
-    cds.db.disconnect()
+    try {
+      // Clean up test data
+      await test.data.reset()
+      // Close CDS connections for this test suite
+      cds.db.disconnect()
+    } catch (error) {
+      console.warn("Warning: Error during cleanup:", error.message)
+    }
   })
 
   beforeEach(async () => {
@@ -221,3 +225,43 @@ describe("Tests for attachments facet disable", () => {
     expect(attachmentFacets[0].Label).to.equal("My custom attachments")
   })
 })
+
+/**
+ * Uploads attachment in draft mode using CDS test utilities
+ * @param {Object} utils - RequestSend utility instance
+ * @param {Object} POST - CDS test POST function
+ * @param {Object} GET - CDS test GET function
+ * @param {string} incidentId - Incident ID
+ * @param {string} filename - Filename for the attachment
+ * @returns {Promise<string>} - Attachment ID
+ */
+async function uploadDraftAttachment(utils, POST, GET, incidentId, filename = "sample.pdf") {
+  const action = await POST.bind(
+    {},
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
+    {
+      up__ID: incidentId,
+      filename: filename,
+      mimeType: "application/pdf",
+      content: createReadStream(join(__dirname, "..", "integration", "content/sample.pdf")),
+      createdAt: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+      ),
+      createdBy: "alice",
+    }
+  )
+
+  await utils.draftModeActions(
+    "processor",
+    "Incidents",
+    incidentId,
+    "ProcessorService",
+    action
+  )
+
+  // Get the uploaded attachment ID
+  const response = await GET(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/attachments`
+  )
+  return response.data.value[0]?.ID
+}
