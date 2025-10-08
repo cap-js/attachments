@@ -101,7 +101,7 @@ To use the aspect `Attachments` on an existing entity, the corresponding entity 
 ```cds
 using { Attachments } from '@cap-js/attachments';  
 
-entity Entity {  
+entity Incidents {  
   // ...  
   attachments: Composition of many Attachments;  
 } 
