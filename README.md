@@ -163,7 +163,7 @@ By default, malware scanning is enabled for all profiles if a storage provider h
 }
 ```
 
-If there is no malware scanner available, the attachments are automatically marked as Clean. 
+If there is no malware scanner available and the scanner is not disabled, then the uploading will fail. 
 
 Scan status codes: 
 - Clean: Only attachments with the status Clean are accessible. 
@@ -176,24 +176,9 @@ Scan status codes:
 > The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). 
 
 
-### Outbox 
-
-In this plugin the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is used to mark attachments as deleted. When using this plugin, the persistent outbox is enabled by default. In the capire documentation of the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) it is described how to overwrite the default outbox configuration. 
-
-If the default is used, nothing must be done. 
-
-
-### Restore Endpoint
-
-The attachment service has an event `RESTORE_ATTACHMENTS`.
-This event can be called with a timestamp to restore externally stored attachments.
-
-By setting the `@UI.Hidden` property to `true`, developers can hide the plugin from the UI achieving visibility.
-This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
-
 ### Visibility Control for Attachments UI Facet Generation
 
-By setting the `@attachments.disable_facet` property to `true`, developers can hide the visibility of the plugin in the UI. This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
+By setting the `@UI.Hidden` property to `true`, developers can hide the visibility of the plugin in the UI. This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
 
 #### Example Usage
 
@@ -241,17 +226,12 @@ The typical sequence includes:
 
 | Component | Minimum Version |
 |-----------|-----------------|
-| CAP Node  | 3.10.3          |
+| CAP Node  | 8.0.0           |
 | UI5       | 1.136.0         |
 
-To be able to use the Fiori `uploadTable` feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's `index.html`
 
 
 ## Architecture Overview
-### Design
-- [Design Details](./doc/Design.md)
-- [Process of Creating, Reading and Deleting an Attachment](./doc/Processes.md)
-
 ### Multitenancy
 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
@@ -355,7 +335,7 @@ To set the binding, provide the following environment variables:
 
 ### Model Texts
 
-In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [35 languages](https://github.com/cap-java/cds-feature-attachments/tree/main/cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.
+In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [2 languages](https://github.com/cap-js/attachments/tree/main/_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.
 
 The following table gives an overview of the fields and the i18n codes:
 
@@ -384,7 +364,7 @@ To configure logging for the attachments plugin, add the following line to the `
     "log": {
       "levels": {
         ...
-        '[com.sap.cds.attachments]': DEBUG
+        attachments: DEBUG
       }
     }
   }
