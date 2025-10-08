@@ -285,7 +285,6 @@ To configure a shared object store instance, modify both the package.json files 
 ```
 To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. Be sure the shared object store instance is bound to the `mtx` application module before deployment.
 
-
 ### Object Stores
 
 The attachment is not stored in the underlying database; instead, it is saved in the respective Object Store, and only a reference to the file is kept in the database, as defined in the [CDS model](../../cds-feature-attachments/src/main/resources/cds/com.sap.cds/cds-feature-attachments/attachments.cds#L20).
