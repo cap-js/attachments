@@ -2,6 +2,11 @@ const fs = require("fs")
 const path = require("path")
 const { createReadStream } = require("@sap/cds").utils.fs
 const { join } = require("@sap/cds").utils.path
+
+/**
+ * Helper functions for attachment testing
+ */
+
 /**
  * Creates attachment metadata for non-draft mode
  * @param {Object} axios - Axios instance
@@ -82,63 +87,6 @@ async function uploadDraftAttachment(utils, POST, GET, incidentId, filename = "s
 }
 
 /**
- * Cleans up attachments for an incident in non-draft mode
- * @param {Object} axios - Axios instance
- * @param {string} incidentId - Incident ID
- */
-async function cleanupNonDraftAttachments(axios, incidentId) {
-  try {
-    const response = await axios.get(`/odata/v4/processor/Incidents(ID=${incidentId})/attachments`)
-    for (const attachment of response.data.value) {
-      try {
-        await axios.delete(
-          `/odata/v4/processor/Incidents(ID=${incidentId})/attachments(up__ID=${incidentId},ID=${attachment.ID})`
-        )
-      } catch (err) {
-        // Ignore individual deletion errors
-      }
-    }
-  } catch (err) {
-    // Ignore cleanup errors
-  }
-}
-
-/**
- * Cleans up attachments for an incident in draft mode
- * @param {Object} utils - RequestSend utility instance
- * @param {Object} GET - CDS test GET function
- * @param {Object} DELETE - CDS test DELETE function
- * @param {string} incidentId - Incident ID
- */
-async function cleanupDraftAttachments(utils, GET, DELETE, incidentId) {
-  try {
-    const response = await GET(
-      `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/attachments`
-    )
-    
-    for (const attachment of response.data.value) {
-      try {
-        const deleteAction = await DELETE.bind(
-          {},
-          `odata/v4/processor/Incidents_attachments(up__ID=${incidentId},ID=${attachment.ID},IsActiveEntity=false)`
-        )
-        await utils.draftModeActions(
-          "processor",
-          "Incidents",
-          incidentId,
-          "ProcessorService",
-          deleteAction
-        )
-      } catch (err) {
-        // Ignore individual deletion errors
-      }
-    }
-  } catch (err) {
-    // Ignore cleanup errors
-  }
-}
-
-/**
  * Waits for attachment scanning to complete
  * @param {number} timeout - Timeout in milliseconds (default: 5000)
  * @returns {Promise<void>}
@@ -173,8 +121,6 @@ module.exports = {
   createAttachmentMetadata,
   uploadAttachmentContent,
   uploadDraftAttachment,
-  cleanupNonDraftAttachments,
-  cleanupDraftAttachments,
   waitForScanning,
   validateAttachmentStructure
 }

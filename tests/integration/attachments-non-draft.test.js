@@ -1,11 +1,11 @@
 const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
+const { test } = cds.test()
 const { commentAnnotation, uncommentAnnotation } = require("../utils/modify-annotation")
 const { 
   createAttachmentMetadata, 
   uploadAttachmentContent, 
-  cleanupNonDraftAttachments, 
   waitForScanning,
   validateAttachmentStructure 
 } = require("../utils/testUtils")
@@ -47,13 +47,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
   beforeEach(async () => {
     // Clean up any existing attachments before each test
-    await cleanupNonDraftAttachments(axios, incidentID)
+    await test.data.reset()
   })
 
-  afterEach(async () => {
-    // Clean up after each test
-    await cleanupNonDraftAttachments(axios, incidentID)
-  })
+  // afterEach(async () => {
+  //   // Clean up after each test
+  //   await test.data.reset()
+  // })
 
   it("should create attachment metadata", async () => {
     const attachmentID = await createAttachmentMetadata(axios, incidentID)

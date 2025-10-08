@@ -1,13 +1,12 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
+const { test } = cds.test()
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
 const { 
   uploadDraftAttachment, 
-  cleanupDraftAttachments, 
   waitForScanning,
-  validateAttachmentStructure 
 } = require("../utils/testUtils")
 
 axios.defaults.auth = { username: "alice" }
@@ -29,14 +28,12 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   })
 
   beforeEach(async () => {
-    // Clean up any existing attachments before each test
-    await cleanupDraftAttachments(utils, GET, DELETE, incidentID)
+    await test.data.reset()
   })
 
-  afterEach(async () => {
-    // Clean up after each test
-    await cleanupDraftAttachments(utils, GET, DELETE, incidentID)
-  })
+  // afterEach(async () => {
+  //   await test.data.reset()
+  // })
 
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
@@ -141,7 +138,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         "ProcessorService",
         action
       )
-
       //read attachments list for Incident
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
