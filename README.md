@@ -17,9 +17,6 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
   * [Malware Scanner](#malware-scanner)
   * [Outbox](#outbox) ?
   * [Restore Endpoint](#restore-endpoint) ?
-    * [Motivation](#motivation)
-    * [HTTP Endpoint](#http-endpoint)
-    * [Security](#security)
   * [Visibility Control](#visibility-control-for-attachments-ui-facet-generation)
   * [Non-Draft Uploading](non-draft-upload)
 * [Releases](#releases) ?
@@ -29,6 +26,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
   * [Multitenancy](#multitenancy)
   * [Object Stores](#object-stores) ?
   * [Model Texts](#model-texts) ?
+* [Monitoring & Logging](#monitoring--logging)
 * [Support, Feedback, Contributing ](#support-feedback-and-contributing)
 * [Code of Conduct](#code-of-conduct)
 * [Licensing](#licensing)
@@ -68,7 +66,7 @@ With the steps above, we have successfully set up asset handling for our referen
 
 2. **Navigate to the object page** of the incident `Solar panel broken`:
 
-    Go to [Object page for incident **Solar panel broken**](http://localhost:4004/incidents/app/#/Incidents(ID=3583f982-d7df-4aad-ab26-301d4a157cd7,IsActiveEntity=true))
+    Go to object page for incident **Solar panel broken**
 
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
 <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
@@ -76,7 +74,7 @@ With the steps above, we have successfully set up asset handling for our referen
 4. **Upload a file** by going into Edit mode and either by clicking the **Upload** button above the Attachments table or by draging and droping the file into the Attachments table direcly. Then click the **Save** button to have that file stored in the dedicated resource (database, S3 bucket, etc.). The PDF file from [_xmpl/db/content/Solar Panel Report.pdf_](./xmpl/db/content/Solar%20Panel%20Report.pdf) can be used as an example:
 <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
 
-6. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
+5. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
 <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
 
 ## Usage
@@ -153,7 +151,7 @@ For using SAP Object Store, you must already have an SAP Object Store service in
 
 The malware scanner is used in the `AttachmentService` to scan attachments. 
 
-For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access and run the following command:
+For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access. To bind it, run the following command:
     ```sh
     cds bind <MalwareScannerLocalName> --to <RemoteMalwareScannerName>
     ```
@@ -236,7 +234,7 @@ The typical sequence includes:
 
 ## Releases
 
-- The plugin is released to [WHERE?].
+- The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments) and [GitHub Releases](https://github.com/cap-js/attachments/releases).
 - See the [changelog](./CHANGELOG.md) for the latest changes.
 
 ## Minimum UI5 and CAP NodeJS Version
@@ -259,7 +257,7 @@ To be able to use the Fiori `uploadTable` feature, you must ensure 1.121.0/ 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
 
 - When using SAP HANA as the storage target, multitenancy support depends on the consuming application. In most cases, multitenancy is achieved by using a dedicated schema for each tenant, providing strong data isolation at the database level.
-- When using an [object store](storage-targets/cds-feature-attachments-oss) as the storage target, true multitenancy is not yet implemented (as of version 1.2.1). In this case, all blobs are stored in a single bucket, and tenant data is not separated.
+- When using an [object store](storage-targets/cds-feature-attachments-oss) as the storage target, true multitenancy is not yet implemented (as of version 2.1.0). In this case, all blobs are stored in a single bucket, and tenant data is not separated.
 
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
@@ -268,7 +266,7 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 
 For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and mtx/sidecar package.json files.
 
-### Shared Object Store Instance
+#### Shared Object Store Instance
 
 To configure a shared object store instance, modify both the package.json files as follows:
 
@@ -287,7 +285,7 @@ To ensure tenant identification when using a shared object store instance, the p
 
 ### Object Stores
 
-A valid Object Store service binding is required, typically one provisioned through SAP BTP. See [Local development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
+A valid Object Store service binding is required, typically one provisioned through SAP BTP. See [Local Development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
 
 #### Local development
 
@@ -379,12 +377,18 @@ In addition to the field names, header information (`@UI.HeaderInfo`) are also a
 
 ## Monitoring & Logging
 
-To configure logging for the attachments plugin, add the following line to the `/srv/src/main/resources/application.yaml` of the consuming application:
+To configure logging for the attachments plugin, add the following line to the `package.json` of the consuming application:
 ```
-logging:
-  level:
-    ...
-    '[com.sap.cds.feature.attachments]': DEBUG
+{
+  "cds": {
+    "log": {
+      "levels": {
+        ...
+        '[com.sap.cds.attachments]': DEBUG
+      }
+    }
+  }
+}
 ...
 ```
 
