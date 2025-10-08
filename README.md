@@ -33,7 +33,6 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 * [Code of Conduct](#code-of-conduct)
 * [Licensing](#licensing)
 
-
 ## Quick Start
 
 For a quick setup with in-memory storage: 
