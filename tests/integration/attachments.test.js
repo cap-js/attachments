@@ -3,14 +3,12 @@ const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { createReadStream } = cds.utils.fs
-const { join } = cds.utils.path
+const { uploadDraftAttachment } = require("../utils/testUtils")
 
 axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
 
 let utils = null
-let sampleDocID = null
 let incidentID = null
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
@@ -25,33 +23,23 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
     utils = new RequestSend(POST)
   })
-  //Draft mode uploading attachment
-  it("Uploading attachment in draft mode with scanning enabled", async () => {
-    //function to upload attachment
-    let action = await POST.bind(
-      {},
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "sample.pdf",
-        mimeType: "application/pdf",
-        content: createReadStream(join(__dirname, "content/sample.pdf")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    )
 
+  beforeEach(async () => {
+    // Clear Attachments
+    await clearAttachments();
+  })
+
+  afterEach(async () => {
+    // Clear Attachments
+    await clearAttachments();
+  })
+
+  it("Uploading attachment in draft mode with scanning enabled", async () => {
+    let incidentID = null
     try {
-      //trigger to upload attachment
-      await utils.draftModeActions(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-        action
-      )
+      // Upload attachment using helper function
+      sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+      expect(sampleDocID).to.not.be.null
     } catch (err) {
       expect(err).to.be.undefined
     }
@@ -96,8 +84,8 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined
     }
 
-    //Mocking scanning timer for at least 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    // Wait for scanning to complete
+    await waitForScanning()
 
     //Check clean status
     try {
@@ -110,25 +98,33 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     } catch (err) {
       expect(err).to.be.undefined
     }
-  })
+  });
 
-  //Deleting the attachment
   it("Deleting the attachment", async () => {
-    //check the content of the uploaded attachment in main table
+    let incidentID = null;
     try {
-      const response = await GET(
+      // First upload an attachment to delete
+      sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+      expect(sampleDocID).to.not.be.null
+
+      // Wait for scanning to complete
+      await waitForScanning()
+
+      //check the content of the uploaded attachment in main table
+      const contentResponse = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       )
-      expect(response.status).to.equal(200)
+      expect(contentResponse.status).to.equal(200)
     } catch (err) {
       expect(err).to.be.undefined
     }
-    //delete attachment
-    let action = await DELETE.bind(
-      {},
-      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
-    )
+
     try {
+      //delete attachment
+      let action = await DELETE.bind(
+        {},
+        `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
+      )
       //trigger to delete attachment
       await utils.draftModeActions(
         "processor",
@@ -137,26 +133,22 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         "ProcessorService",
         action
       )
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
 
-    //read attachments list for Incident
-    try {
+      //read attachments list for Incident
       const response = await GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
       )
       //the data should have no attachments
       expect(response.status).to.equal(200)
       expect(response.data.value.length).to.equal(0)
+
+      //content should not be there
+      await expect(GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+      )).to.be.rejectedWith(/404/)
     } catch (err) {
       expect(err).to.be.undefined
     }
-
-    //content should not be there
-    await expect(GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-    )).to.be.rejectedWith(/404/)
   })
 })
 
