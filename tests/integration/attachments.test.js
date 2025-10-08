@@ -4,10 +4,7 @@ const app = path.resolve(__dirname, "../incidents-app")
 const { test } = cds.test()
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { 
-  uploadDraftAttachment, 
-  waitForScanning,
-} = require("../utils/testUtils")
+const { uploadDraftAttachment, waitForScanning } = require("../utils/testUtils")
 
 axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
@@ -27,13 +24,20 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     utils = new RequestSend(POST)
   })
 
+  afterAll(async () => {
+    try {
+      // Clean up test data
+      await test.data.reset()
+      // Close CDS connections for this test suite
+      cds.db.disconnect()
+    } catch (error) {
+      console.warn("Warning: Error during test cleanup:", error.message)
+    }
+  })
+
   beforeEach(async () => {
     await test.data.reset()
   })
-
-  // afterEach(async () => {
-  //   await test.data.reset()
-  // })
 
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
@@ -72,7 +76,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined
     }
 
-
     // Check Scanning status
     try {
       const response = await GET(
@@ -81,9 +84,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(response.status).to.equal(200)
       expect(response.data.value.length).to.equal(1)
       expect(response.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
-
     } catch (err) {
-
       expect(err).to.be.undefined
     }
 
@@ -147,9 +148,11 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(response.data.value.length).to.equal(0)
 
       //content should not be there
-      await expect(GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      )).to.be.rejectedWith(/404/)
+      await expect(
+        GET(
+          `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+        )
+      ).to.be.rejectedWith(/404/)
     } catch (err) {
       expect(err).to.be.undefined
     }
@@ -167,15 +170,29 @@ describe("Tests for attachments facet disable", () => {
     utils = new RequestSend(POST)
   })
 
+  afterAll(async () => {
+    try {
+      // Close CDS connections for this test suite
+      cds.db.disconnect()
+    } catch (error) {
+      console.warn("Warning: Error during test cleanup:", error.message)
+    }
+  })
+
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
     try {
-      const res = await GET(
-        `odata/v4/processor/$metadata?$format=json`
-      )
+      const res = await GET(`odata/v4/processor/$metadata?$format=json`)
       expect(res.status).to.equal(200)
-      const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
-      const attachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
-      const attachmentsFacetTarget = facets.some(facet => facet.Target === 'attachments/@UI.LineItem')
+      const facets =
+        res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
+          "@UI.Facets"
+        ]
+      const attachmentsFacetLabel = facets.some(
+        (facet) => facet.Label === "Attachments"
+      )
+      const attachmentsFacetTarget = facets.some(
+        (facet) => facet.Target === "attachments/@UI.LineItem"
+      )
       expect(attachmentsFacetLabel).to.be.true
       expect(attachmentsFacetTarget).to.be.true
     } catch (err) {
@@ -184,42 +201,55 @@ describe("Tests for attachments facet disable", () => {
   })
 
   it("Checking attachments facet when @attachments.disable_facet is enabled", async () => {
-    const res = await GET(
-      `odata/v4/processor/$metadata?$format=json`
-    )
+    const res = await GET(`odata/v4/processor/$metadata?$format=json`)
     expect(res.status).to.equal(200)
-    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
-    const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
+    const facets =
+      res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
+        "@UI.Facets"
+      ]
+    const hiddenAttachmentsFacetLabel = facets.some(
+      (facet) => facet.Label === "Attachments"
+    )
 
     //Checking the facet metadata for hiddenAttachments since its annotated with @attachments.disable_facet as enabled
-    const hiddenAttachmentsFacetTarget = facets.some(facet => facet.Target === 'hiddenAttachments/@UI.LineItem')
+    const hiddenAttachmentsFacetTarget = facets.some(
+      (facet) => facet.Target === "hiddenAttachments/@UI.LineItem"
+    )
     expect(hiddenAttachmentsFacetLabel).to.be.true
     expect(hiddenAttachmentsFacetTarget).to.be.false
   })
 
   it("Checking attachments facet when @UI.Hidden is enabled", async () => {
-    const res = await GET(
-      `odata/v4/processor/$metadata?$format=json`
-    )
+    const res = await GET(`odata/v4/processor/$metadata?$format=json`)
     expect(res.status).to.equal(200)
-    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Incidents"]["@UI.Facets"]
-    const hiddenAttachmentsFacetLabel = facets.some(facet => facet.Label === 'Attachments')
+    const facets =
+      res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
+        "@UI.Facets"
+      ]
+    const hiddenAttachmentsFacetLabel = facets.some(
+      (facet) => facet.Label === "Attachments"
+    )
 
-    const hiddenAttachmentsFacetTarget = facets.find(facet => facet.Target === 'hiddenAttachments2/@UI.LineItem')
+    const hiddenAttachmentsFacetTarget = facets.find(
+      (facet) => facet.Target === "hiddenAttachments2/@UI.LineItem"
+    )
     expect(hiddenAttachmentsFacetLabel).to.be.true
     expect(!!hiddenAttachmentsFacetTarget).to.be.true
-    expect(hiddenAttachmentsFacetTarget['@UI.Hidden']).to.equal(true)
+    expect(hiddenAttachmentsFacetTarget["@UI.Hidden"]).to.equal(true)
   })
 
   it("Attachments facet is not added when its manually added by the developer", async () => {
-    const res = await GET(
-      `odata/v4/processor/$metadata?$format=json`
-    )
+    const res = await GET(`odata/v4/processor/$metadata?$format=json`)
     expect(res.status).to.equal(200)
-    const facets = res.data.ProcessorService.$Annotations["ProcessorService.Customers"]["@UI.Facets"]
+    const facets =
+      res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
+        "@UI.Facets"
+      ]
 
-    const attachmentFacets = facets.filter(facet => facet.Target === 'attachments/@UI.LineItem')
+    const attachmentFacets = facets.filter(
+      (facet) => facet.Target === "attachments/@UI.LineItem"
+    )
     expect(attachmentFacets.length).to.equal(1)
-    expect(attachmentFacets[0].Label).to.equal('My custom attachments')
+    expect(attachmentFacets[0].Label).to.equal("My custom attachments")
   })
 })
