@@ -29,8 +29,6 @@ beforeAll(async () => {
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios } = require("@cap-js/cds-test")(app)
 
-jest.setTimeout(5 * 60 * 1000)
-
 let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 afterAll(async () => {
@@ -48,7 +46,7 @@ afterAll(async () => {
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   function createHelpers(axios) {
     return {
-      createAttachmentMetadata: async (incidentID) =>
+      createAttachmentMetadata: async (incidentID) => 
         helperCreateAttachmentMetadata(
           axios,
           incidentID,

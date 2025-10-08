@@ -9,7 +9,6 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 axios.defaults.auth = { username: "alice" }
-jest.setTimeout(5 * 60 * 1000)
 
 let utils = null
 let incidentID = null

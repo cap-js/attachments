@@ -1,5 +1,5 @@
 const config = {
-    testTimeout: 42222,
+    testTimeout: 60000,
     testMatch: ['**/*.test.js'],
     setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
     forceExit: true,
