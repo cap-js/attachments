@@ -87,7 +87,7 @@ The attachments plugin needs to be referenced in the package.json of the consumi
 
 ```cds
 "devDependencies": { 
-    “@cap-js/attachments”: ${latest-version}, 
+    "@cap-js/attachments": "<latest-version>", 
     //... 
 }
 ```
