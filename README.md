@@ -155,7 +155,7 @@ The malware scanner is used in the `AttachmentService` to scan attachments.
 
 For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access and run the following command:
     ```sh
-    cds bind malware-scanner -2 <INSTANCE>:<SERVICE-KEY>
+    cds bind <MalwareScannerLocalName> --to <RemoteMalwareScannerName>
     ```
 
 By default, malware scanning is enabled for all profiles unless no storage provider has been specified. You can configure malware scanning by setting:
