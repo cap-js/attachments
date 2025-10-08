@@ -46,23 +46,6 @@ afterAll(async () => {
 })
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
-  function createHelpers(axios) {
-    return {
-      createAttachmentMetadata: async (incidentID) =>
-        helperCreateAttachmentMetadata(
-          axios,
-          incidentID,
-          (filename = "sample.pdf")
-        ),
-      uploadAttachmentContent: async (incidentID, attachmentID, contentPath) =>
-        helperUploadAttachmentContent(
-          axios,
-          incidentID,
-          attachmentID,
-          (contentPath = "content/sample.pdf")
-        ),
-    }
-  }
   axios.defaults.auth = { username: "alice" }
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
@@ -77,9 +60,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   afterAll(async () => {
-    // Clean up test data
+    // Clean up test data & Close CDS connections for this test suite
     await test.data.reset()
-    // Close CDS connections for this test suite
     cds.db.disconnect()
   })
 
@@ -111,13 +93,28 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(response.status).to.equal(200)
 
-    // Use helper function to validate structure
-    validateAttachmentStructure(
-      response.data.value[0],
-      "sample.pdf",
-      "Clean",
-      incidentID
+    const expectedFilename = "sample.pdf"
+    const expectedStatus = "Clean"
+    const attachment = response.data.value[0]
+    if (attachment.up__ID !== incidentID) {
+    throw new Error(
+      `Expected up__ID to be ${incidentID}, got ${attachment.up__ID}`
     )
+  }
+  if (attachment.filename !== expectedFilename) {
+    throw new Error(
+      `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
+    )
+  }
+  if (attachment.status !== expectedStatus) {
+    throw new Error(
+      `Expected status to be ${expectedStatus}, got ${attachment.status}`
+    )
+  }
+  if (attachment.content !== undefined) {
+    throw new Error("Content should not be included in list responses")
+  }
+
     expect(response.data.value[0].ID).to.equal(attachmentID)
   })
 
@@ -168,85 +165,35 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 })
 
-/**
- * Helper functions for attachment testing
- */
-
-/**
- * Creates attachment metadata for non-draft mode
- * @param {Object} axios - Axios instance
- * @param {string} incidentId - Incident ID
- * @param {string} filename - Filename for the attachment
- * @returns {Promise<string>} - Attachment ID
- */
-async function helperCreateAttachmentMetadata(axios, incidentId, filename) {
-  const response = await axios.post(
-    `/odata/v4/processor/Incidents(${incidentId})/attachments`,
-    { filename: filename },
-    { headers: { "Content-Type": "application/json" } }
-  )
-  return response.data.ID
-}
-
-/**
- * Uploads attachment content for non-draft mode
- * @param {Object} axios - Axios instance
- * @param {string} incidentId - Incident ID
- * @param {string} attachmentId - Attachment ID
- * @param {string} contentPath - Path to content file
- * @returns {Promise<Object>} - Axios response
- */
-async function helperUploadAttachmentContent(
-  axios,
-  incidentId,
-  attachmentId,
-  contentPath
-) {
-  const fileContent = fs.readFileSync(
-    path.join(__dirname, "..", "integration", contentPath)
-  )
-  const response = await axios.put(
-    `/odata/v4/processor/Incidents(${incidentId})/attachments(up__ID=${incidentId},ID=${attachmentId})/content`,
-    fileContent,
-    {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Length": fileContent.length,
-      },
-    }
-  )
-  return response
-}
-
-/**
- * Validates attachment response structure
- * @param {Object} attachment - Attachment object from API response
- * @param {string} expectedFilename - Expected filename
- * @param {string} expectedStatus - Expected status
- * @param {string} incidentId - Expected incident ID
- */
-function validateAttachmentStructure(
-  attachment,
-  expectedFilename,
-  expectedStatus,
-  incidentId
-) {
-  if (attachment.up__ID !== incidentId) {
-    throw new Error(
-      `Expected up__ID to be ${incidentId}, got ${attachment.up__ID}`
-    )
-  }
-  if (attachment.filename !== expectedFilename) {
-    throw new Error(
-      `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
-    )
-  }
-  if (attachment.status !== expectedStatus) {
-    throw new Error(
-      `Expected status to be ${expectedStatus}, got ${attachment.status}`
-    )
-  }
-  if (attachment.content !== undefined) {
-    throw new Error("Content should not be included in list responses")
+function createHelpers(axios) {
+  return {
+    createAttachmentMetadata: async (incidentID, filename = "sample.pdf") => {
+      const response = await axios.post(
+        `/odata/v4/processor/Incidents(${incidentID})/attachments`,
+        { filename: filename },
+        { headers: { "Content-Type": "application/json" } }
+      )
+      return response.data.ID
+    },
+    uploadAttachmentContent: async (
+      incidentID,
+      attachmentID,
+      contentPath = "content/sample.pdf"
+    ) => {
+      const fileContent = fs.readFileSync(
+        path.join(__dirname, "..", "integration", contentPath)
+      )
+      const response = await axios.put(
+        `/odata/v4/processor/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+        fileContent,
+        {
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Length": fileContent.length,
+          },
+        }
+      )
+      return response
+    },
   }
 }
