@@ -180,7 +180,7 @@ Scan status codes:
 
 ### Outbox 
 
-In this plugin the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is used to mark attachments as deleted. When using this plugin, the persistent outbox is enabled by default. In the capire documentation of the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is it described how to overwrite the default outbox configuration. 
+In this plugin the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) is used to mark attachments as deleted. When using this plugin, the persistent outbox is enabled by default. In the capire documentation of the [persistent outbox](https://cap.cloud.sap/docs/java/outbox#persistent) it is described how to overwrite the default outbox configuration. 
 
 If the default is used, nothing must be done. 
 
