@@ -6,9 +6,7 @@ const {
   commentAnnotation,
   uncommentAnnotation,
 } = require("../utils/modify-annotation")
-const {
-  waitForScanning,
-} = require("../utils/testUtils").default
+const { waitForScanning } = require("../utils/testUtils")
 
 const servicesCdsPath = path.resolve(
   __dirname,
@@ -31,7 +29,6 @@ beforeAll(async () => {
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios } = require("@cap-js/cds-test")(app)
 
-axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
 
 let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
@@ -49,6 +46,27 @@ afterAll(async () => {
 })
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
+  function createHelpers(axios) {
+    return {
+      createAttachmentMetadata: async (incidentID) =>
+        helperCreateAttachmentMetadata(
+          axios,
+          incidentID,
+          (filename = "sample.pdf")
+        ),
+      uploadAttachmentContent: async (incidentID, attachmentID, contentPath) =>
+        helperUploadAttachmentContent(
+          axios,
+          incidentID,
+          attachmentID,
+          (contentPath = "content/sample.pdf")
+        ),
+    }
+  }
+  axios.defaults.auth = { username: "alice" }
+  const { createAttachmentMetadata, uploadAttachmentContent } =
+    createHelpers(axios)
+
   beforeAll(async () => {
     cds.env.requires.db.kind = "sql"
     cds.env.requires.attachments.kind = "db"
@@ -71,23 +89,19 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should create attachment metadata", async () => {
-    const attachmentID = await createAttachmentMetadata(axios, incidentID)
+    const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).to.exist
   })
 
   it("should upload attachment content", async () => {
-    const attachmentID = await createAttachmentMetadata(axios, incidentID)
-    const response = await uploadAttachmentContent(
-      axios,
-      incidentID,
-      attachmentID
-    )
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).to.equal(204)
   })
 
   it("should list attachments for incident", async () => {
-    const attachmentID = await createAttachmentMetadata(axios, incidentID)
-    await uploadAttachmentContent(axios, incidentID, attachmentID)
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
     await waitForScanning()
@@ -108,8 +122,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
-    const attachmentID = await createAttachmentMetadata(axios, incidentID)
-    await uploadAttachmentContent(axios, incidentID, attachmentID)
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
     await waitForScanning()
@@ -129,8 +143,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should delete attachment and verify deletion", async () => {
-    const attachmentID = await createAttachmentMetadata(axios, incidentID)
-    await uploadAttachmentContent(axios, incidentID, attachmentID)
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
     await waitForScanning()
@@ -165,7 +179,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
  * @param {string} filename - Filename for the attachment
  * @returns {Promise<string>} - Attachment ID
  */
-async function createAttachmentMetadata(axios, incidentId, filename = "sample.pdf") {
+async function helperCreateAttachmentMetadata(axios, incidentId, filename) {
   const response = await axios.post(
     `/odata/v4/processor/Incidents(${incidentId})/attachments`,
     { filename: filename },
@@ -182,16 +196,23 @@ async function createAttachmentMetadata(axios, incidentId, filename = "sample.pd
  * @param {string} contentPath - Path to content file
  * @returns {Promise<Object>} - Axios response
  */
-async function uploadAttachmentContent(axios, incidentId, attachmentId, contentPath = 'content/sample.pdf') {
-  const fileContent = fs.readFileSync(path.join(__dirname, '..', 'integration', contentPath))
+async function helperUploadAttachmentContent(
+  axios,
+  incidentId,
+  attachmentId,
+  contentPath
+) {
+  const fileContent = fs.readFileSync(
+    path.join(__dirname, "..", "integration", contentPath)
+  )
   const response = await axios.put(
     `/odata/v4/processor/Incidents(${incidentId})/attachments(up__ID=${incidentId},ID=${attachmentId})/content`,
     fileContent,
     {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Length": fileContent.length
-      }
+        "Content-Length": fileContent.length,
+      },
     }
   )
   return response
@@ -204,15 +225,26 @@ async function uploadAttachmentContent(axios, incidentId, attachmentId, contentP
  * @param {string} expectedStatus - Expected status
  * @param {string} incidentId - Expected incident ID
  */
-function validateAttachmentStructure(attachment, expectedFilename, expectedStatus, incidentId) {
+function validateAttachmentStructure(
+  attachment,
+  expectedFilename,
+  expectedStatus,
+  incidentId
+) {
   if (attachment.up__ID !== incidentId) {
-    throw new Error(`Expected up__ID to be ${incidentId}, got ${attachment.up__ID}`)
+    throw new Error(
+      `Expected up__ID to be ${incidentId}, got ${attachment.up__ID}`
+    )
   }
   if (attachment.filename !== expectedFilename) {
-    throw new Error(`Expected filename to be ${expectedFilename}, got ${attachment.filename}`)
+    throw new Error(
+      `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
+    )
   }
   if (attachment.status !== expectedStatus) {
-    throw new Error(`Expected status to be ${expectedStatus}, got ${attachment.status}`)
+    throw new Error(
+      `Expected status to be ${expectedStatus}, got ${attachment.status}`
+    )
   }
   if (attachment.content !== undefined) {
     throw new Error("Content should not be included in list responses")

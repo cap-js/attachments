@@ -4,7 +4,9 @@ const app = path.resolve(__dirname, "../incidents-app")
 const { test } = cds.test()
 const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { waitForScanning } = require("../utils/testUtils").default
+const { waitForScanning } = require("../utils/testUtils")
+const { createReadStream } = cds.utils.fs
+const { join } = cds.utils.path
 
 axios.defaults.auth = { username: "alice" }
 jest.setTimeout(5 * 60 * 1000)
@@ -235,7 +237,13 @@ describe("Tests for attachments facet disable", () => {
  * @param {string} filename - Filename for the attachment
  * @returns {Promise<string>} - Attachment ID
  */
-async function uploadDraftAttachment(utils, POST, GET, incidentId, filename = "sample.pdf") {
+async function uploadDraftAttachment(
+  utils,
+  POST,
+  GET,
+  incidentId,
+  filename = "sample.pdf"
+) {
   const action = await POST.bind(
     {},
     `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
@@ -243,7 +251,9 @@ async function uploadDraftAttachment(utils, POST, GET, incidentId, filename = "s
       up__ID: incidentId,
       filename: filename,
       mimeType: "application/pdf",
-      content: createReadStream(join(__dirname, "..", "integration", "content/sample.pdf")),
+      content: createReadStream(
+        join(__dirname, "..", "integration", "content/sample.pdf")
+      ),
       createdAt: new Date(
         Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
       ),
