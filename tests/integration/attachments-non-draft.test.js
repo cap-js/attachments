@@ -62,10 +62,10 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   afterAll(async () => {
-      // Clean up test data
-      await test.data.reset()
-      // Close CDS connections for this test suite
-      cds.db.disconnect()
+    // Clean up test data
+    await test.data.reset()
+    // Close CDS connections for this test suite
+    cds.db.disconnect()
   })
 
   beforeEach(async () => {

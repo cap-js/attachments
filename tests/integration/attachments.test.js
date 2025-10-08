@@ -88,46 +88,46 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
-      // First upload an attachment to delete
-      sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-      expect(sampleDocID).to.not.be.null
+    // First upload an attachment to delete
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).to.not.be.null
 
-      // Wait for scanning to complete
-      await waitForScanning()
+    // Wait for scanning to complete
+    await waitForScanning()
 
-      //check the content of the uploaded attachment in main table
-      const contentResponse = await GET(
+    //check the content of the uploaded attachment in main table
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).to.equal(200)
+
+    //delete attachment
+    let action = await DELETE.bind(
+      {},
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
+    )
+    //trigger to delete attachment
+    await utils.draftModeActions(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+      action
+    )
+    //read attachments list for Incident
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(0)
+
+    //content should not be there
+    await expect(
+      GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       )
-      expect(contentResponse.status).to.equal(200)
-
-      //delete attachment
-      let action = await DELETE.bind(
-        {},
-        `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
-      )
-      //trigger to delete attachment
-      await utils.draftModeActions(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-        action
-      )
-      //read attachments list for Incident
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      )
-      //the data should have no attachments
-      expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(0)
-
-      //content should not be there
-      await expect(
-        GET(
-          `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-        )
-      ).to.be.rejectedWith(/404/)
+    ).to.be.rejectedWith(/404/)
   })
 })
 
@@ -143,8 +143,8 @@ describe("Tests for attachments facet disable", () => {
   })
 
   afterAll(async () => {
-      // Close CDS connections for this test suite
-      cds.db.disconnect()
+    // Close CDS connections for this test suite
+    cds.db.disconnect()
   })
 
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
