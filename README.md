@@ -129,7 +129,7 @@ By default, the plugin operates without a dedicated storage target, storing atta
 
 Other available storage targets: 
 - AWS 
-- Local file system as a storage backend (only for testing scenarios) 
+- Local mock file system (only for testing scenarios) 
 
 When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
 
