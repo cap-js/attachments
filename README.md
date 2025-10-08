@@ -158,7 +158,7 @@ For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serv
     cds bind <MalwareScannerLocalName> --to <RemoteMalwareScannerName>
     ```
 
-By default, malware scanning is enabled for all profiles unless no storage provider has been specified. You can configure malware scanning by setting:
+By default, malware scanning is enabled for all profiles if a storage provider has been specified. You can configure malware scanning by setting:
 ```json
 "attachments": {
     "scan": true
