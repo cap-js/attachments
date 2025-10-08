@@ -41,7 +41,7 @@ For a quick setup with in-memory storage:
 ```sh
  npm add @cap-js/attachments
  ```
-- To use Attachments, simply extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](changes-in-the-cds-models) for more details): 
+- To use Attachments, extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](#changes-in-the-cds-models) for more details): 
 ```cds
 using { Attachments } from '@cap-js/attachments';
 
