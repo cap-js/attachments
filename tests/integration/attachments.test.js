@@ -112,6 +112,54 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     }
   })
 
+  it("Scan status is translated", async () => {
+    //function to upload attachment
+    let action = await POST.bind(
+      {},
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+
+    try {
+      //trigger to upload attachment
+      await utils.draftModeActions(
+        "processor",
+        "Incidents",
+        incidentID,
+        "ProcessorService",
+        action
+      )
+    } catch (err) {
+      expect(err).to.be.undefined
+    }
+    
+    const scanStatesEN = await cds.run(SELECT.from('sap.attachments.ScanStates'));
+    const scanStatesDE = await cds.run(SELECT.localized.from('sap.attachments.ScanStates').columns('code', `texts[locale='de'].name as name`))
+    // Check Scanning status
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
+    )
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(2)
+    expect(response.data.value[0].statusNav.name).to.equal(scanStatesEN.find(state => state.code === response.data.value[0].status).name)
+
+    const responseDE = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
+    )
+    expect(responseDE.status).to.equal(200)
+    expect(responseDE.data.value.length).to.equal(2)
+    expect(responseDE.data.value[0].statusNav.name).to.equal(scanStatesDE.find(state => state.code === responseDE.data.value[0].status).name)
+  })
+
   //Deleting the attachment
   it("Deleting the attachment", async () => {
     //check the content of the uploaded attachment in main table
@@ -148,7 +196,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       )
       //the data should have no attachments
       expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(0)
+      expect(response.data.value.length).to.equal(1)
     } catch (err) {
       expect(err).to.be.undefined
     }
