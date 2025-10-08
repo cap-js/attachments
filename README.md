@@ -86,7 +86,7 @@ With the steps above, we have successfully set up asset handling for our referen
 The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
 
 ```cds
-“devDependencies”: { 
+"devDependencies": { 
     “@cap-js/attachments”: ${latest-version}, 
     //... 
 }
