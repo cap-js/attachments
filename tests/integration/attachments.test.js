@@ -25,14 +25,10 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   })
 
   afterAll(async () => {
-    try {
-      // Clean up test data
-      await test.data.reset()
-      // Close CDS connections for this test suite
-      cds.db.disconnect()
-    } catch (error) {
-      console.warn("Warning: Error during test cleanup:", error.message)
-    }
+    // Clean up test data
+    await test.data.reset()
+    // Close CDS connections for this test suite
+    cds.db.disconnect()
   })
 
   beforeEach(async () => {
@@ -43,13 +39,9 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     let sampleDocID = null
 
-    try {
-      // Upload attachment using helper function
-      sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-      expect(sampleDocID).to.not.be.null
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).to.not.be.null
 
     //read attachments list for Incident
     try {
@@ -66,49 +58,36 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       expect(err).to.be.undefined
     }
     //read attachment in active table
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      )
-      expect(response.status).to.equal(200)
-      expect(response.data).to.not.be.undefined
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(response.status).to.equal(200)
+    expect(response.data).to.not.be.undefined
 
     // Check Scanning status
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      )
-      expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(1)
-      expect(response.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    const scanResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(scanResponse.status).to.equal(200)
+    expect(scanResponse.data.value.length).to.equal(1)
+    expect(scanResponse.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
 
     // Wait for scanning to complete
     await waitForScanning()
 
     //Check clean status
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      )
-      expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(1)
-      expect(response.data.value[0].status).to.equal("Clean")
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    const resultResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(resultResponse.status).to.equal(200)
+    expect(resultResponse.data.value.length).to.equal(1)
+    expect(resultResponse.data.value[0].status).to.equal("Clean")
   })
 
   //Deleting the attachment
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
-    try {
       // First upload an attachment to delete
       sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
       expect(sampleDocID).to.not.be.null
@@ -121,11 +100,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       )
       expect(contentResponse.status).to.equal(200)
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
 
-    try {
       //delete attachment
       let action = await DELETE.bind(
         {},
@@ -153,9 +128,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
           `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
         )
       ).to.be.rejectedWith(/404/)
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
   })
 })
 
@@ -171,12 +143,8 @@ describe("Tests for attachments facet disable", () => {
   })
 
   afterAll(async () => {
-    try {
       // Close CDS connections for this test suite
       cds.db.disconnect()
-    } catch (error) {
-      console.warn("Warning: Error during test cleanup:", error.message)
-    }
   })
 
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {

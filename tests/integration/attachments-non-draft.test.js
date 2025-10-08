@@ -62,15 +62,10 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   afterAll(async () => {
-    try {
       // Clean up test data
       await test.data.reset()
-
       // Close CDS connections for this test suite
       cds.db.disconnect()
-    } catch (error) {
-      console.warn("Warning: Error during test cleanup:", error.message)
-    }
   })
 
   beforeEach(async () => {
