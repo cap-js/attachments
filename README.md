@@ -146,7 +146,7 @@ For using SAP Object Store, you must already have an SAP Object Store service in
     In the project directory, you can generate a new file _.cdsrc-private.json by running:
 
     ```sh
-    cds bind objectstore -2 <INSTANCE>:<SERVICE-KEY> --kind s3
+    cds bind <ObjectStoreLocalName> --to <ObjectStoreRemoteName>
     ```
 
 ### Malware Scanner
