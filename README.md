@@ -15,17 +15,14 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
   * [Changes in the CDS Models](#changes-in-the-cds-models)
   * [Storage Targets](#storage-targets)
   * [Malware Scanner](#malware-scanner)
-  * [Outbox](#outbox) ?
-  * [Restore Endpoint](#restore-endpoint) ?
   * [Visibility Control](#visibility-control-for-attachments-ui-facet-generation)
   * [Non-Draft Uploading](non-draft-upload)
-* [Releases](#releases) ?
+* [Releases](#releases)
 * [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
 * [Architecture Overview](#architecture-overview)
-  * [Design](#design) ?
   * [Multitenancy](#multitenancy)
-  * [Object Stores](#object-stores) ?
-  * [Model Texts](#model-texts) ?
+  * [Object Stores](#object-stores)
+  * [Model Texts](#model-texts)
 * [Monitoring & Logging](#monitoring--logging)
 * [Support, Feedback, Contributing ](#support-feedback-and-contributing)
 * [Code of Conduct](#code-of-conduct)
@@ -126,7 +123,7 @@ Both methods directly add the respective UI Facet. Take note that in order to us
 By default, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
 
 Other available storage targets: 
-- AWS 
+- AWS
 - Local mock file system (only for testing scenarios) 
 
 When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
@@ -146,6 +143,8 @@ For using SAP Object Store, you must already have an SAP Object Store service in
     ```sh
     cds bind <ObjectStoreLocalName> --to <ObjectStoreRemoteName>
     ```
+
+See [Object Stores](#object-stores) for further information on SAP Object Store.
 
 ### Malware Scanner
 
@@ -339,20 +338,19 @@ In the model, several fields are annotated with the `@title` annotation. Default
 
 The following table gives an overview of the fields and the i18n codes:
 
-| Field Name | i18n Code             |
-|------------|-----------------------|
-| `content`  | `attachment_content`  |
-| `mimeType` | `attachment_mimeType` |
-| `fileName` | `attachment_fileName` |
-| `status`   | `attachment_status`   |
-| `note`     | `attachment_note`     |
+| Field Name | i18n Code    |
+|------------|--------------|
+| `mimeType` | `MediaType`  |
+| `fileName` | `FileName`   |
+| `status`   | `ScanStatus` |
+| `note`     | `note`       |
 
 In addition to the field names, header information (`@UI.HeaderInfo`) are also annotated:
 
 | Header Info      | i18n Code     |  
 |------------------|---------------|
-| `TypeName`       | `attachment`  |
-| `TypeNamePlural` | `attachments` |
+| `TypeName`       | `Attachment`  |
+| `TypeNamePlural` | `Attachments` |
 
 
 ## Monitoring & Logging
