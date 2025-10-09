@@ -46,7 +46,7 @@ entity Incidents {
 }
 ```
 
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. 
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. A miniature version of this app can be found within the [tests](https://github.com/cap-js/attachments/tree/main/tests/incidents-app) directory for local testing.
 
 For object store integration, see [Object Stores](#object-stores).
 
