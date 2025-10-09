@@ -30,7 +30,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 ## Quick Start
 
-For a quick setup with in-memory storage: 
+For a quick local development setup with in-memory storage:
 
 - The plugin is self-configuring as described in [Package Setup](#package-setup). To enable attachments, simply add the plugin package to your project:  
 ```sh
@@ -46,13 +46,13 @@ entity Incidents {
 }
 ```
 
-In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. A miniature version of this app can be found within the [tests](https://github.com/cap-js/attachments/tree/main/tests/incidents-app) directory for local testing.
+In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. A miniature version of this app can be found within the [tests](./tests/incidents-app) directory for local testing.
 
-For object store integration, see [Object Stores](#object-stores).
+For productive use, a valid object store binding is required, see [Object Stores](#object-stores).
 
 
 ## Local Walk-Through
-With the steps above, we have successfully set up asset handling for our reference application. Let's see that in action by extending the Incidents Entity in the schema.cds file. We can try out the scenarios where the attachments contents are stored locally in the database.
+With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps. For local testing, the attachments contents are stored in a local database.
 
 1. **Start the server**:
 
@@ -120,15 +120,12 @@ Both methods directly add the respective UI Facet. Take note that in order to us
 
 ### Storage Targets
 
-By default, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
-
-Other available storage targets: 
-- AWS
-- Local mock file system (only for testing scenarios) 
+When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
 
 When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
 
-For using SAP Object Store, you must already have an SAP Object Store service instance created. To bind it locally, follow this setup:
+For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
+For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it locally, follow this setup:
 
 1. Log in to Cloud Foundry:
 
@@ -136,13 +133,13 @@ For using SAP Object Store, you must already have an SAP Object Store service in
     cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
     ```
 
-2.  To bind to the service, continue with the steps below.
-
-    In the project directory, you can generate a new file _.cdsrc-private.json by running:
+2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
 
     ```sh
     cds bind <ObjectStoreLocalName> --to <ObjectStoreRemoteName>
     ```
+
+    Where `ObjectStoreLocalName` can be any name given by the user here.
 
 See [Object Stores](#object-stores) for further information on SAP Object Store.
 
@@ -162,7 +159,7 @@ By default, malware scanning is enabled for all profiles if a storage provider h
 }
 ```
 
-If there is no malware scanner available and the scanner is not disabled, then the uploading will fail. 
+If there is no malware scanner available and the scanner is not disabled, then the upload will fail. 
 
 Scan status codes: 
 - Clean: Only attachments with the status Clean are accessible. 
@@ -235,7 +232,6 @@ The typical sequence includes:
 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
 
-- When using SAP HANA as the storage target, multitenancy support depends on the consuming application. In most cases, multitenancy is achieved by using a dedicated schema for each tenant, providing strong data isolation at the database level.
 - When using an [object store](storage-targets/cds-feature-attachments-oss) as the storage target, true multitenancy is not yet implemented (as of version 2.1.0). In this case, all blobs are stored in a single bucket, and tenant data is not separated.
 
 > [!Note]
@@ -264,11 +260,11 @@ To ensure tenant identification when using a shared object store instance, the p
 
 ### Object Stores
 
-A valid Object Store service binding is required, typically one provisioned through SAP BTP. See [Local Development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
+A valid object store service binding is required, typically one provisioned through SAP BTP. See [Local Development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
 
 #### Local development
 
-For local development, bind to an Object Store service using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry):
+For local development, bind to an object store service using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry):
 
 ```bash
 cds bind <service-instance-name>
@@ -334,7 +330,7 @@ To set the binding, provide the following environment variables:
 
 ### Model Texts
 
-In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [2 languages](https://github.com/cap-js/attachments/tree/main/_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.
+In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [2 languages](./_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.
 
 The following table gives an overview of the fields and the i18n codes:
 
