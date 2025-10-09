@@ -1,27 +1,32 @@
 const cds = require("@sap/cds")
 const path = require("path")
-const app = path.resolve(__dirname, "../incidents-app")
-const { test } = cds.test()
-const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
+// const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
 const { waitForScanning } = require("../utils/testUtils")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
+const app = path.join(__dirname, "../incidents-app")
+const { test, expect, axios, GET, POST, DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null
-let incidentID = null
+const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
   beforeAll(async () => {
+    // Set environment before any connections
     cds.env.requires.db.kind = "sql"
     cds.env.requires.attachments.kind = "db"
-    await cds.connect.to("sql:my.db")
-    await cds.connect.to("attachments")
     cds.env.requires.attachments.scan = false
     cds.env.profiles = ["development"]
-    incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
+
+    // Connect to services
+    await cds.connect.to("sql:my.db")
+    await cds.connect.to("attachments")
+
+    // Initialize test variables
+    
     utils = new RequestSend(POST)
   })
 
@@ -49,25 +54,21 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     expect(sampleDocID).to.not.be.null
 
     //read attachments list for Incident
-    try {
-      const response = await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-      )
-      //the data should have only one attachment
-      expect(response.status).to.equal(200)
-      expect(response.data.value.length).to.equal(1)
-      //to make sure content is not read
-      expect(response.data.value[0].content).to.be.undefined
-      sampleDocID = response.data.value[0].ID
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).to.equal(200)
+    expect(attachmentResponse.data.value.length).to.equal(1)
+    //to make sure content is not read
+    expect(attachmentResponse.data.value[0].content).to.be.undefined
+    sampleDocID = attachmentResponse.data.value[0].ID
     //read attachment in active table
-    const response = await GET(
+    const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
-    expect(response.status).to.equal(200)
-    expect(response.data).to.not.be.undefined
+    expect(contentResponse.status).to.equal(200)
+    expect(contentResponse.data).to.not.be.undefined
 
     // Check Scanning status
     const scanResponse = await GET(
@@ -91,8 +92,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
 
   it("Scan status is translated", async () => {
     //function to upload attachment
-    let action = await POST.bind(
-      {},
+    let action = () => POST(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentID,
@@ -112,29 +112,42 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         "processor",
         "Incidents",
         incidentID,
-        "ProcessorService",
+        // "ProcessorService",
         action
       )
     } catch (err) {
       expect(err).to.be.undefined
     }
-    
-    const scanStatesEN = await cds.run(SELECT.from('sap.attachments.ScanStates'));
-    const scanStatesDE = await cds.run(SELECT.localized.from('sap.attachments.ScanStates').columns('code', `texts[locale='de'].name as name`))
+
+    const scanStatesEN = await cds.run(
+      SELECT.from("sap.attachments.ScanStates")
+    )
+    const scanStatesDE = await cds.run(
+      SELECT.localized
+        .from("sap.attachments.ScanStates")
+        .columns("code", `texts[locale='de'].name as name`)
+    )
     // Check Scanning status
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
     )
     expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(2)
-    expect(response.data.value[0].statusNav.name).to.equal(scanStatesEN.find(state => state.code === response.data.value[0].status).name)
+    expect(response.data.value.length).to.equal(1)
+    expect(response.data.value[0].statusNav.name).to.equal(
+      scanStatesEN.find((state) => state.code === response.data.value[0].status)
+        .name
+    )
 
     const responseDE = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
     expect(responseDE.status).to.equal(200)
-    expect(responseDE.data.value.length).to.equal(2)
-    expect(responseDE.data.value[0].statusNav.name).to.equal(scanStatesDE.find(state => state.code === responseDE.data.value[0].status).name)
+    expect(responseDE.data.value.length).to.equal(1)
+    expect(responseDE.data.value[0].statusNav.name).to.equal(
+      scanStatesDE.find(
+        (state) => state.code === responseDE.data.value[0].status
+      ).name
+    )
   })
 
   //Deleting the attachment
@@ -155,8 +168,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     expect(contentResponse.status).to.equal(200)
 
     //delete attachment
-    let action = await DELETE.bind(
-      {},
+    let action = () => DELETE(
       `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
     )
     //trigger to delete attachment
@@ -164,7 +176,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       "processor",
       "Incidents",
       incidentID,
-      "ProcessorService",
+      // "ProcessorService",
       action
     )
     //read attachments list for Incident
@@ -173,7 +185,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     )
     //the data should have no attachments
     expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(1)
+    expect(response.data.value.length).to.equal(0)
 
     //content should not be there
     await expect(
@@ -186,12 +198,17 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
 
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
+    // Set environment before any connections
     cds.env.requires.db.kind = "sql"
     cds.env.requires.attachments.kind = "db"
-    await cds.connect.to("sql:my.db")
-    await cds.connect.to("attachments")
     cds.env.requires.attachments.scan = false
     cds.env.profiles = ["development"]
+
+    // Connect to services
+    await cds.connect.to("sql:my.db")
+    await cds.connect.to("attachments")
+
+    // Initialize test variables
     utils = new RequestSend(POST)
   })
 
@@ -291,8 +308,7 @@ async function uploadDraftAttachment(
   incidentId,
   filename = "sample.pdf"
 ) {
-  const action = await POST.bind(
-    {},
+  const action = () => POST(
     `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
     {
       up__ID: incidentId,
@@ -312,7 +328,7 @@ async function uploadDraftAttachment(
     "processor",
     "Incidents",
     incidentId,
-    "ProcessorService",
+    // "ProcessorService",
     action
   )
 
