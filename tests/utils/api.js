@@ -9,20 +9,43 @@ class RequestSend {
     action, // the action to execute
     isRootCreated = false
   ) {
-    if (!isRootCreated) {
-      try {
-        // Create draft from active entity
-        await this.post(
-          `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/draftEdit`,
-          {
-            PreserveChanges: true,
-          }
-        )
-      } catch (err) {
-        return err
-      }
+    // Use the new separated functions for better maintainability
+    const editError = await this.draftModeEdit(
+      serviceName,
+      entityName,
+      id,
+      isRootCreated
+    )
+    if (editError) {
+      return editError
     }
 
+    const saveError = await this.draftModeSave(
+      serviceName,
+      entityName,
+      id,
+      action
+    )
+    if (saveError) {
+      return saveError
+    }
+  }
+
+  async draftModeEdit(serviceName, entityName, id) {
+    try {
+      // Create draft from active entity
+      await this.post(
+        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/draftEdit`,
+        {
+          PreserveChanges: true,
+        }
+      )
+    } catch (err) {
+      return err
+    }
+  }
+
+  async draftModeSave(serviceName, entityName, id, action) {
     try {
       // Execute the action (e.g., POST attachment)
       await action()

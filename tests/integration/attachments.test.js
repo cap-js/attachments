@@ -26,7 +26,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     await cds.connect.to("attachments")
 
     // Initialize test variables
-    
+
     utils = new RequestSend(POST)
   })
 
@@ -92,32 +92,24 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
 
   it("Scan status is translated", async () => {
     //function to upload attachment
-    let action = () => POST(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "sample.pdf",
-        mimeType: "application/pdf",
-        content: createReadStream(join(__dirname, "content/sample.pdf")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    )
-
-    try {
-      //trigger to upload attachment
-      await utils.draftModeActions(
-        "processor",
-        "Incidents",
-        incidentID,
-        // "ProcessorService",
-        action
+    let action = () =>
+      POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+        {
+          up__ID: incidentID,
+          filename: "sample.pdf",
+          mimeType: "application/pdf",
+          content: createReadStream(join(__dirname, "content/sample.pdf")),
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        }
       )
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+
+    //trigger to upload attachment
+    await utils.draftModeEdit("processor", "Incidents", incidentID)
+    await utils.draftModeSave("processor", "Incidents", incidentID, action)
 
     const scanStatesEN = await cds.run(
       SELECT.from("sap.attachments.ScanStates")
@@ -168,17 +160,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     expect(contentResponse.status).to.equal(200)
 
     //delete attachment
-    let action = () => DELETE(
-      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
-    )
+    let action = () =>
+      DELETE(
+        `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
+      )
     //trigger to delete attachment
-    await utils.draftModeActions(
-      "processor",
-      "Incidents",
-      incidentID,
-      // "ProcessorService",
-      action
-    )
+    await utils.draftModeEdit("processor", "Incidents", incidentID)
+    await utils.draftModeSave("processor", "Incidents", incidentID, action)
+
     //read attachments list for Incident
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
@@ -308,29 +297,25 @@ async function uploadDraftAttachment(
   incidentId,
   filename = "sample.pdf"
 ) {
-  const action = () => POST(
-    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
-    {
-      up__ID: incidentId,
-      filename: filename,
-      mimeType: "application/pdf",
-      content: createReadStream(
-        join(__dirname, "..", "integration", "content/sample.pdf")
-      ),
-      createdAt: new Date(
-        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-      ),
-      createdBy: "alice",
-    }
-  )
+  const action = () =>
+    POST(
+      `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentId,
+        filename: filename,
+        mimeType: "application/pdf",
+        content: createReadStream(
+          join(__dirname, "..", "integration", "content/sample.pdf")
+        ),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
 
-  await utils.draftModeActions(
-    "processor",
-    "Incidents",
-    incidentId,
-    // "ProcessorService",
-    action
-  )
+  await utils.draftModeEdit("processor", "Incidents", incidentID)
+  await utils.draftModeSave("processor", "Incidents", incidentID, action)
 
   // Get the uploaded attachment ID
   const response = await GET(
