@@ -84,7 +84,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await waitForScanning()
+    await delay()
 
     const response = await axios.get(
       `/odata/v4/processor/Incidents(ID=${incidentID})/attachments`
