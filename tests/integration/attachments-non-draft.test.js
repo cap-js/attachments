@@ -6,7 +6,7 @@ const {
   commentAnnotation,
   uncommentAnnotation,
 } = require("../utils/modify-annotation")
-const { waitForScanning } = require("../utils/testUtils")
+const { delay } = require("../utils/testUtils")
 
 const servicesCdsPath = path.resolve(
   __dirname,
