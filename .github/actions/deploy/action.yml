@@ -37,7 +37,11 @@ runs:
       shell: bash
       run: |
         echo "::debug::CF_API=${{ inputs.CF_API }}"
-        cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }}
+        for i in {1..3}; do
+          cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }} && break
+          echo "cf login failed, retrying ($i/3)..."
+          sleep 5
+        done
 
     - name: Install Multi-Target Application Build Tool (MBT)
       shell: bash
