@@ -88,24 +88,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const expectedFilename = "sample.pdf"
     const expectedStatus = "Clean"
     const attachment = response.data.value[0]
-  //   if (attachment.up__ID !== incidentID) {
-  //   throw new Error(
-  //     `Expected up__ID to be ${incidentID}, got ${attachment.up__ID}`
-  //   )
-  // }
-  // if (attachment.filename !== expectedFilename) {
-  //   throw new Error(
-  //     `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
-  //   )
-  // }
-  // if (attachment.status !== expectedStatus) {
-  //   throw new Error(
-  //     `Expected status to be ${expectedStatus}, got ${attachment.status}`
-  //   )
-  // }
-  // if (attachment.content !== undefined) {
-  //   throw new Error("Content should not be included in list responses")
-  // }
+    
     expect(attachment.up__ID).to.equal(incidentID)
     expect(attachment.filename).to.equal(expectedFilename)
     expect(attachment.status).to.equal(expectedStatus)
