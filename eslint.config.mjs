@@ -2,6 +2,10 @@ import cds from "@sap/cds/eslint.config.mjs"
 export default [
   ...cds,
   {
-    ignores: ["tests/**/*"],
+    name: 'test-files-config',
+    files: ["tests/**/*"],
+    rules: {
+      'no-console': 'off',
+    }
   },
 ]
