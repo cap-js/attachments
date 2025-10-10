@@ -169,7 +169,7 @@ Scan status codes:
 - Infected: The attachment is infected. 
 
 > [!Note]
-> The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). 
+> The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service) even with the malware scanner disabled. 
 
 
 ### Visibility Control for Attachments UI Facet Generation
@@ -231,8 +231,6 @@ The typical sequence includes:
 ### Multitenancy
 
 The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
-
-- When using an [object store](storage-targets/cds-feature-attachments-oss) as the storage target, true multitenancy is not yet implemented (as of version 2.1.0). In this case, all blobs are stored in a single bucket, and tenant data is not separated.
 
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
