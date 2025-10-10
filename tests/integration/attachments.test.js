@@ -96,8 +96,8 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       )
 
     //trigger to upload attachment
-    await utils.draftModeEdit("processor", "Incidents", incidentID)
-    await utils.draftModeSave("processor", "Incidents", incidentID, action)
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
 
     const scanStatesEN = await cds.run(
       SELECT.from("sap.attachments.ScanStates")
@@ -153,8 +153,8 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
         `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
       )
     //trigger to delete attachment
-    await utils.draftModeEdit("processor", "Incidents", incidentID)
-    await utils.draftModeSave("processor", "Incidents", incidentID, action)
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
 
     //read attachments list for Incident
     const response = await GET(
@@ -297,8 +297,8 @@ async function uploadDraftAttachment(
       }
     )
 
-  await utils.draftModeEdit("processor", "Incidents", incidentID)
-  await utils.draftModeSave("processor", "Incidents", incidentID, action)
+  await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+  await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
 
   // Get the uploaded attachment ID
   const response = await GET(

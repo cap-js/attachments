@@ -2,11 +2,11 @@ class RequestSend {
   constructor(post) {
     this.post = post
   }
-  async draftModeEdit(serviceName, entityName, id) {
+  async draftModeEdit(serviceName, entityName, id, path) {
     try {
       // Create draft from active entity
       await this.post(
-        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/draftEdit`,
+        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/${path}.draftEdit`,
         {
           PreserveChanges: true,
         }
@@ -16,14 +16,14 @@ class RequestSend {
     }
   }
 
-  async draftModeSave(serviceName, entityName, id, action) {
+  async draftModeSave(serviceName, entityName, id, action, path) {
     try {
       // Execute the action (e.g., POST attachment)
       await action()
 
       // Prepare the draft
       await this.post(
-        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/draftPrepare`,
+        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftPrepare`,
         {
           SideEffectsQualifier: "",
         }
@@ -31,7 +31,7 @@ class RequestSend {
 
       // Activate the draft
       await this.post(
-        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/draftActivate`,
+        `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftActivate`,
         {}
       )
     } catch (err) {
