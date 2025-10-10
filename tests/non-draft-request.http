@@ -20,15 +20,19 @@ Content-Type: application/json
 }
 
 ### Put attachment content (content request)
-@newAttachmentID = {{createAttachment.response.body.ID}}
-PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+@attachmentsID = {{createAttachment.response.body.ID}}
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
 Authorization: {{auth}}
 Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
+### Get newly created attachment metadata
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
+Authorization: {{auth}}
+
 ### Fetching newly created attachment content
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{newAttachmentID}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
 Authorization: {{auth}}
 
 ### Get list of attachments for a particular incident
@@ -37,22 +41,15 @@ GET {{host}}/odata/v4/processor/Incidents(ID={{incidentsID}})/attachments
 Authorization: {{auth}}
 
 ### Get attachments content
-@attachmentsID = {{attachments.response.body.value[0].ID}}
 GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
 Authorization: {{auth}}
 
 ### Get attachments content with up__ID included
-@incidentID = {{attachments.response.body.value[0].up__ID}}
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
-Authorization: {{auth}}
-
-### Fetching newly created attachment content with up__ID included
-GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
+GET {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})/content
 Authorization: {{auth}}
 
 ### Put attachment content (content request) with up__ID included
-@newAttachmentID = {{createAttachment.response.body.ID}}
-PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentID}},ID={{attachmentsID}})/content
+PUT {{host}}/odata/v4/processor/Incidents({{incidentsID}})/attachments(up__ID={{incidentsID}},ID={{attachmentsID}})/content
 Authorization: {{auth}}
 Content-Type: image/jpeg
 

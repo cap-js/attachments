@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 2.2.2
+
+### Added
+
+- Enhanced logging capabilities by introducing a logging wrapper, providing more comprehensive and structured output to facilitate easier debugging and troubleshooting.
+
+### Fixed
+
+- Resolved an issue in hybrid mode where an incorrect route path variable was used for attachment uploads in local environments.
+
 ## Version 2.2.1
 
 ### Fixed

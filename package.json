@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -10,6 +10,7 @@
   "files": [
     "index.cds",
     "lib",
+    "db",
     "srv"
   ],
   "scripts": {
@@ -25,13 +26,14 @@
   "devDependencies": {
     "@cap-js/cds-test": ">=0",
     "@cap-js/sqlite": "^2",
+    "eslint": "^9.36.0",
     "express": "^4.18.2"
   },
   "peerDependencies": {
     "@sap/cds": ">=8"
   },
   "engines": {
-    "node": ">=17.0.0"
+    "node": ">=18.0.0"
   },
   "cds": {
     "requires": {
