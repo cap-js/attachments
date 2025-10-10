@@ -8,5 +8,5 @@ async function delay(timeout = 1000) {
 }
 
 module.exports = {
-  waitForScanning,
+  delay,
 }

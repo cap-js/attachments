@@ -1,8 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
-// const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
 const { RequestSend } = require("../utils/api")
-const { waitForScanning } = require("../utils/testUtils")
+const { delay } = require("../utils/testUtils")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
@@ -28,17 +27,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     // Initialize test variables
 
     utils = new RequestSend(POST)
-  })
-
-  afterAll(async () => {
-    try {
-      // Clean up test data
-      await test.data.reset()
-      // Close CDS connections for this test suite
-      cds.db.disconnect()
-    } catch (error) {
-      console.warn("Warning: Error during cleanup:", error.message)
-    }
   })
 
   beforeEach(async () => {
@@ -79,7 +67,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     expect(scanResponse.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
 
     // Wait for scanning to complete
-    await waitForScanning()
+    await delay()
 
     //Check clean status
     const resultResponse = await GET(
@@ -151,7 +139,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     expect(sampleDocID).to.not.be.null
 
     // Wait for scanning to complete
-    await waitForScanning()
+    await delay()
 
     //check the content of the uploaded attachment in main table
     const contentResponse = await GET(
@@ -199,11 +187,6 @@ describe("Tests for attachments facet disable", () => {
 
     // Initialize test variables
     utils = new RequestSend(POST)
-  })
-
-  afterAll(async () => {
-    // Close CDS connections for this test suite
-    cds.db.disconnect()
   })
 
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {

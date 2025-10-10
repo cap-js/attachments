@@ -57,12 +57,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     cds.env.profiles = ["development"]
   })
 
-  afterAll(async () => {
-    // Clean up test data & Close CDS connections for this test suite
-    await test.data.reset()
-    cds.db.disconnect()
-  })
-
   beforeEach(async () => {
     // Clean up any existing attachments before each test
     await test.data.reset()
@@ -94,25 +88,28 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const expectedFilename = "sample.pdf"
     const expectedStatus = "Clean"
     const attachment = response.data.value[0]
-    if (attachment.up__ID !== incidentID) {
-    throw new Error(
-      `Expected up__ID to be ${incidentID}, got ${attachment.up__ID}`
-    )
-  }
-  if (attachment.filename !== expectedFilename) {
-    throw new Error(
-      `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
-    )
-  }
-  if (attachment.status !== expectedStatus) {
-    throw new Error(
-      `Expected status to be ${expectedStatus}, got ${attachment.status}`
-    )
-  }
-  if (attachment.content !== undefined) {
-    throw new Error("Content should not be included in list responses")
-  }
-
+  //   if (attachment.up__ID !== incidentID) {
+  //   throw new Error(
+  //     `Expected up__ID to be ${incidentID}, got ${attachment.up__ID}`
+  //   )
+  // }
+  // if (attachment.filename !== expectedFilename) {
+  //   throw new Error(
+  //     `Expected filename to be ${expectedFilename}, got ${attachment.filename}`
+  //   )
+  // }
+  // if (attachment.status !== expectedStatus) {
+  //   throw new Error(
+  //     `Expected status to be ${expectedStatus}, got ${attachment.status}`
+  //   )
+  // }
+  // if (attachment.content !== undefined) {
+  //   throw new Error("Content should not be included in list responses")
+  // }
+    expect(attachment.up__ID).to.equal(incidentID)
+    expect(attachment.filename).to.equal(expectedFilename)
+    expect(attachment.status).to.equal(expectedStatus)
+    expect(attachment.content).to.be.undefined
     expect(response.data.value[0].ID).to.equal(attachmentID)
   })
 
@@ -121,7 +118,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await waitForScanning()
+    await delay()
 
     const response = await axios.get(
       `/odata/v4/processor/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
@@ -142,7 +139,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await waitForScanning()
+    await delay()
 
     // Delete the attachment
     const deleteResponse = await axios.delete(
