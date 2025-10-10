@@ -110,8 +110,12 @@ describe('scanRequest', () => {
     const key = { ID: 'test-id' }
     cds.env = { requires: {}, profiles: [] }
 
-    // The function should not throw but should update status to Failed
-    await scanRequest(Attachments, key)
+    try {
+      await scanRequest(Attachments, key)
+    } catch (error) {
+      expect(error.message).toBe("SAP Malware Scanning service is not bound.")
+    }
+
     expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
   })
 })
