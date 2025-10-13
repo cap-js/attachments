@@ -11,11 +11,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Resolved a crash in the malware scanning process when running the CDS server in a multitenancy setup.
-- Corrected missing translated columns and ensured translations are available for all standard languages.
-- Eliminated cross-dependencies in Jest tests to improve test isolation and reliability.
+- Corrected missing translations for column labels.
+- Scan states are now translated.
 
 ### Added
 
+- Deprecated `@attachments.disable_facet`
 - Introduced support for @UI.Hidden, enabling dynamic hiding of the attachments section in the UI.
 
 ## Version 2.2.2
