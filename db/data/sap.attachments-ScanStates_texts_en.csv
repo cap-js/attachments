@@ -1,6 +1,6 @@
-locale;code;name
-en;Unscanned;Unscanned
-en;Scanning;Scanning
-en;Infected;Infected
-en;Clean;Clean
-en;Failed;Failed
+locale;code;name;descr
+en;Unscanned;Unscanned;
+en;Scanning;Scanning;
+en;Infected;Infected;
+en;Clean;Clean;
+en;Failed;Failed;
