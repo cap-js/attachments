@@ -1,6 +1,6 @@
-locale;code;name
-de;Unscanned;Nicht gescannt
-de;Scanning;Wird gescannt
-de;Infected;Infiziert
-de;Clean;Sauber
-de;Failed;Fehlgeschlagen
+locale;code;name;descr
+de;Unscanned;Nicht gescannt;
+de;Scanning;Wird gescannt;
+de;Infected;Infiziert;
+de;Clean;Sauber;
+de;Failed;Fehlgeschlagen;
