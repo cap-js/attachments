@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 3.0.0
 
+**BREAKING CHANGE:** Replaced usage of the CAP `req` variable with `cds.context` throughout the codebase.
+
 ### Fixed
 
 - Resolved a crash in the malware scanning process when running the CDS server in a multitenancy setup.
