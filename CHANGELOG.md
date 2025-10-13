@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.0.0
+
+### Fixed
+
+- Resolved a crash in the malware scanning process when running the CDS server in a multitenancy setup.
+- Corrected missing translated columns and ensured translations are available for all standard languages.
+- Eliminated cross-dependencies in Jest tests to improve test isolation and reliability.
+
+### Added
+
+- Introduced support for @UI.Hidden, enabling dynamic hiding of the attachments section in the UI.
+
 ## Version 2.2.2
 
 ### Added
