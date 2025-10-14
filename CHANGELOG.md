@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.0.0
+
+**BREAKING CHANGE:** Replaced usage of the CAP `req` variable with `cds.context` throughout the codebase.
+
+### Fixed
+
+- Resolved a crash in the malware scanning process when running the CDS server in a multitenancy setup.
+- Corrected missing translations for column labels.
+- Scan states are now translated.
+
+### Added
+
+- Deprecated `@attachments.disable_facet`
+- Introduced support for @UI.Hidden, enabling dynamic hiding of the attachments section in the UI.
+
 ## Version 2.2.2
 
 ### Added

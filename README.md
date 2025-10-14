@@ -16,10 +16,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 - [Code of Conduct](#code-of-conduct)
 - [Licensing](#licensing)
 
-
 ## Setup
-
-
 
 To enable attachments, simply add this self-configuring plugin package to your project:
 
@@ -32,12 +29,15 @@ In this guide, we use the [Incidents Management reference sample app](https://gi
 > [!Note]
 > To be able to use the Fiori *uploadTable* feature, you must ensure 1.121.0/ 1.122.0/ ^1.125.0 SAPUI5 version is updated in the application's _index.html_
 
+> [!Note]
+> The plugin supports cds 8 & 9
 
 ## Use Attachments
 
 > [!Note]
 > To be able to use the plugin with Fiori elements UI, make sure *draft* is enabled for the entity.
 
+> [!Note]
 > The plugin currently supports file uploads up to **400 MB** in size per attachment.
 
 To use Attachments, simply add an element referring to the pre-defined `Attachments` type as follows:
@@ -116,7 +116,7 @@ By default, malware scanning is enabled for all profiles except development prof
 
 ## Visibility control for Attachments UI Facet generation
 
-By setting the `@attachments.disable_facet` property to `true`, developers can hide the plugin from the UI achieving visibility.
+By setting the `@UI.Hidden` property to `true`, developers can hide the plugin from the UI achieving visibility.
 This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
 
 ### Example Usage
@@ -124,11 +124,26 @@ This feature is particularly useful in scenarios where the visibility of the plu
 ```cds
 entity Incidents {
   // ...
-  @attachments.disable_facet
+  @UI.Hidden
   attachments: Composition of many Attachments;
 }
 ```
-In this example, the `@attachments.disable_facet` is set to `true`, which means the plugin will be hidden by default.
+In this example, the `@UI.Hidden` is set to `true`, which means the plugin will be hidden by default. You can also use dynamic expressions which are then added to the facet.
+
+
+```cds
+entity Incidents {
+  // ...
+  status : Integer enum {
+    submitted =  1;
+    fulfilled =  2;
+    shipped   =  3;
+    canceled  = -1;
+  };
+  @UI.Hidden : (status = #canceled ? true : false)
+  attachments: Composition of many Attachments;
+}
+```
 
 ## Non-Draft Upload Example
 

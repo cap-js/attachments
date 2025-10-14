@@ -1,0 +1,31 @@
+{
+  "collections": [
+    {
+      "collectionName": "cds",
+      "folders": [
+        {
+          "startingFolderPath": "_i18n/**",
+          "sourceFilters": ["*.properties"]
+        }
+      ]
+    },
+    {
+      "collectionName": "attachments_data",
+      "folders": [
+        {
+          "startingFolderPath": "/db/data",
+          "targetFolderPath": "/db/data",
+          "oneQFolderPath": "/db/data",
+          "sourceFilters": ["**/*_texts.csv"]
+        }
+      ]
+    }
+  ],
+  "defaultConfiguration": {
+    "targetFolderPath": ".",
+    "xlfFolderPath": "/.dummy/xlf",
+    "oneQFolderPath": "/_i18n",
+    "pseudoLocFolderPath": "/_i18n",
+    "targetFileNamingConvention": "[filename]_[langCode].[extension]"
+  }
+}
