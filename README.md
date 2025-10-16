@@ -168,7 +168,7 @@ Scan status codes:
 - `Failed`: Scanning failed. 
 
 > [!Note]
-> The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service) even with the malware scanner disabled. 
+> The plugin currently supports file uploads up to 400 MB in size per attachment as this is a limitation of the [malware scanning service](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). Please note: this limitation occurs even with the malware scanner disabled. 
 
 
 ### Visibility Control for Attachments UI Facet Generation
