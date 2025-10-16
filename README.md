@@ -76,6 +76,7 @@ With the steps above, we have successfully set up asset handling for our referen
 
 ## Usage
 
+<details>
 ### Package Setup
 
 The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
@@ -89,6 +90,22 @@ The attachments plugin needs to be referenced in the package.json of the consumi
 
 This is done automatically by running `npm add @cap-js/attachments`. With this, the aspect Attachments can be used in the application's CDS model. 
 
+In addition, different profiles can be found in `package.json` as well, such as: 
+
+```json
+"cds": {  
+  "requires": {  
+    //...
+    "[hybrid]": {  
+      "attachments": {  
+        "kind": "s3"  
+        //...
+      }  
+    }  
+  }  
+}  
+```
+</details>
 
 ### Changes in the CDS Models
 
@@ -115,13 +132,17 @@ service ProcessorService {
 }
 ```
 
-Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. 
+Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. For example:
+
+```cds
+annotate service.Incidents with @odata.draft.enabled;
+```
 
 ### Storage Targets
 
-When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
+When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
 
-When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
+Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
 For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
 For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it locally, follow this setup:
@@ -139,6 +160,12 @@ For using an AWS S3 Object Store in BTP, you must already have an SAP Object Sto
     ```
 
     Where `ObjectStoreLocalName` can be any name given by the user here and `ObjectStoreRemoteName` is the name of your object store instance in BTP.
+
+3.  To run the application locally, run the command:
+
+```bash
+cds watch --profile hybrid
+```
 
 See [Object Stores](#object-stores) for further information on SAP Object Store.
 
@@ -215,8 +242,6 @@ The typical sequence includes:
 1. **POST** to create attachment metadata  
 2. **PUT** to upload file content using the ID returned
 
-> Make sure to replace `{{host}}`, `{{auth}}`, and IDs accordingly.
-
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments).
@@ -259,20 +284,6 @@ To ensure tenant identification when using a shared object store instance, the p
 ### Object Stores
 
 A valid object store service binding is required, typically one provisioned through SAP BTP. See [Local Development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
-
-#### Local development
-
-For local development, bind to an object store service using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry):
-
-```bash
-cds bind <service-instance-name>
-```
-
-This will create an entry in the `.cdsrc-private.json` file with the service binding configuration. Then start the application with:
-
-```bash
-cds watch --profile hybrid
-```
 
 #### Deployment to Cloud Foundry
 
