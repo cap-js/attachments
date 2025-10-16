@@ -215,7 +215,7 @@ The typical sequence includes:
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments) and [GitHub Releases](https://github.com/cap-js/attachments/releases).
-- See the [changelog](./CHANGELOG.md) for the latest changes.
+- See the [changelog](./CHANGELOG.md) or [GitHub Releases](https://github.com/cap-js/attachments/releases) for the latest changes.
 
 ## Minimum UI5 and CAP NodeJS Version
 
