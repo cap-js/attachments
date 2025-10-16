@@ -362,13 +362,13 @@ In addition to the field names, header information (`@UI.HeaderInfo`) are also a
 ## Monitoring & Logging
 
 To configure logging for the attachments plugin, add the following configuration to the `package.json` of the consuming application:
-```
+```json
 {
   "cds": {
     "log": {
       "levels": {
-        ...
-        attachments: DEBUG
+         // (...)
+         "attachments": "debug"
       }
     }
   }
