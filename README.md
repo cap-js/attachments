@@ -138,7 +138,7 @@ For using an AWS S3 Object Store in BTP, you must already have an SAP Object Sto
     cds bind <ObjectStoreLocalName> --to <ObjectStoreRemoteName>
     ```
 
-    Where `ObjectStoreLocalName` can be any name given by the user here.
+    Where `ObjectStoreLocalName` can be any name given by the user here and `ObjectStoreRemoteName` is the name of your object store instance in BTP.
 
 See [Object Stores](#object-stores) for further information on SAP Object Store.
 
