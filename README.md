@@ -121,7 +121,7 @@ Both methods directly add the respective UI Facet. Take note that in order to us
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
 
-When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file is kept in the database, as defined in the CDS model. 
+When using a dedicated storage target, the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
 For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
 For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it locally, follow this setup:
@@ -144,7 +144,7 @@ See [Object Stores](#object-stores) for further information on SAP Object Store.
 
 ### Malware Scanner
 
-The malware scanner is used in the `AttachmentService` to scan attachments. 
+The BTP malware scanning service is used in the `AttachmentService` to scan attachments for vulnerabilities.
 
 For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access. To bind it, run the following command:
     ```sh
@@ -153,9 +153,14 @@ For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serv
 
 By default, malware scanning is enabled for all profiles if a storage provider has been specified. You can configure malware scanning by setting:
 ```json
-"attachments": {
-    "scan": true
-}
+{  
+  "cds": {  
+     // (...)  
+     "attachments": {  
+       "scan": true  
+     }  
+  }  
+} 
 ```
 
 If there is no malware scanner available and the scanner is not disabled, then the upload will fail. 
@@ -168,7 +173,7 @@ Scan status codes:
 - `Failed`: Scanning failed. 
 
 > [!Note]
-> The plugin currently supports file uploads up to 400 MB in size per attachment as this is a limitation of the [malware scanning service](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). Please note: this limitation occurs even with the malware scanner disabled. 
+> The plugin currently supports file uploads up to 400 MB in size per attachment as this is a limitation of the [malware scanning service](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). Please note: this limitation remains even with the malware scanner disabled. 
 
 
 ### Visibility Control for Attachments UI Facet Generation
