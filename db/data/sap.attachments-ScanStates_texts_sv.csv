@@ -1,0 +1,6 @@
+locale;code;name;descr
+sv;Unscanned;Ej skannad;The file is not yet scanned for malware.
+sv;Scanning;Skannar;The file is currently being scanned for malware.
+sv;Infected;Infekterad;The file contains malware! Do not download!
+sv;Clean;Ren;The file does not contain any malware.
+sv;Failed;Misslyckades;The file could not be scanned for malware.
