@@ -161,11 +161,11 @@ By default, malware scanning is enabled for all profiles if a storage provider h
 If there is no malware scanner available and the scanner is not disabled, then the upload will fail. 
 
 Scan status codes: 
-- Clean: Only attachments with the status Clean are accessible. 
-- Scanning: Immediately after upload, the attachment is marked as Scanning. Depending on processing speed, it may already appear as Clean when the page is reloaded. 
-- Unscanned: Attachment is still unscanned. 
-- Failed: Scanning failed. 
-- Infected: The attachment is infected. 
+- `Unscanned`: Attachment is still unscanned. 
+- `Scanning`: Immediately after upload, the attachment is marked as Scanning. Depending on processing speed, it may already appear as Clean when the page is reloaded. 
+- `Clean`: Only attachments with the status Clean are accessible. 
+- `Infected`: The attachment is infected. 
+- `Failed`: Scanning failed. 
 
 > [!Note]
 > The plugin currently supports file uploads [up to 400 MB in size per attachment](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service) even with the malware scanner disabled. 
