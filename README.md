@@ -224,8 +224,6 @@ The typical sequence includes:
 | CAP Node  | 8.0.0           |
 | UI5       | 1.136.0         |
 
-
-
 ## Architecture Overview
 ### Multitenancy
 
