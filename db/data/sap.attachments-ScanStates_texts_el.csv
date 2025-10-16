@@ -1,0 +1,6 @@
+locale;code;name;descr
+el;Unscanned;Μη σαρωμένο;The file is not yet scanned for malware.
+el;Scanning;Σάρωση;The file is currently being scanned for malware.
+el;Infected;Μολυσμένο;The file contains malware! Do not download!
+el;Clean;Καθαρό;The file does not contain any malware.
+el;Failed;Απέτυχε;The file could not be scanned for malware.

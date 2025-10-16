@@ -1,0 +1,6 @@
+locale;code;name;descr
+pt;Unscanned;Não verificado;The file is not yet scanned for malware.
+pt;Scanning;Verificando;The file is currently being scanned for malware.
+pt;Infected;Infectado;The file contains malware! Do not download!
+pt;Clean;Limpo;The file does not contain any malware.
+pt;Failed;Com falha;The file could not be scanned for malware.

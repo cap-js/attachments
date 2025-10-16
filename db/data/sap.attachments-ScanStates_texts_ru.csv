@@ -1,0 +1,6 @@
+locale;code;name;descr
+ru;Unscanned;Не проверено;The file is not yet scanned for malware.
+ru;Scanning;Проверка;The file is currently being scanned for malware.
+ru;Infected;Заражено;The file contains malware! Do not download!
+ru;Clean;Чисто;The file does not contain any malware.
+ru;Failed;Неудачно;The file could not be scanned for malware.

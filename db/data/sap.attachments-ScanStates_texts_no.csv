@@ -1,0 +1,6 @@
+locale;code;name;descr
+no;Unscanned;Ikke skannet;The file is not yet scanned for malware.
+no;Scanning;Skannes;The file is currently being scanned for malware.
+no;Infected;Infisert;The file contains malware! Do not download!
+no;Clean;Ikke infisert;The file does not contain any malware.
+no;Failed;Mislyktes;The file could not be scanned for malware.
