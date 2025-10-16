@@ -1,0 +1,6 @@
+locale;code;name;descr
+1Q;Unscanned;eSTpYD69gqffD/nemmlqrw_Unscanned;The file is not yet scanned for malware.
+1Q;Scanning;n/MLAUe5tSbPPRJ4OCv0kg_Scanning;The file is currently being scanned for malware.
+1Q;Infected;/DyuGaU0P9o641+KWJvIqg_Infected;The file contains malware! Do not download!
+1Q;Clean;+88XPA+K97P+sUF4u6Wlhg_Clean;The file does not contain any malware.
+1Q;Failed;znAdnNJgtbRvnh17AQu1IA_Failed;The file could not be scanned for malware.
