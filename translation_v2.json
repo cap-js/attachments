@@ -10,7 +10,7 @@
       ]
     },
     {
-      "collectionName": "data",
+      "collectionName": "attachments_data",
       "folders": [
         {
           "startingFolderPath": "/db/data",
