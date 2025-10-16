@@ -361,7 +361,7 @@ In addition to the field names, header information (`@UI.HeaderInfo`) are also a
 
 ## Monitoring & Logging
 
-To configure logging for the attachments plugin, add the following line to the `package.json` of the consuming application:
+To configure logging for the attachments plugin, add the following configuration to the `package.json` of the consuming application:
 ```
 {
   "cds": {
