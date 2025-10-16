@@ -117,7 +117,6 @@ service ProcessorService {
 
 Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. 
 
-
 ### Storage Targets
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. 
