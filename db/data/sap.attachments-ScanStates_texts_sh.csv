@@ -1,6 +1,6 @@
 locale;code;name;descr
-sh;Unscanned;Nije skenirano;The file is not yet scanned for malware.
-sh;Scanning;Skeniranje;The file is currently being scanned for malware.
-sh;Infected;Zaraženo;The file contains malware! Do not download!
-sh;Clean;Čisto;The file does not contain any malware.
-sh;Failed;Nije uspelo;The file could not be scanned for malware.
+en;Unscanned;Nije skenirano;The file is not yet scanned for malware.
+en;Scanning;Skeniranje;The file is currently being scanned for malware.
+en;Infected;Zaraženo;The file contains malware! Do not download!
+en;Clean;Čisto;The file does not contain any malware.
+en;Failed;Nije uspelo;The file could not be scanned for malware.
