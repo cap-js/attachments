@@ -21,3 +21,7 @@ extend my.Incidents with {
 extend my.Customers with {
   attachments: Composition of many Attachments;
 }
+
+extend my.SampleRootWithComposedEntity with {
+  attachments: Composition of many Attachments;
+}
