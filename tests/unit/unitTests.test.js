@@ -1,4 +1,4 @@
-let mockAttachmentsSrv, key, req = {}
+let mockAttachmentsSrv, key = {}
 
 jest.mock('@sap/cds', () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
@@ -72,7 +72,6 @@ beforeEach(() => {
     status: 200
   }))
   key = { ID: 'test-id' }
-  req = {}
 })
 
 describe('scanRequest', () => {
@@ -82,7 +81,7 @@ describe('scanRequest', () => {
         json: () => Promise.resolve({ malwareDetected: false })
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
     expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
   })
@@ -94,14 +93,14 @@ describe('scanRequest', () => {
         status: 200
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
   })
 
   it('should update status to "Failed" if fetch throws', async () => {
     global.fetch = jest.fn(() => { throw new Error('Network error') })
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
   })
 
