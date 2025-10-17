@@ -48,7 +48,7 @@ entity Incidents {
 
 In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. A miniature version of this app can be found within the [tests](./tests/incidents-app) directory for local testing.
 
-For productive use, a valid object store binding is required, see [Object Stores](#object-stores).
+For productive use, a valid object store binding is required, see [Object Stores](#object-stores) and [Storage Targets](#storage-targets).
 
 
 ## Local Walk-Through
@@ -283,7 +283,7 @@ To ensure tenant identification when using a shared object store instance, the p
 
 ### Object Stores
 
-A valid object store service binding is required, typically one provisioned through SAP BTP. See [Local Development](#local-development) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
+A valid object store service binding is required, typically one provisioned through SAP BTP. See [Storage Targets](#storage-targets) and [Deployment to Cloud Foundry](#deployment-to-cloud-foundry) on how to use this object store service binding.
 
 #### Deployment to Cloud Foundry
 
