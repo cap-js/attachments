@@ -1,0 +1,6 @@
+locale;code;name;descr
+ja;Unscanned;未スキャン;The file is not yet scanned for malware.
+ja;Scanning;スキャン中;The file is currently being scanned for malware.
+ja;Infected;感染あり;The file contains malware! Do not download!
+ja;Clean;感染なし;The file does not contain any malware.
+ja;Failed;失敗;The file could not be scanned for malware.

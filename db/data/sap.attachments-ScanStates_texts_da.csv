@@ -1,0 +1,6 @@
+locale;code;name;descr
+da;Unscanned;Ikke scannet;The file is not yet scanned for malware.
+da;Scanning;Scanner;The file is currently being scanned for malware.
+da;Infected;Inficeret;The file contains malware! Do not download!
+da;Clean;Ikke inficeret;The file does not contain any malware.
+da;Failed;Mislykkedes;The file could not be scanned for malware.

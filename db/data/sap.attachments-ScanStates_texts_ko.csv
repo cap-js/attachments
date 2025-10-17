@@ -1,0 +1,6 @@
+locale;code;name;descr
+ko;Unscanned;스캔되지 않음;The file is not yet scanned for malware.
+ko;Scanning;스캔 중;The file is currently being scanned for malware.
+ko;Infected;감염됨;The file contains malware! Do not download!
+ko;Clean;정상;The file does not contain any malware.
+ko;Failed;실패;The file could not be scanned for malware.
