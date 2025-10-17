@@ -59,8 +59,8 @@ beforeEach(() => {
       malwareScanner: {
         credentials: {
           uri: 'scanner.example.com',
-          username: 'user',
-          password: 'pass'
+          certificate: '-----BEGIN CERTIFICATE-----\nFAKECERT\n-----END CERTIFICATE-----',
+          key: '-----BEGIN PRIVATE KEY-----\nFAKEKEY\n-----END PRIVATE KEY-----'
         }
       },
       attachments: { scan: true }
