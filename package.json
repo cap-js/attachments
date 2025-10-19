@@ -89,5 +89,8 @@
         }
       }
     }
-  }
+  },
+  "workspaces": [
+    "tests/incidents-app/"
+  ]
 }
