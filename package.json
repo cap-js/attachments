@@ -94,5 +94,8 @@
         }
       }
     }
-  }
+  },
+  "workspaces": [
+    "tests/incidents-app/"
+  ]
 }
