@@ -189,6 +189,38 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
       )
     ).to.be.rejectedWith(/404/)
   })
+
+  it("Cancel draft where parent has composed key", async () => {
+
+    await POST(
+      `odata/v4/processor/SampleRootWithComposedEntity`, {
+        sampleID: "ABC",
+        gjahr: 2025
+      }
+    )
+    const doc = await POST(
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
+      {
+        up__sampleID: 'ABC',
+        up__gjahr: 2025,
+        filename: 'myfancyfile',
+        mimeType: "application/pdf",
+        content: createReadStream(
+          join(__dirname, "..", "integration", "content/sample.pdf")
+        ),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    expect(doc.data.ID).to.not.be.null
+
+    const deleteRes = await DELETE(
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)`
+    );
+    expect(deleteRes.status).to.equal(204);
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
