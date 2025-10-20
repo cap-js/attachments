@@ -64,6 +64,7 @@
         }
       },
       "attachments": {
+        "outbox": true,
         "scan": true,
         "objectStore": {
           "kind": "separate"
