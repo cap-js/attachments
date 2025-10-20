@@ -147,14 +147,32 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     )
     expect(contentResponse.status).to.equal(200)
 
+    const attachmentData = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)`
+    )
+
+    //trigger to delete attachment
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+
+    const db = await cds.connect.to('db');
+    const attachmentIDs = []
+    db.before('*', req => {
+      if (req.event === 'CREATE' && req.target?.name === 'cds.outbox.Messages') {
+        const msg = JSON.parse(req.query.INSERT.entries[0].msg);
+        attachmentIDs.push(msg.data.url)
+      }
+    })
+
     //delete attachment
     let action = () =>
       DELETE(
         `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
       )
-    //trigger to delete attachment
-    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
     await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
+
+    expect(attachmentIDs[0]).to.equal(attachmentData.data.url);
+    expect(attachmentIDs.length).to.equal(1);
 
     //read attachments list for Incident
     const response = await GET(
