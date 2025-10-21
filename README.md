@@ -77,93 +77,9 @@ We can try out the scenarios where the attachments contents are stored locally i
 <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
 
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 ## Using SAP Object Store
 
 For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
-=======
-### Package Setup
-
-<<<<<<< Updated upstream
-=======
-### Package Setup
-
->>>>>>> Stashed changes
-=======
-### Package Setup
-
->>>>>>> Stashed changes
-<details>
-
-The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
-
-```cds
-"devDependencies": { 
-    "@cap-js/attachments": "<latest-version>", 
-    //... 
-}
-```
-
-This is done automatically by running `npm add @cap-js/attachments`. With this, the aspect Attachments can be used in the application's CDS model. 
-
-In addition, different profiles can be found in `package.json` as well, such as: 
-
-```json
-"cds": {  
-  "requires": {  
-    //...
-    "[hybrid]": {  
-      "attachments": {  
-        "kind": "s3"  
-        //...
-      }  
-    }  
-  }  
-}  
-```
-</details>
-
-### Changes in the CDS Models
-
-To use the aspect `Attachments` on an existing entity, the corresponding entity needs to either include attachments as an element in the model definition or be extended in a CDS file in the `srv` module. In the quick start, the former was done, adding an element to the model definition: 
-```cds
-using { Attachments } from '@cap-js/attachments';  
-
-entity Incidents {  
-  // ...  
-  attachments: Composition of many Attachments;  
-} 
-```
- 
-The entity Incidents can also be extended in the `srv` module, as seen in the following example:  
-```cds
-using { Attachments } from '@cap-js/attachments'; 
-
-extend my.Incidents with { 
-  attachments: Composition of many Attachments; 
-} 
-  
-service ProcessorService { 
-  entity Incidents as projection on my.Incidents 
-}
-```
-
-Both methods directly add the respective UI Facet. To use the plugin with an SAP Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. For example:
-
-```cds
-annotate service.Incidents with @odata.draft.enabled;
-```
-
-### Storage Targets
-
-When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
-
-Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
-
-For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
-For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it locally, follow this setup:
->>>>>>> Stashed changes
 
 1. Log in to Cloud Foundry:
 
