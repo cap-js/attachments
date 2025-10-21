@@ -78,6 +78,7 @@ We can try out the scenarios where the attachments contents are stored locally i
 
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 ## Using SAP Object Store
 
 For using SAP Object Store, you must already have a SAP Object Store service instance with a bucket which you can access. To connect it, follow this setup.
@@ -85,6 +86,10 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
 ### Package Setup
 
 <<<<<<< Updated upstream
+=======
+### Package Setup
+
+>>>>>>> Stashed changes
 =======
 ### Package Setup
 
