@@ -157,7 +157,7 @@ For using an AWS S3 Object Store in BTP, you must already have an SAP Object Sto
 2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
 
     ```sh
-    cds bind <ObjectStoreLocalName> --to <ObjectStoreRemoteName>
+    cds bind <LocalObjectStoreName> --to <RemoteObjectStoreName>
     ```
 
     Where `ObjectStoreLocalName` can be any name given by the user here and `ObjectStoreRemoteName` is the name of your object store instance in BTP.
