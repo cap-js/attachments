@@ -22,6 +22,16 @@ Should you wish to work on an issue, please claim it first by commenting on the 
 
 If you have questions about one of the issues, please comment on them, and one of the maintainers will clarify.
 
+## Local development setup
+
+`./tests/incidents-app/` contains a working sample with which the plugin can be locally tested and which is used by the integration tests.
+
+`cd ./tests/incidents-app/` into the app and run `cds watch` within the folder to have the Incidents app running but with the local version of the plugin.
+
+If you want to test your implementation against the BTP Object Store or the Malware Scanning Service, use [`cds bind`](https://cap.cloud.sap/docs/advanced/hybrid-testing) and run with `cds watch --profile hybrid` to test those changes.
+
+If you are prompted locally for authentication use CAPs local development mock values of "alice" and "1234".
+
 ## Contributing Code or Documentation
 
 You are welcome to contribute code in order to fix a bug or to implement a new feature that is logged as an issue.

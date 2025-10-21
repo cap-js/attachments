@@ -64,3 +64,9 @@ entity Urgency : CodeList {
 
 type EMailAddress : String;
 type PhoneNumber  : String;
+
+
+entity SampleRootWithComposedEntity {
+  key sampleID: String;
+  key gjahr: Integer;
+}
