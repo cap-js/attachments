@@ -240,8 +240,8 @@ For scenarios where the entity is not draft-enabled, for example [`tests/non-dra
 
 The typical sequence includes:
 
-1. **POST** to create attachment metadata  
-2. **PUT** to upload file content using the ID returned
+1. **POST** -> create attachment metadata, returns ID  
+2. **PUT** -> upload file content using the ID
 
 ## Releases
 
