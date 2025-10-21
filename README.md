@@ -176,7 +176,7 @@ The BTP malware scanning service is used in the `AttachmentService` to scan atta
 
 For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access. To bind it, run the following command:
     ```sh
-    cds bind <MalwareScannerLocalName> --to <RemoteMalwareScannerName>
+    cds bind <LocalMalwareScannerName> --to <RemoteMalwareScannerName>
     ```
 
 By default, malware scanning is enabled for all profiles if a storage provider has been specified. You can configure malware scanning by setting:
