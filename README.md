@@ -133,7 +133,7 @@ service ProcessorService {
 }
 ```
 
-Both methods directly add the respective UI Facet. Take note that in order to use the plugin with Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. For example:
+Both methods directly add the respective UI Facet. To use the plugin with an SAP Fiori elements UI, be sure that [`draft` is enabled](https://cap.cloud.sap/docs/advanced/fiori#enabling-draft-with-odata-draft-enabled) for the entity using `@odata.draft.enabled`. For example:
 
 ```cds
 annotate service.Incidents with @odata.draft.enabled;
