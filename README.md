@@ -236,7 +236,7 @@ entity Incidents {
 
 ### Non-Draft Upload
 
-For scenarios where the entity is not draft-enabled, for example [`tests/non-draft-request.http`](./tests/non-draft-request.http), separate http requests for metadata creation and asset uploading need to be performaned manually. 
+For scenarios where the entity is not draft-enabled, for example [`tests/non-draft-request.http`](./tests/non-draft-request.http), separate HTTP requests for metadata creation and asset uploading need to be performed manually. 
 
 The typical sequence includes:
 
