@@ -263,7 +263,7 @@ The plugin supports multitenancy scenarios, allowing both shared and tenant-spec
 > [!Note]
 > Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
 
-For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and mtx/sidecar package.json files.
+For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
 
 #### Shared Object Store Instance
 
