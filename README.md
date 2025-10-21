@@ -84,6 +84,11 @@ For using SAP Object Store, you must already have a SAP Object Store service ins
 =======
 ### Package Setup
 
+<<<<<<< Updated upstream
+=======
+### Package Setup
+
+>>>>>>> Stashed changes
 <details>
 
 The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
