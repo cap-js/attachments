@@ -77,6 +77,7 @@ With the steps above, we have successfully set up asset handling for our referen
 ## Usage
 
 <details>
+
 ### Package Setup
 
 The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
