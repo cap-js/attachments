@@ -39,6 +39,8 @@ const axios = require('axios')
 const AttachmentsService = require('../../lib/basic')
 const cds = require('@sap/cds')
 const { Readable } = require('stream')
+const crypto = require('crypto')
+
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -78,6 +80,9 @@ describe('scanRequest with mTLS', () => {
       certificate: '-----BEGIN CERTIFICATE-----\nFAKECERT\n-----END CERTIFICATE-----',
       key: '-----BEGIN PRIVATE KEY-----\nFAKEKEY\n-----END PRIVATE KEY-----'
     }
+    jest.spyOn(crypto, 'X509Certificate').mockImplementation(() => ({
+      validTo: '2030-01-01T00:00:00Z'
+    }))
   })
   it('should update status to "Scanning" and "Clean" if no malware detected', async () => {
     global.fetch = jest.fn(() =>
