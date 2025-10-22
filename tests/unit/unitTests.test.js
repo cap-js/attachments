@@ -56,13 +56,6 @@ beforeEach(() => {
   }
   cds.env = {
     requires: {
-      malwareScanner: {
-        credentials: {
-          uri: 'scanner.example.com',
-          certificate: '-----BEGIN CERTIFICATE-----\nFAKECERT\n-----END CERTIFICATE-----',
-          key: '-----BEGIN PRIVATE KEY-----\nFAKEKEY\n-----END PRIVATE KEY-----'
-        }
-      },
       attachments: { scan: true }
     },
     profiles: []
@@ -75,7 +68,72 @@ beforeEach(() => {
   req = {}
 })
 
-describe('scanRequest', () => {
+describe('scanRequest with mTLS', () => {
+  beforeEach(() => {
+    if (!cds.env.requires.malwareScanner) {
+      cds.env.requires.malwareScanner = {}
+    }
+    cds.env.requires.malwareScanner.credentials = {
+      uri: 'scanner.example.com',
+      certificate: '-----BEGIN CERTIFICATE-----\nFAKECERT\n-----END CERTIFICATE-----',
+      key: '-----BEGIN PRIVATE KEY-----\nFAKEKEY\n-----END PRIVATE KEY-----'
+    }
+  })
+  it('should update status to "Scanning" and "Clean" if no malware detected', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ malwareDetected: false })
+      })
+    )
+    await scanRequest({ name: 'Attachments' }, key, req)
+    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
+    expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
+  })
+
+  it('should update status to "Infected" and delete content if malware detected', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ malwareDetected: true }),
+        status: 200
+      })
+    )
+    await scanRequest({ name: 'Attachments' }, key, req)
+    expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
+    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
+  })
+
+  it('should update status to "Failed" if fetch throws', async () => {
+    global.fetch = jest.fn(() => { throw new Error('Network error') })
+    await scanRequest({ name: 'Attachments' }, key, req)
+    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
+  })
+
+  it('should handle missing credentials gracefully', async () => {
+    const Attachments = { name: 'TestAttachments' }
+    const key = { ID: 'test-id' }
+    cds.env = { requires: {}, profiles: [] }
+
+    try {
+      await scanRequest(Attachments, key)
+    } catch (error) {
+      expect(error.message).toBe("SAP Malware Scanning service is not bound.")
+    }
+
+    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
+  })
+})
+
+describe('scanRequest with basic auth', () => {
+  beforeEach(() => {
+    if (!cds.env.requires.malwareScanner) {
+      cds.env.requires.malwareScanner = {}
+    }
+    cds.env.requires.malwareScanner.credentials = {
+      uri: 'scanner.example.com',
+      username: 'user',
+      password: 'pass'
+    }
+  })
   it('should update status to "Scanning" and "Clean" if no malware detected', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
