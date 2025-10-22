@@ -28,7 +28,9 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 * [Code of Conduct](#code-of-conduct)
 * [Licensing](#licensing)
 
-## Quick Start
+## Usage
+
+### Quick Start
 
 For a quick local development setup with in-memory storage:
 
@@ -36,6 +38,35 @@ For a quick local development setup with in-memory storage:
 ```sh
  npm add @cap-js/attachments
  ```
+
+ <details>
+
+The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
+
+```cds
+"devDependencies": { 
+    "@cap-js/attachments": "<latest-version>", 
+    //... 
+}
+```
+
+In addition, different profiles can be found in `package.json` as well, such as: 
+
+```json
+"cds": {  
+  "requires": {  
+    //...
+    "[hybrid]": {  
+      "attachments": {  
+        "kind": "s3"  
+        //...
+      }  
+    }  
+  }  
+}  
+```
+</details>
+
 - To use Attachments, extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](#changes-in-the-cds-models) for more details): 
 ```cds
 using { Attachments } from '@cap-js/attachments';
@@ -73,40 +104,6 @@ With the steps above, we have successfully set up asset handling for our referen
 
 5. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
 <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
-
-## Usage
-
-### Package Setup
-
-<details>
-
-The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
-
-```cds
-"devDependencies": { 
-    "@cap-js/attachments": "<latest-version>", 
-    //... 
-}
-```
-
-This is done automatically by running `npm add @cap-js/attachments`. With this, the aspect Attachments can be used in the application's CDS model. 
-
-In addition, different profiles can be found in `package.json` as well, such as: 
-
-```json
-"cds": {  
-  "requires": {  
-    //...
-    "[hybrid]": {  
-      "attachments": {  
-        "kind": "s3"  
-        //...
-      }  
-    }  
-  }  
-}  
-```
-</details>
 
 ### Changes in the CDS Models
 
