@@ -8,10 +8,9 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 <!-- TOC -->
 
-* [Quick Start](#quick-start)
-* [Local Walk-Through](#local-walk-through)
 * [Usage](#usage)
-  * [Package Setup](#package-setup)
+  * [Quick Start](#quick-start)
+  * [Local Walk-Through](#local-walk-through)
   * [Changes in the CDS Models](#changes-in-the-cds-models)
   * [Storage Targets](#storage-targets)
   * [Malware Scanner](#malware-scanner)
@@ -82,7 +81,7 @@ In this guide, we use the [Incidents Management reference sample app](https://
 For productive use, a valid object store binding is required, see [Object Stores](#object-stores) and [Storage Targets](#storage-targets).
 
 
-## Local Walk-Through
+### Local Walk-Through
 With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps. For local testing, the attachments contents are stored in a local database.
 
 1. **Start the server**:
