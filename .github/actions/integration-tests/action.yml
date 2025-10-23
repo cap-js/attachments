@@ -1,0 +1,62 @@
+name: "Integration tests"
+description: "Run tests with BTP services being bound"
+inputs:
+  CF_API:
+    description: "Cloud Foundry API endpoint"
+    required: true
+  CF_USERNAME:
+    description: "Cloud Foundry username"
+    required: true
+  CF_PASSWORD:
+    description: "Cloud Foundry password"
+    required: true
+  CF_ORG:
+    description: "Cloud Foundry organization"
+    required: true
+  CF_SPACE:
+    description: "Cloud Foundry space"
+    required: true
+  NODE_VERSION:
+    description: "Node.js version to use for tests"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies and Cloud Foundry CLI (v8.9.0)
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libc6 wget tar
+        wget "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=8.9.0&source=github-rel" -O cf-cli.tar.gz
+        tar -xvzf cf-cli.tar.gz
+        sudo mv cf /usr/local/bin/
+        sudo mv cf8 /usr/local/bin/
+        cf --version
+
+    - name: Authenticate with Cloud Foundry
+      shell: bash
+      run: |
+        echo "::debug::CF_API=${{ inputs.CF_API }}"
+        for i in {1..3}; do
+          cf login -a ${{ inputs.CF_API }} -u ${{ inputs.CF_USERNAME }} -p ${{ inputs.CF_PASSWORD }} -o ${{ inputs.CF_ORG }} -s ${{ inputs.CF_SPACE }} && break
+          echo "cf login failed, retrying ($i/3)..."
+          sleep 10
+          if [ "$i" -eq 3 ]; then
+            echo "❌ cf login failed after 3 attempts."
+            exit 1
+          fi
+        done
+
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm i -g @sap/cds-dk
+    - run: npm i
+    - run: cd tests/incidents-app && npm i
+    # Bind against BTP services
+    - run: cds bind -2 cap-js-attachments-hana,cap-js-attachments-object-store,cap-js-attachments-malware-scanner -o package.json
+    # Run tests in hybrid mode
+    - run: cds bind --exec cds deploy --to hana
+    - run: cds bind --exec npm run test

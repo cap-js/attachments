@@ -48,15 +48,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
-  beforeAll(async () => {
-    cds.env.requires.db.kind = "sql"
-    cds.env.requires.attachments.kind = "db"
-    await cds.connect.to("sql:my.db")
-    await cds.connect.to("attachments")
-    cds.env.requires.attachments.scan = false
-    cds.env.profiles = ["development"]
-  })
-
   beforeEach(async () => {
     // Clean up any existing attachments before each test
     await test.data.reset()
