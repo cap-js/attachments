@@ -59,10 +59,12 @@ runs:
     - run: cd tests/incidents-app && npm i
       shell: bash
     # Deploy model to HANA
+    - name: Create HDI Container
+      run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
     - run: cds deploy --to hana:cap-js-attachments-hana
       shell: bash
     # Bind against BTP services
-    - run: cds bind db -2 cap-js-attachments-hana -o package.json
+    - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }} -o package.json
       shell: bash
     - run: cds bind objectStore -2 cap-js-attachments-object-store -o package.json
       shell: bash
@@ -72,4 +74,7 @@ runs:
     - run: cds bind --exec cds deploy --to hana
       shell: bash
     - run: cds bind --exec npm run test
+      shell: bash
+    - name: Delete HDI Container
+      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }} --force
       shell: bash
