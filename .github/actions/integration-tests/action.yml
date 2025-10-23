@@ -59,7 +59,11 @@ runs:
     - run: cd tests/incidents-app && npm i
       shell: bash
     # Bind against BTP services
-    - run: cds bind -2 cap-js-attachments-hana,cap-js-attachments-object-store,cap-js-attachments-malware-scanner -o package.json
+    - run: cds bind db -2 cap-js-attachments-hana -o package.json
+      shell: bash
+    - run: cds bind objectStore -2 cap-js-attachments-object-store -o package.json
+      shell: bash
+    - run: cds bind malware-scanner -2 cap-js-attachments-malware-scanner -o package.json
       shell: bash
     # Run tests in hybrid mode
     - run: cds bind --exec cds deploy --to hana
