@@ -33,80 +33,83 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 For a quick local development setup with in-memory storage:
 
-- The plugin is self-configuring as described in [Package Setup](#package-setup). To enable attachments, simply add the plugin package to your project:  
-```sh
- npm add @cap-js/attachments
- ```
+- The plugin is self-configuring as described, see the following details section. To enable attachments, simply add the plugin package to your project:  
+  ```sh
+  npm add @cap-js/attachments
+  ```
 
- <details>
+  <details>
+    The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
 
-The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
+    ```cds
+    "devDependencies": { 
+      "@cap-js/attachments": "<latest-version>", 
+      // (...)
+    }
+    ```
 
-```cds
-"devDependencies": { 
-    "@cap-js/attachments": "<latest-version>", 
-    //... 
-}
-```
+    In addition, different profiles can be found in `package.json` as well, such as: 
 
-In addition, different profiles can be found in `package.json` as well, such as: 
-
-```json
-"cds": {  
-  "requires": {  
-    //...
-    "[hybrid]": {  
-      "attachments": {  
-        "kind": "s3"  
-        //...
+    ```json
+    "cds": {  
+      "requires": {  
+        // (...)
+        "[hybrid]": {  
+          "attachments": {  
+            "kind": "s3"  
+            // (...)
+          }  
+        }  
       }  
     }  
-  }  
-}  
-```
-</details>
+    ```
+  </details>
 
 - To use Attachments, extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](#changes-in-the-cds-models) for more details): 
-```cds
-using { Attachments } from '@cap-js/attachments';
 
-entity Incidents {  
-  // ...  
-  attachments: Composition of many Attachments;  
-}
-```
+  ```cds
+  using { Attachments } from '@cap-js/attachments';
+
+  entity Incidents {  
+      // (...)
+      attachments: Composition of many Attachments;  
+  }
+  ```
 
 In this guide, we use the [Incidents Management reference sample app](https://github.com/cap-js/incidents-app) as the base application to provide a demonstration how to use this plugin. A miniature version of this app can be found within the [tests](./tests/incidents-app) directory for local testing.
 
 For productive use, a valid object store binding is required, see [Object Stores](#object-stores) and [Storage Targets](#storage-targets).
 
-
 ### Local Walk-Through
-With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps. For local testing, the attachments contents are stored in a local database.
+
+With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps. 
+
+> [!NOTE]
+> For local testing, the attachment objects are stored in a [local database](https://cap.cloud.sap/docs/guides/databases-sqlite).
 
 1. **Start the server**:
 
-  - *Default* scenario (In memory database):
-      ```sh
-      cds watch
-      ```
+- *Default* scenario (In memory database):
+  ```sh
+  cds watch
+  ```
 
 2. **Navigate to the object page** of the incident `Solar panel broken`:
-
-    Go to object page for incident **Solar panel broken**
+Go to object page for incident **Solar panel broken**
 
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
-<img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
+  <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
 
 4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_tests/integration/content/sample.pdf_](./tests/integration/content/sample.pdf):
-<img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
+  <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
 
 5. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
-<img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
+  <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
 
 ### Changes in the CDS Models
 
 To use the aspect `Attachments` on an existing entity, the corresponding entity needs to either include attachments as an element in the model definition or be extended in a CDS file in the `srv` module. In the quick start, the former was done, adding an element to the model definition: 
+
 ```cds
 using { Attachments } from '@cap-js/attachments';  
 
@@ -116,7 +119,8 @@ entity Incidents {
 } 
 ```
  
-The entity Incidents can also be extended in the `srv` module, as seen in the following example:  
+The entity Incidents can also be extended in the `srv` module, as seen in the following example:
+
 ```cds
 using { Attachments } from '@cap-js/attachments'; 
 
@@ -142,23 +146,23 @@ When testing locally, the plugin operates without a dedicated storage target, st
 Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
 For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
-For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it locally, follow this setup:
+For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it in a hybrid setup, follow this setup:
 
 1. Log in to Cloud Foundry:
 
-    ```sh
-    cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
-    ```
+```sh
+cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
+```
 
 2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
 
-    ```sh
-    cds bind <LocalObjectStoreName> --to <RemoteObjectStoreName>
-    ```
+```sh
+cds bind <HybridObjectStoreName> --to <RemoteObjectStoreName>
+```
 
-    Where `LocalObjectStoreName` can be any name given by the user here and `RemoteObjectStoreName` is the name of your object store instance in SAP BTP.
+Where `HybridObjectStoreName` can be any name given by the user here and `RemoteObjectStoreName` is the name of your object store instance in SAP BTP.
 
-3.  To run the application locally, run the command:
+3.  To run the application in hybrid mode, run the command:
 
 ```bash
 cds watch --profile hybrid
@@ -171,11 +175,13 @@ See [Object Stores](#object-stores) for further information on SAP Object Store.
 The BTP malware scanning service is used in the `AttachmentService` to scan attachments for vulnerabilities.
 
 For using [SAP Malware Scanning Service](https://discovery-center.cloud.sap/serviceCatalog/malware-scanning-service), you must already have a service instance which you can access. To bind it, run the following command:
-    ```sh
-    cds bind <LocalMalwareScannerName> --to <RemoteMalwareScannerName>
-    ```
+
+```sh
+cds bind <HybridMalwareScannerName> --to <RemoteMalwareScannerName>
+```
 
 By default, malware scanning is enabled for all profiles if a storage provider has been specified. You can configure malware scanning by setting:
+
 ```json
 {  
   "cds": {  
@@ -213,8 +219,8 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
-In this example, the `@UI.Hidden` is set to `true`, which means the plugin will be hidden by default. You can also use dynamic expressions which are then added to the facet.
 
+In this example, the `@UI.Hidden` is set to `true`, which means the plugin will be hidden by default. You can also use dynamic expressions which are then added to the facet.
 
 ```cds
 entity Incidents {
@@ -267,13 +273,13 @@ To configure a shared object store instance, modify both the package.json files 
 
 ```json
 "cds": {
-    "requires": {
-        "attachments": {
-            "objectStore": {
-                "kind": "shared"
-            }
-        }
+  "requires": {
+    "attachments": {
+      "objectStore": {
+        "kind": "shared"
+      }
     }
+  }
 }
 ```
 To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. Be sure the shared object store instance is bound to the `mtx` application module before deployment.
@@ -359,6 +365,7 @@ In addition to the field names, header information (`@UI.HeaderInfo`) are also a
 ## Monitoring & Logging
 
 To configure logging for the attachments plugin, add the following configuration to the `package.json` of the consuming application:
+
 ```json
 {
   "cds": {
