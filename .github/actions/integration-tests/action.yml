@@ -58,6 +58,9 @@ runs:
       shell: bash
     - run: cd tests/incidents-app && npm i
       shell: bash
+    # Deploy model to HANA
+    - run: cds deploy --to hana:cap-js-attachments-hana
+      shell: bash
     # Bind against BTP services
     - run: cds bind db -2 cap-js-attachments-hana -o package.json
       shell: bash
