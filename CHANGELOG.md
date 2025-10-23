@@ -4,11 +4,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.2.0
+
+### Added
+
+- Support for mTLS authentication in malware scanning service
+
 ## Version 3.1.0
 
 ### Added
 
- - Introduced a sample application in the `/tests/` folder to facilitate local development and testing.
+- Introduced a sample application in the `/tests/` folder to facilitate local development and testing.
 
 ### Fixed
 
