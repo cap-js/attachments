@@ -48,10 +48,10 @@ runs:
         done
 
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ NODE_VERSION }}
+    - name: Use Node.js ${{ inputs.NODE_VERSION }}
       uses: actions/setup-node@v2
       with:
-        node-version: ${{ NODE_VERSION }}
+        node-version: ${{ inputs.NODE_VERSION }}
     - run: npm i -g @sap/cds-dk
       shell: bash
     - run: npm i
@@ -61,14 +61,14 @@ runs:
     # Deploy model to HANA
     - name: Create HDI Container
       shell: bash
-      run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ NODE_VERSION }}
+      run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
     - name: Configure HDI
       shell: bash
       run: export HDI_DEPLOY_OPTIONS={"auto_undeploy": true, "exit": true}
-    - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ NODE_VERSION }}
+    - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
       shell: bash
     # Bind against BTP services
-    - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ NODE_VERSION }} -o package.json
+    - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} -o package.json
       shell: bash
     - run: cds bind objectStore -2 cap-js-attachments-object-store -o package.json
       shell: bash
@@ -78,5 +78,5 @@ runs:
     - run: cds bind --exec npm run test
       shell: bash
     - name: Delete HDI Container
-      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ NODE_VERSION }} --force
+      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} --force
       shell: bash
