@@ -62,7 +62,7 @@ runs:
     - name: Create HDI Container
       shell: bash
       run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
-    - run: cds deploy --to hana:cap-js-attachments-hana
+    - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       shell: bash
     # Bind against BTP services
     - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }} -o package.json
