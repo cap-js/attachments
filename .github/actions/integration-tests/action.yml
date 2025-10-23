@@ -59,17 +59,17 @@ runs:
     - run: cd tests/incidents-app && npm i
       shell: bash
     # Deploy model to HANA
-    - name: Create HDI Container
-      shell: bash
-      run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
-    - name: Configure HDI
-      shell: bash
-      run: export HDI_DEPLOY_OPTIONS={"auto_undeploy": true, "exit": true}
-    - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
-      shell: bash
+    #- name: Create HDI Container
+    #  shell: bash
+    #  run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
+    #- name: Configure HDI
+    #  shell: bash
+    #  run: export HDI_DEPLOY_OPTIONS={"auto_undeploy": true, "exit": true}
+    #- run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
+    #  shell: bash
     # Bind against BTP services
-    - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} -o package.json
-      shell: bash
+    #- run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} -o package.json
+    #  shell: bash
     - run: cds bind objectStore -2 cap-js-attachments-object-store -o package.json
       shell: bash
     - run: cds bind malware-scanner -2 cap-js-attachments-malware-scanner -o package.json
@@ -77,6 +77,6 @@ runs:
     # Run tests in hybrid mode
     - run: cds bind --exec npm run test
       shell: bash
-    - name: Delete HDI Container
-      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} --force
-      shell: bash
+    #- name: Delete HDI Container
+    #  run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} --force
+    #  shell: bash
