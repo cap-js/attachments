@@ -64,7 +64,7 @@ runs:
       run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
     - name: Configure HDI
       shell: bash
-      run: echo "HDI_DEPLOY_OPTIONS={"auto_undeploy": true, "exit": true}" >> $GITHUB_ENV
+      run: echo "HDI_DEPLOY_OPTIONS={"auto_undeploy"\: true, "exit"\: true}" >> $GITHUB_ENV
     - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
       shell: bash
     # Bind against BTP services
