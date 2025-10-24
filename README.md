@@ -141,7 +141,7 @@ annotate service.Incidents with @odata.draft.enabled;
 
 ### Storage Targets
 
-When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
+When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing].(https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
 
 Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
