@@ -1,0 +1,6 @@
+locale;code;name;descr
+th;Unscanned;ยังไม่ได้สแกน;The file is not yet scanned for malware.
+th;Scanning;กำลังสแกน;The file is currently being scanned for malware.
+th;Infected;ติดมัลแวร์;The file contains malware! Do not download!
+th;Clean;ไม่มีมัลแวร์;The file does not contain any malware.
+th;Failed;ล้มเหลว;The file could not be scanned for malware.

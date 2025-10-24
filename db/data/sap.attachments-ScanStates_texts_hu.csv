@@ -1,0 +1,6 @@
+locale;code;name;descr
+hu;Unscanned;Nincs beolvasva;The file is not yet scanned for malware.
+hu;Scanning;Beolvasás;The file is currently being scanned for malware.
+hu;Infected;Fertőzött;The file contains malware! Do not download!
+hu;Clean;Tisztítás;The file does not contain any malware.
+hu;Failed;Nem sikerült;The file could not be scanned for malware.

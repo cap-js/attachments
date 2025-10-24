@@ -1,0 +1,6 @@
+locale;code;name;descr
+zh_CN;Unscanned;未扫描;The file is not yet scanned for malware.
+zh_CN;Scanning;扫描中;The file is currently being scanned for malware.
+zh_CN;Infected;被感染;The file contains malware! Do not download!
+zh_CN;Clean;无感染;The file does not contain any malware.
+zh_CN;Failed;失败;The file could not be scanned for malware.
