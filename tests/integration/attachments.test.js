@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { delay } = require("../utils/testUtils")
+const { waitForScanStatus } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
@@ -27,15 +27,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     let sampleDocID = null
-
-    const db = await cds.connect.to('db');
-    const ScanStates = []
-    db.before('*', req => {
-      if (req.event === 'UPDATE' && req.target?.name?.startsWith('ProcessorService.Incidents.attachments') && req.query.UPDATE.data.status) {
-        ScanStates.push(req.query.UPDATE.data.status)
-      }
-    })
-
+    const scanStartWaiter = waitForScanStatus('Scanning')
+    const scanCleanWaiter = waitForScanStatus('Clean')
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
@@ -50,15 +43,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     //to make sure content is not read
     expect(attachmentResponse.data.value[0].content).to.be.undefined
     sampleDocID = attachmentResponse.data.value[0].ID
-    //read attachment in active table
-    // Wait for scanning to complete
-    await delay(3000);
 
-    const contentResponse = await GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-    )
-    expect(contentResponse.status).to.equal(200)
-    expect(contentResponse.data).to.not.be.undefined
+    await scanStartWaiter;
     
     // Check Scanning status
     const scanResponse = await GET(
@@ -66,7 +52,15 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(scanResponse.status).to.equal(200)
     expect(scanResponse.data.value.length).to.equal(1)
-    expect(ScanStates.some(v => v === 'Scanning')).to.be.true // Initial status should be Scanning
+    expect(scanResponse.data.value[0].status).to.equal('Scanning')
+
+    await scanCleanWaiter;
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).to.equal(200)
+    expect(contentResponse.data).to.not.be.undefined
 
 
     //Check clean status
@@ -74,7 +68,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     );
     expect(resultResponse.status).to.equal(200)
-    expect(ScanStates.some(v => v === 'Clean')).to.be.true // Initial status should be Scanning
+    expect(resultResponse.data.value[0].status).to.equal('Clean')
   })
 
   it("Scan status is translated", async () => {
@@ -133,12 +127,14 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
 
     // Wait for scanning to complete
-    await delay();
+    await scanCleanWaiter;
 
     //check the content of the uploaded attachment in main table
     const contentResponse = await GET(
@@ -180,8 +176,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     //the data should have no attachments
     expect(response.status).to.equal(200)
     expect(response.data.value.length).to.equal(0)
-
-    await delay();
     
     //content should not be there
     await expect(

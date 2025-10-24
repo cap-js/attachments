@@ -6,7 +6,7 @@ const {
   commentAnnotation,
   uncommentAnnotation,
 } = require("../utils/modify-annotation")
-const { delay } = require("../utils/testUtils")
+const { waitForScanStatus } = require("../utils/testUtils")
 
 const servicesCdsPath = path.resolve(
   __dirname,
@@ -65,34 +65,36 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should list attachments for incident", async () => {
+    const scanCleanWaiter = waitForScanStatus('Clean');
+
     const attachmentID = await createAttachmentMetadata(incidentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await delay()
+    await scanCleanWaiter;
 
     const response = await axios.get(
       `/odata/v4/processor/Incidents(ID=${incidentID})/attachments`
     )
     expect(response.status).to.equal(200)
 
-    const expectedFilename = "sample.pdf"
-    const expectedStatus = "Clean"
     const attachment = response.data.value[0]
     
     expect(attachment.up__ID).to.equal(incidentID)
-    expect(attachment.filename).to.equal(expectedFilename)
-    expect(attachment.status).to.equal(expectedStatus)
+    expect(attachment.filename).to.equal("sample.pdf")
+    expect(attachment.status).to.equal("Clean")
     expect(attachment.content).to.be.undefined
     expect(response.data.value[0].ID).to.equal(attachmentID)
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
+    const scanCleanWaiter = waitForScanStatus('Clean');
+
     const attachmentID = await createAttachmentMetadata(incidentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await delay()
+    await scanCleanWaiter;
 
     const response = await axios.get(
       `/odata/v4/processor/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
@@ -109,11 +111,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should delete attachment and verify deletion", async () => {
+    const scanCleanWaiter = waitForScanStatus('Clean');
+
     const attachmentID = await createAttachmentMetadata(incidentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await delay()
+    await scanCleanWaiter;
 
     // Delete the attachment
     const deleteResponse = await axios.delete(
