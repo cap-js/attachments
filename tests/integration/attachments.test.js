@@ -181,6 +181,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(response.status).to.equal(200)
     expect(response.data.value.length).to.equal(0)
 
+    await delay();
+    
     //content should not be there
     await expect(
       GET(
