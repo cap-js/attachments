@@ -150,9 +150,8 @@ For using an AWS S3 Object Store in BTP, you must already have an SAP Object Sto
 
 1. Log in to Cloud Foundry:
 
-```sh
-cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
-```
+  ```sh
+  cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
 
 2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
 
