@@ -64,7 +64,7 @@ runs:
       run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
     - name: Configure HDI
       shell: bash
-      run: export HDI_DEPLOY_OPTIONS={"auto_undeploy": true, "exit": true}
+      run: export HDI_DEPLOY_OPTIONS={"auto_undeploy"\: true, "exit"\: true}
     - run: cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }}
       shell: bash
     # Bind against BTP services
@@ -78,5 +78,6 @@ runs:
     - run: cds bind --exec npm run test
       shell: bash
     - name: Delete HDI Container
+      if: ${{ always() }}
       run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.NODE_VERSION }} --force
       shell: bash
