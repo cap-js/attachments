@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.1.0
+
+### Added
+
+ - Introduced a sample application in the `/tests/` folder to facilitate local development and testing.
+
+### Fixed
+
+- Resolved a memory leak that could occur during the malware scanning process.
+- Ensured reliable deletion of all related attachments when parent entities are removed, preventing orphaned data.
+- Improved handling of attachment deletion for non-draft entities to ensure consistent cleanup.
+
 ## Version 3.0.0
 
 **BREAKING CHANGE:** Replaced usage of the CAP `req` variable with `cds.context` throughout the codebase.

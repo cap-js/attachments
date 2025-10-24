@@ -124,7 +124,7 @@
                                     }
                                 }
                             },
-                            "initialLoad": "Enabled",
+                            "liveMode": true,
                             "controlConfiguration": {
                                 "@com.sap.vocabularies.UI.v1.LineItem": {
                                     "tableSettings": {
