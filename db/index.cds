@@ -48,7 +48,7 @@ context sap.attachments {
     },
     LineItem: [
       {Value: content, @HTML5.CssDefaults: {width: '30%'}},
-      {Value: status, Criticality: status.criticality, @HTML5.CssDefaults: {width: '10%'}},
+      {Value: status, Criticality: statusNav.criticality, @HTML5.CssDefaults: {width: '10%'}},
       {Value: createdAt, @HTML5.CssDefaults: {width: '20%'}},
       {Value: createdBy, @HTML5.CssDefaults: {width: '15%'}},
       {Value: note, @HTML5.CssDefaults: {width: '25%'}}

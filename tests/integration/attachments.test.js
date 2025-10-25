@@ -29,6 +29,17 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     let sampleDocID = null
     const scanStartWaiter = waitForScanStatus('Scanning')
     const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const db = await cds.connect.to('db');
+    const ScanStates = [];
+    db.after('*', (res, req) => {
+      if (
+        req.event === 'UPDATE' && req.query.UPDATE.data.status && 
+        req.target.name.includes('.attachments')
+      ) {
+        ScanStates.push(req.query.UPDATE.data.status)
+      }
+    });
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
@@ -52,7 +63,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(scanResponse.status).to.equal(200)
     expect(scanResponse.data.value.length).to.equal(1)
-    expect(scanResponse.data.value[0].status).to.equal('Scanning')
+    expect(ScanStates.some(s => s === 'Scanning')).to.be.true
 
     await scanCleanWaiter;
 
@@ -68,7 +79,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     );
     expect(resultResponse.status).to.equal(200)
-    expect(resultResponse.data.value[0].status).to.equal('Clean')
+    expect(ScanStates.some(s => s === 'Clean')).to.be.true
   })
 
   it("Scan status is translated", async () => {

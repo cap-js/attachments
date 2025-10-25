@@ -6,3 +6,4 @@ gen/
 package-lock.json
 
 .cdsrc-private.json
+coverage/
