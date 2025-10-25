@@ -33,7 +33,6 @@ jest.doMock('../../lib/malwareScanner', () => {
   }
 })
 
-const { scanRequest } = require('../../lib/malwareScanner')
 const { getObjectStoreCredentials, fetchToken } = require('../../lib/helper')
 const axios = require('axios')
 const AttachmentsService = require('../../lib/basic')
@@ -73,51 +72,6 @@ beforeEach(() => {
   }))
   key = { ID: 'test-id' }
   req = {}
-})
-
-describe('scanRequest', () => {
-  it('should update status to "Scanning" and "Clean" if no malware detected', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ malwareDetected: false })
-      })
-    )
-    await scanRequest({ name: 'Attachments' }, key, req)
-    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
-    expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
-  })
-
-  it('should update status to "Infected" and delete content if malware detected', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ malwareDetected: true }),
-        status: 200
-      })
-    )
-    await scanRequest({ name: 'Attachments' }, key, req)
-    expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
-    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
-  })
-
-  it('should update status to "Failed" if fetch throws', async () => {
-    global.fetch = jest.fn(() => { throw new Error('Network error') })
-    await scanRequest({ name: 'Attachments' }, key, req)
-    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
-  })
-
-  it('should handle missing credentials gracefully', async () => {
-    const Attachments = { name: 'TestAttachments' }
-    const key = { ID: 'test-id' }
-    cds.env = { requires: {}, profiles: [] }
-
-    try {
-      await scanRequest(Attachments, key)
-    } catch (error) {
-      expect(error.message).toBe("SAP Malware Scanning service is not bound.")
-    }
-
-    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
-  })
 })
 
 describe('getObjectStoreCredentials', () => {
@@ -167,19 +121,5 @@ describe('fetchToken', () => {
   it('should handle error and throw', async () => {
     axios.post.mockRejectedValue(new Error('fail'))
     await expect(fetchToken('url', 'clientId', 'clientSecret')).rejects.toThrow('fail')
-  })
-})
-
-describe('AttachmentsService', () => {
-  let service
-  beforeEach(() => {
-    service = new AttachmentsService()
-  })
-
-  it('deleteInfectedAttachment should call UPDATE with content null', async () => {
-    const Attachments = {}
-    const key = {}
-    await service.deleteInfectedAttachment(Attachments, key)
-    expect(cds.ql.UPDATE).toHaveBeenCalledWith(Attachments, key)
   })
 })

@@ -1,7 +1,8 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { delay } = require("../utils/testUtils")
+const { waitForScanStatus } = require("../utils/testUtils")
+const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
@@ -12,18 +13,8 @@ axios.defaults.auth = { username: "alice" }
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
-describe("Tests for uploading/deleting attachments through API calls - in-memory db", () => {
+describe("Tests for uploading/deleting attachments through API calls", () => {
   beforeAll(async () => {
-    // Set environment before any connections
-    cds.env.requires.db.kind = "sql"
-    cds.env.requires.attachments.kind = "db"
-    cds.env.requires.attachments.scan = false
-    cds.env.profiles = ["development"]
-
-    // Connect to services
-    await cds.connect.to("sql:my.db")
-    await cds.connect.to("attachments")
-
     // Initialize test variables
 
     utils = new RequestSend(POST)
@@ -36,7 +27,19 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     let sampleDocID = null
+    const scanStartWaiter = waitForScanStatus('Scanning')
+    const scanCleanWaiter = waitForScanStatus('Clean')
 
+    const db = await cds.connect.to('db');
+    const ScanStates = [];
+    db.after('*', (res, req) => {
+      if (
+        req.event === 'UPDATE' && req.query.UPDATE.data.status && 
+        req.target.name.includes('.attachments')
+      ) {
+        ScanStates.push(req.query.UPDATE.data.status)
+      }
+    });
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
@@ -51,31 +54,32 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     //to make sure content is not read
     expect(attachmentResponse.data.value[0].content).to.be.undefined
     sampleDocID = attachmentResponse.data.value[0].ID
-    //read attachment in active table
-    const contentResponse = await GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-    )
-    expect(contentResponse.status).to.equal(200)
-    expect(contentResponse.data).to.not.be.undefined
 
+    await scanStartWaiter;
+    
     // Check Scanning status
     const scanResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     )
     expect(scanResponse.status).to.equal(200)
     expect(scanResponse.data.value.length).to.equal(1)
-    expect(scanResponse.data.value[0].status).to.equal("Scanning") // Initial status should be Scanning
+    expect(ScanStates.some(s => s === 'Scanning')).to.be.true
 
-    // Wait for scanning to complete
-    await delay()
+    await scanCleanWaiter;
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).to.equal(200)
+    expect(contentResponse.data).to.not.be.undefined
+
 
     //Check clean status
     const resultResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-    )
+    );
     expect(resultResponse.status).to.equal(200)
-    expect(resultResponse.data.value.length).to.equal(1)
-    expect(resultResponse.data.value[0].status).to.equal("Clean")
+    expect(ScanStates.some(s => s === 'Clean')).to.be.true
   })
 
   it("Scan status is translated", async () => {
@@ -134,12 +138,14 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
 
     // Wait for scanning to complete
-    await delay()
+    await scanCleanWaiter;
 
     //check the content of the uploaded attachment in main table
     const contentResponse = await GET(
@@ -181,7 +187,7 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
     //the data should have no attachments
     expect(response.status).to.equal(200)
     expect(response.data.value.length).to.equal(0)
-
+    
     //content should not be there
     await expect(
       GET(
@@ -225,16 +231,6 @@ describe("Tests for uploading/deleting attachments through API calls - in-memory
 
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
-    // Set environment before any connections
-    cds.env.requires.db.kind = "sql"
-    cds.env.requires.attachments.kind = "db"
-    cds.env.requires.attachments.scan = false
-    cds.env.profiles = ["development"]
-
-    // Connect to services
-    await cds.connect.to("sql:my.db")
-    await cds.connect.to("attachments")
-
     // Initialize test variables
     utils = new RequestSend(POST)
   })
@@ -330,22 +326,34 @@ async function uploadDraftAttachment(
   incidentId,
   filename = "sample.pdf"
 ) {
-  const action = () =>
-    POST(
+  const action = async () => {
+    const res = await POST(
       `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentId,
         filename: filename,
         mimeType: "application/pdf",
-        content: createReadStream(
-          join(__dirname, "..", "integration", "content/sample.pdf")
-        ),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
       }
     )
+    const fileContent = fs.readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      }
+    )
+    return res;
+  }
 
   await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
   await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")

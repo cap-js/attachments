@@ -6,25 +6,22 @@ annotate service.Incidents with @title : '{i18n>Incident}';
 annotate service.Incidents with @odata.draft.enabled;
 
 annotate service.Incidents with @(
+    UI.SemanticKey : [title],
     UI.LineItem : [
         {
-            $Type : 'UI.DataField',
             Value : title,
             Label : '{i18n>Title}',
         },
         {
-            $Type : 'UI.DataField',
             Value : customer.name,
             Label : '{i18n>Customer}',
         },
         {
-            $Type : 'UI.DataField',
             Value : status.descr,
             Criticality : status.criticality,
             Label : '{i18n>Status}',
         },
         {
-            $Type : 'UI.DataField',
             Value : urgency.descr,
             Label : '{i18n>Urgency}',
         },
@@ -94,13 +91,11 @@ annotate service.Incidents with {
 annotate service.Incidents with @(
     UI.HeaderInfo : {
         Title : {
-            $Type : 'UI.DataField',
             Value : title,
         },
         TypeName : '',
         TypeNamePlural : '',
         Description : {
-            $Type : 'UI.DataField',
             Value : customer.name,
         },
         TypeImageUrl : 'sap-icon://alert',
@@ -108,15 +103,12 @@ annotate service.Incidents with @(
 );
 annotate service.Incidents with @(
     UI.FieldGroup #i18nDetails : {
-        $Type : 'UI.FieldGroupType',
         Data : [
             {
-                $Type : 'UI.DataField',
                 Value : status_code,
                 Criticality : status.criticality,
             },
             {
-                $Type : 'UI.DataField',
                 Value : urgency_code,
             },],
     }

@@ -11,6 +11,7 @@ context sap.attachments {
     content  : LargeBinary @title: '{i18n>Attachment}'; // only for db-based services
     mimeType : String default 'application/octet-stream' @title: '{i18n>MediaType}';
     filename : String @title: '{i18n>FileName}';
+    hash     : String @UI.Hidden @Core.Computed;
     status   : String @title: '{i18n>ScanStatus}' default 'Unscanned' @Common.Text : statusNav.name @Common.TextArrangement : #TextOnly;
     statusNav : Association to one ScanStates on statusNav.code = status;
   }
@@ -24,6 +25,7 @@ context sap.attachments {
       Failed;
     };
     name : localized String(64);
+    criticality: Integer @UI.Hidden;
   }
 
   aspect Attachments : cuid, managed, MediaData {
@@ -46,7 +48,7 @@ context sap.attachments {
     },
     LineItem: [
       {Value: content, @HTML5.CssDefaults: {width: '30%'}},
-      {Value: status, @HTML5.CssDefaults: {width: '10%'}},
+      {Value: status, Criticality: statusNav.criticality, @HTML5.CssDefaults: {width: '10%'}},
       {Value: createdAt, @HTML5.CssDefaults: {width: '20%'}},
       {Value: createdBy, @HTML5.CssDefaults: {width: '15%'}},
       {Value: note, @HTML5.CssDefaults: {width: '25%'}}
