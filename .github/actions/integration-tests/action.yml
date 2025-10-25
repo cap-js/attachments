@@ -78,7 +78,11 @@ runs:
     # Run tests in hybrid mode
     - run: cds bind --exec npm run test
       shell: bash
+    - name: Delete HDI Container Key
+      if: ${{ always() }}
+      run: cf delete-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA-key -f
+      shell: bash
     - name: Delete HDI Container
       if: ${{ always() }}
-      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA --force
+      run: cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -f
       shell: bash
