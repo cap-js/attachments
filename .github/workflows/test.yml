@@ -33,7 +33,7 @@ jobs:
         hyperscaler: [AWS]
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Integration tests
       uses: ./.github/actions/integration-tests
       with:
