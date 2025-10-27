@@ -1,5 +1,3 @@
-let mockAttachmentsSrv, key, req = {}
-
 jest.mock('@sap/cds', () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
   debug: jest.fn(),
@@ -11,9 +9,6 @@ jest.mock('@sap/cds', () => ({
     _debug: true
   })),
   Service: class { },
-  connect: {
-    to: () => Promise.resolve(mockAttachmentsSrv)
-  },
   env: { requires: {} }
 }))
 
@@ -41,18 +36,6 @@ const { Readable } = require('stream')
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockAttachmentsSrv = {
-    get: jest.fn(() => {
-      const stream = new Readable()
-      stream.push('test content')
-      stream.push(null)
-      return Promise.resolve(stream)
-    }),
-    update: jest.fn(() => Promise.resolve()),
-    deleteInfectedAttachment: jest.fn(() => Promise.resolve()),
-    getStatus: jest.fn(() => { process.stdout.write('getStatus called'); return Promise.resolve('Clean') }),
-    put: jest.fn(() => { process.stdout.write('put called'); return Promise.resolve() }),
-  }
   cds.env = {
     requires: {
       malwareScanner: {
@@ -70,8 +53,6 @@ beforeEach(() => {
     json: () => Promise.resolve({ malwareDetected: false }),
     status: 200
   }))
-  key = { ID: 'test-id' }
-  req = {}
 })
 
 describe('getObjectStoreCredentials', () => {
