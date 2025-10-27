@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus, delay } = require("../utils/testUtils")
+const { waitForScanStatus } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios } = require("@cap-js/cds-test")(app)
