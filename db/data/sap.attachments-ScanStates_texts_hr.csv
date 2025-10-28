@@ -1,0 +1,6 @@
+locale;code;name;descr
+hr;Unscanned;Neskenirano;The file is not yet scanned for malware.
+hr;Scanning;Skeniranje;The file is currently being scanned for malware.
+hr;Infected;Zaražena;The file contains malware! Do not download!
+hr;Clean;Čista;The file does not contain any malware.
+hr;Failed;Nije uspjelo;The file could not be scanned for malware.

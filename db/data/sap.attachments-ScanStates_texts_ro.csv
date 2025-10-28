@@ -1,0 +1,6 @@
+locale;code;name;descr
+ro;Unscanned;Nescanat;The file is not yet scanned for malware.
+ro;Scanning;Se scanează;The file is currently being scanned for malware.
+ro;Infected;Infectat;The file contains malware! Do not download!
+ro;Clean;Curat;The file does not contain any malware.
+ro;Failed;Nereușit;The file could not be scanned for malware.

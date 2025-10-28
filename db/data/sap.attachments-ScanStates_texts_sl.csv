@@ -1,0 +1,6 @@
+locale;code;name;descr
+sl;Unscanned;Ni optično prebrano;The file is not yet scanned for malware.
+sl;Scanning;Optično branje;The file is currently being scanned for malware.
+sl;Infected;Okuženo;The file contains malware! Do not download!
+sl;Clean;Čisto;The file does not contain any malware.
+sl;Failed;Neuspešno;The file could not be scanned for malware.
