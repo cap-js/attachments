@@ -1,0 +1,6 @@
+locale;code;name;descr
+vi;Unscanned;Chưa quét được;The file is not yet scanned for malware.
+vi;Scanning;Đang quét;The file is currently being scanned for malware.
+vi;Infected;Bị nhiễm virus;The file contains malware! Do not download!
+vi;Clean;Dọn dẹp;The file does not contain any malware.
+vi;Failed;Không thành công;The file could not be scanned for malware.

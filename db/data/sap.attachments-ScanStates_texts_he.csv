@@ -1,0 +1,6 @@
+locale;code;name;descr
+he;Unscanned;לא סרוק;The file is not yet scanned for malware.
+he;Scanning;סריקה;The file is currently being scanned for malware.
+he;Infected;מזוהם;The file contains malware! Do not download!
+he;Clean;נקי;The file does not contain any malware.
+he;Failed;נכשל;The file could not be scanned for malware.

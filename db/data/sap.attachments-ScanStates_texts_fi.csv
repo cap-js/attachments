@@ -1,0 +1,6 @@
+locale;code;name;descr
+fi;Unscanned;Skannaamaton;The file is not yet scanned for malware.
+fi;Scanning;Skannataan;The file is currently being scanned for malware.
+fi;Infected;Tartunnan saanut;The file contains malware! Do not download!
+fi;Clean;Puhdistettu;The file does not contain any malware.
+fi;Failed;Epäonnistui;The file could not be scanned for malware.
