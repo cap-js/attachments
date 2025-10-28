@@ -86,7 +86,7 @@
       },
       "[hybrid]": {
         "attachments": {
-          "kind": "azure",
+          "kind": "s3",
           "scan": true,
           "objectStore": {
             "kind": "separate"
