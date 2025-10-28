@@ -121,30 +121,42 @@ describe('scanRequest', () => {
 
 describe('getObjectStoreCredentials', () => {
   it('should return credentials from service manager', async () => {
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
     axios.get.mockResolvedValue({ data: { items: [{ id: 'test-cred' }] } })
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
+    axios.post.mockResolvedValue({ data: { access_token: 'test-token' } })
+
+    const creds = await getObjectStoreCredentials('tenant')
     expect(creds.id).toBe('test-cred')
   })
 
   it('should return null when tenant ID is missing', async () => {
-    const creds = await getObjectStoreCredentials(null, 'url', 'token')
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
+    const creds = await getObjectStoreCredentials(null)
     expect(creds).toBeNull()
   })
 
-  it('should return null when sm_url is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', null, 'token')
-    expect(creds).toBeNull()
-  })
-
-  it('should return null when token is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', 'url', null)
-    expect(creds).toBeNull()
-  })
-
-  it('should handle error gracefully and return null', async () => {
-    axios.get.mockRejectedValue(new Error('fail'))
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
-    expect(creds).toBeNull()
+  it('should throw error if credentials are missing', async () => {
+    try {
+      await getObjectStoreCredentials('tenant')
+    } catch (err) {
+      expect(err.message).toBe('Service Manager Instance is not bound')
+    }
   })
 })
 
