@@ -1,0 +1,6 @@
+locale;code;name;descr
+bg;Unscanned;Несканирано;The file is not yet scanned for malware.
+bg;Scanning;Сканиране;The file is currently being scanned for malware.
+bg;Infected;Заразено;The file contains malware! Do not download!
+bg;Clean;Изчистване;The file does not contain any malware.
+bg;Failed;Неуспешно;The file could not be scanned for malware.

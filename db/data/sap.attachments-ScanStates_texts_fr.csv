@@ -1,0 +1,6 @@
+locale;code;name;descr
+fr;Unscanned;Non analysé;The file is not yet scanned for malware.
+fr;Scanning;Analyse en cours;The file is currently being scanned for malware.
+fr;Infected;Infecté;The file contains malware! Do not download!
+fr;Clean;Non infecté;The file does not contain any malware.
+fr;Failed;Échec;The file could not be scanned for malware.

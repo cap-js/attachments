@@ -1,0 +1,6 @@
+locale;code;name;descr
+uk;Unscanned;Не проскановано;The file is not yet scanned for malware.
+uk;Scanning;Сканування;The file is currently being scanned for malware.
+uk;Infected;Інфіковано;The file contains malware! Do not download!
+uk;Clean;Очистити;The file does not contain any malware.
+uk;Failed;Помилка;The file could not be scanned for malware.

@@ -1,0 +1,6 @@
+locale;code;name;descr
+tr;Unscanned;Taranmamış;The file is not yet scanned for malware.
+tr;Scanning;Taranıyor;The file is currently being scanned for malware.
+tr;Infected;Enfekte;The file contains malware! Do not download!
+tr;Clean;Temiz;The file does not contain any malware.
+tr;Failed;Başarısız;The file could not be scanned for malware.
