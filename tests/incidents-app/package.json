@@ -23,6 +23,9 @@
             }
           }
         }
+      },
+      "attachments": {
+        "hyperscaler": "AWS"
       }
     }
   },

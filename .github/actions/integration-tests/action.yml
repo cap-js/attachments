@@ -19,6 +19,9 @@ inputs:
   NODE_VERSION:
     description: "Node.js version to use for tests"
     required: true
+  OBJECT_STORE_KIND:
+    description: "Hyperscaler to use for tests"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -58,7 +61,6 @@ runs:
       shell: bash
     - run: cd tests/incidents-app && npm i
       shell: bash
-    # 
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
       shell: bash
@@ -81,6 +83,13 @@ runs:
       shell: bash
     - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -o package.json
       shell: bash
+
+    # Set Hyperscaler for attachment plugin in package.json
+    - run: |
+        cd tests/incidents-app
+        npx -y json -I -f package.json -e "this['cds']['requires']['attachments']['kind'] = { 'hyperscaler': '${{inputs.OBJECT_STORE_KIND}}' }"
+      shell: bash
+
     # Run tests in hybrid mode
     - run: cds bind --exec npm run test
       shell: bash

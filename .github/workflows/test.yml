@@ -43,4 +43,5 @@ jobs:
         CF_PASSWORD: ${{ secrets[format('CF_PASSWORD', matrix.hyperscaler)] }}
         CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.hyperscaler)] }}
         CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.hyperscaler)] }}
+        OBJECT_STORE_KIND: ${{ vars[format('OBJECT_STORE_KIND_{0}', matrix.hyperscaler)] }}
         NODE_VERSION: ${{ matrix.node-version }}
