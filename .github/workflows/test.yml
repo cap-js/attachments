@@ -31,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [20.x, 22.x]
-        hyperscaler: [AWS, Azure]
+        hyperscaler: [AWS, AZURE]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
