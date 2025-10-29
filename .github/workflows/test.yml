@@ -24,8 +24,9 @@ jobs:
     - run: npm i
     - run: cd tests/incidents-app && npm i
     - run: npm run test
-  integration-tests-aws:
+  integration-tests:
     runs-on: ubuntu-latest
+    name: Integration Tests on Node.js ${{ matrix['node-version'] }} with ${{ matrix.hyperscaler }}
     strategy:
       fail-fast: false
       matrix:
