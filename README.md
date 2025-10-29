@@ -329,15 +329,12 @@ resources:
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the command `rm -rf node_modules` should be used before installation.
 
 The integration tests need a binding to a real object store. Run them with `npm run test`.
-To set the binding, provide the following environment variables:
-- AWS_S3_BUCKET
-- AWS_S3_REGION
-- AWS_S3_ACCESS_KEY_ID
-- AWS_S3_SECRET_ACCESS_KEY
+To set the binding, please see the section [Storage Targets](#storage-targets).
 
-##### Supported Storage Backends
+##### Supported Storage Provider
 
 - **AWS S3**
+- **Azure Blob Storage**
 
 ### Model Texts
 

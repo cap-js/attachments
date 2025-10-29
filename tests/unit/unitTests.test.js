@@ -1,4 +1,4 @@
-let mockAttachmentsSrv, key, req = {}
+let mockAttachmentsSrv, key = {}
 
 jest.mock('@sap/cds', () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
@@ -72,7 +72,6 @@ beforeEach(() => {
     status: 200
   }))
   key = { ID: 'test-id' }
-  req = {}
 })
 
 describe('scanRequest', () => {
@@ -82,7 +81,7 @@ describe('scanRequest', () => {
         json: () => Promise.resolve({ malwareDetected: false })
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
     expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
   })
@@ -94,14 +93,14 @@ describe('scanRequest', () => {
         status: 200
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
   })
 
   it('should update status to "Failed" if fetch throws', async () => {
     global.fetch = jest.fn(() => { throw new Error('Network error') })
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
   })
 
@@ -122,30 +121,42 @@ describe('scanRequest', () => {
 
 describe('getObjectStoreCredentials', () => {
   it('should return credentials from service manager', async () => {
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
     axios.get.mockResolvedValue({ data: { items: [{ id: 'test-cred' }] } })
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
+    axios.post.mockResolvedValue({ data: { access_token: 'test-token' } })
+
+    const creds = await getObjectStoreCredentials('tenant')
     expect(creds.id).toBe('test-cred')
   })
 
   it('should return null when tenant ID is missing', async () => {
-    const creds = await getObjectStoreCredentials(null, 'url', 'token')
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
+    const creds = await getObjectStoreCredentials(null)
     expect(creds).toBeNull()
   })
 
-  it('should return null when sm_url is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', null, 'token')
-    expect(creds).toBeNull()
-  })
-
-  it('should return null when token is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', 'url', null)
-    expect(creds).toBeNull()
-  })
-
-  it('should handle error gracefully and return null', async () => {
-    axios.get.mockRejectedValue(new Error('fail'))
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
-    expect(creds).toBeNull()
+  it('should throw error if credentials are missing', async () => {
+    try {
+      await getObjectStoreCredentials('tenant')
+    } catch (err) {
+      expect(err.message).toBe('Service Manager Instance is not bound')
+    }
   })
 })
 
