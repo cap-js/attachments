@@ -1,0 +1,6 @@
+locale;code;name;descr
+sk;Unscanned;Nenaskenované;The file is not yet scanned for malware.
+sk;Scanning;Skenovanie;The file is currently being scanned for malware.
+sk;Infected;Infikované;The file contains malware! Do not download!
+sk;Clean;Očistiť;The file does not contain any malware.
+sk;Failed;Neúspešné;The file could not be scanned for malware.

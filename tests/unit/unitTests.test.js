@@ -1,4 +1,4 @@
-let mockAttachmentsSrv, key, req = {}
+let mockAttachmentsSrv, key = {}
 
 const validCert = "-----BEGIN CERTIFICATE-----\nMIIDbTCCAlWgAwIBAgIUOtfA6VNuNW1ZU4TQmBr1io86kXowDQYJKoZIhvcNAQEL\nBQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAgFw0yNTEwMjMwNzM2NTRaGA8yMDU1\nMTAxNjA3MzY1NFowRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUx\nITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDCCASIwDQYJKoZIhvcN\nAQEBBQADggEPADCCAQoCggEBAO+NhuWAbRo+z2a52YfyRtuXEqZySvhlEneaesNT\nXrSZP9tIeGR0wUZOT7no73+SNAjNCuHA/U+jpm1W3po1BtRJTgpDU5+mu2WhsqKi\nGEKkLmBO7d8gHKQyEWoYJc8yqU3UIOtlmTXETEZbW8Ee8/Iaqi1xyGCh3I8H/qiY\nlkFUZX2ZeuFmo1ueR3lTxjujG7q+oK1kDRHrAHcO8WopSnAvcCL47DBhI3fniJo1\nb3tbYGVTGWdx3C9z0SeCdQ4rfLjfMV+0gix9hZCO6Di6f86BUhQpJWmdTALfoY6P\nsP2BRU0Y0KmpQgw4BZvlPvtsAZD10Qhgc3fPuT1+gEqgnK8CAwEAAaNTMFEwHQYD\nVR0OBBYEFMD3McHmLuwnZGc0c7kyjIzf2y6/MB8GA1UdIwQYMBaAFMD3McHmLuwn\nZGc0c7kyjIzf2y6/MA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEB\nAFB1Z43T4TAdwjhh7ynvw+wqFeWFE3ZUCUjMM/AIckFgG+1XF9aVbr226obsclEc\n+YAdsmrVUY6yPLbfLAJFVP6pMJslq85wF2C+vb61MFZb1NKIFc3HNxlWLAMfGli7\nNvzbRp21a6RLK0tghHdKWuekdit/wfvMqgWUqJI5Pm/NuOupClpCOLQOy9Nxwyyl\nYU8cqOzBgCXyVfMM4IWfkDdFfbdbX3k+mY/jOmC+5qIqPrR0rnvJwVJd3z+pW62D\n42rYCQqToHXqH1LTYEIMiZZFG9ZlpT2RQZFOgLcpsuTQKgo77T32DEvJk018xK0I\nQ/H33UI3Zp4U/YRmL18jyLU=\n-----END CERTIFICATE-----"
 const expiredCert = "-----BEGIN CERTIFICATE-----\nMIIDazCCAlOgAwIBAgIUSIZ70YxKWyJTPhAaHW4lysXYk30wDQYJKoZIhvcNAQEL\nBQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM\nGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yMDA4MDEwMTAwMDBaFw0yMDEw\nMDEwMTAwMDBaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw\nHwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggEiMA0GCSqGSIb3DQEB\nAQUAA4IBDwAwggEKAoIBAQDlP6mPHLokEiD2faTK2hBiyv2wKtDNiHt0sSeP8ae7\ns+IAIwAX+pmw7QMIYDcQQO6c7Lfle7c/XtUMirJik3/zdjOfrX1qsxMFXTgnwmqH\n9njrGDgs4OK9+l5fkhtcX8YkxkxfoLSO7gGrO2Xv+KeDVmysD5JBrfp2UQFLPp6/\n6ohAZQeHEqx/snfcypEd+K8llBORsKo7tB15Yt5jRSUsuaiGVPPVcCPi9yUcvXHJ\nA7Jv/c0zSiM23pby39tCnZX0KCyBZ2aJMSiWk+Txd0uib5fX7Ln2AS1wOvjVOLNM\nIwcVibyvEGo5DDEzpt6li1BYpLltxLLqftEpLB5NzA6fAgMBAAGjUzBRMB0GA1Ud\nDgQWBBRyUe78kMLzNpV2q3jf5xT6Cu3KrDAfBgNVHSMEGDAWgBRyUe78kMLzNpV2\nq3jf5xT6Cu3KrDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCG\nLL6V13KzKQlLvvTThywV7rOyKqHtZYPUFV+hnHDLaEfJhqVzFIK4SL+K6/VQrj3B\n3BEWh3tAaeaKwAj6BSGGYH/OCA5Vl4yewFLMfostw7LyrLkHlbkhALmC7j5TWapR\ni/tHFifcAYkQnMip1HrOTeGxjEd4RV2kILIsd8ukNv54KAnsxpIIQt2AOhy6LzIs\nkWJOf0IMAusn/PgXBKBJ+YonsldsavC/TBSi3qZXWygcsD1ISviBNIjcS7hbejU8\nLseGs+B6YGIC/Ow6zD71UuOYvQnvjhJG/syaUoUivVppbxbvZyZi7bg48RZLxxig\np3fwjV9eQceKgnNUvzhg\n-----END CERTIFICATE-----"
@@ -68,7 +68,6 @@ beforeEach(() => {
     status: 200
   }))
   key = { ID: 'test-id' }
-  req = {}
 })
 
 describe('scanRequest with mTLS', () => {
@@ -154,7 +153,7 @@ describe('scanRequest with basic auth', () => {
         json: () => Promise.resolve({ malwareDetected: false })
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
     expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
   })
@@ -166,14 +165,14 @@ describe('scanRequest with basic auth', () => {
         status: 200
       })
     )
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
     expect(mockAttachmentsSrv.update).toHaveBeenCalled()
   })
 
   it('should update status to "Failed" if fetch throws', async () => {
     global.fetch = jest.fn(() => { throw new Error('Network error') })
-    await scanRequest({ name: 'Attachments' }, key, req)
+    await scanRequest({ name: 'Attachments' }, key)
     expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
   })
 
@@ -194,30 +193,42 @@ describe('scanRequest with basic auth', () => {
 
 describe('getObjectStoreCredentials', () => {
   it('should return credentials from service manager', async () => {
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
     axios.get.mockResolvedValue({ data: { items: [{ id: 'test-cred' }] } })
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
+    axios.post.mockResolvedValue({ data: { access_token: 'test-token' } })
+
+    const creds = await getObjectStoreCredentials('tenant')
     expect(creds.id).toBe('test-cred')
   })
 
   it('should return null when tenant ID is missing', async () => {
-    const creds = await getObjectStoreCredentials(null, 'url', 'token')
+    cds.env.requires.serviceManager = {
+      credentials: {
+        sm_url: 'https://sm.example.com',
+        url: 'https://token.example.com',
+        clientid: 'client-id',
+        clientsecret: 'client-secret'
+      }
+    }
+
+    const creds = await getObjectStoreCredentials(null)
     expect(creds).toBeNull()
   })
 
-  it('should return null when sm_url is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', null, 'token')
-    expect(creds).toBeNull()
-  })
-
-  it('should return null when token is missing', async () => {
-    const creds = await getObjectStoreCredentials('tenant', 'url', null)
-    expect(creds).toBeNull()
-  })
-
-  it('should handle error gracefully and return null', async () => {
-    axios.get.mockRejectedValue(new Error('fail'))
-    const creds = await getObjectStoreCredentials('tenant', 'url', 'token')
-    expect(creds).toBeNull()
+  it('should throw error if credentials are missing', async () => {
+    try {
+      await getObjectStoreCredentials('tenant')
+    } catch (err) {
+      expect(err.message).toBe('Service Manager Instance is not bound')
+    }
   })
 })
 

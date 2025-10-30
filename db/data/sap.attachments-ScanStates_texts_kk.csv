@@ -1,0 +1,6 @@
+locale;code;name;descr
+kk;Unscanned;Сканерленбеген;The file is not yet scanned for malware.
+kk;Scanning;Сканерлеуде;The file is currently being scanned for malware.
+kk;Infected;Бұзылған;The file contains malware! Do not download!
+kk;Clean;Таза;The file does not contain any malware.
+kk;Failed;Сәтсіз;The file could not be scanned for malware.

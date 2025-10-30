@@ -1,0 +1,6 @@
+locale;code;name;descr
+it;Unscanned;Non digitalizzato;The file is not yet scanned for malware.
+it;Scanning;Scansione in corso;The file is currently being scanned for malware.
+it;Infected;Infettato;The file contains malware! Do not download!
+it;Clean;Pulito;The file does not contain any malware.
+it;Failed;Non riuscito;The file could not be scanned for malware.

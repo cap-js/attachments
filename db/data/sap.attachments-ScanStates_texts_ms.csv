@@ -1,0 +1,6 @@
+locale;code;name;descr
+ms;Unscanned;Tidak Diimbas;The file is not yet scanned for malware.
+ms;Scanning;Mengimbas;The file is currently being scanned for malware.
+ms;Infected;Dijangkiti;The file contains malware! Do not download!
+ms;Clean;Bersih;The file does not contain any malware.
+ms;Failed;Gagal;The file could not be scanned for malware.

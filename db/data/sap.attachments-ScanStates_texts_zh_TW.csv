@@ -1,0 +1,6 @@
+locale;code;name;descr
+zh_TW;Unscanned;未掃描;The file is not yet scanned for malware.
+zh_TW;Scanning;正在掃描;The file is currently being scanned for malware.
+zh_TW;Infected;已感染;The file contains malware! Do not download!
+zh_TW;Clean;清除;The file does not contain any malware.
+zh_TW;Failed;失敗;The file could not be scanned for malware.

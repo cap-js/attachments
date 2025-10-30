@@ -1,6 +1,6 @@
 locale;code;name;descr
-de;Unscanned;Nicht gescannt;
-de;Scanning;Wird gescannt;
-de;Infected;Infiziert;
-de;Clean;Sauber;
-de;Failed;Fehlgeschlagen;
+de;Unscanned;Nicht gescannt;The file is not yet scanned for malware.
+de;Scanning;Wird gescannt...;The file is currently being scanned for malware.
+de;Infected;Mit Malware infiziert;The file contains malware! Do not download!
+de;Clean;Nicht infiziert;The file does not contain any malware.
+de;Failed;Fehlgeschlagen;The file could not be scanned for malware.
