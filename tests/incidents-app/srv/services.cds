@@ -4,7 +4,9 @@ using { sap.capire.incidents as my } from '../db/schema';
  * Service used by support personell, i.e. the incidents' 'processors'.
  */
 service ProcessorService {
+  @cds.redirection.target
   entity Incidents as projection on my.Incidents;
+
   entity Customers @readonly as projection on my.Customers;
   
   @odata.draft.enabled

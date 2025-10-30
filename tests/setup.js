@@ -20,10 +20,10 @@ jest.doMock('../lib/logger', () => ({
     logProcessStep: jest.fn(),
     logWithSuggestion: jest.fn()
   }
-}));
+}))
 
 // Suppress console output in tests
-const originalConsole = global.console;
+const originalConsole = global.console
 global.console = {
   ...originalConsole,
   log: jest.fn(),
@@ -31,4 +31,4 @@ global.console = {
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn()
-};
+}
