@@ -30,16 +30,16 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const scanStartWaiter = waitForScanStatus('Scanning')
     const scanCleanWaiter = waitForScanStatus('Clean')
 
-    const db = await cds.connect.to('db');
-    const ScanStates = [];
+    const db = await cds.connect.to('db')
+    const ScanStates = []
     db.after('*', (res, req) => {
       if (
-        req.event === 'UPDATE' && req.query.UPDATE.data.status && 
+        req.event === 'UPDATE' && req.query.UPDATE.data.status &&
         req.target.name.includes('.attachments')
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
       }
-    });
+    })
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).to.not.be.null
@@ -55,8 +55,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(attachmentResponse.data.value[0].content).to.be.undefined
     sampleDocID = attachmentResponse.data.value[0].ID
 
-    await scanStartWaiter;
-    
+    await scanStartWaiter
+
     // Check Scanning status
     const scanResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
@@ -65,7 +65,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(scanResponse.data.value.length).to.equal(1)
     expect(ScanStates.some(s => s === 'Scanning')).to.be.true
 
-    await scanCleanWaiter;
+    await scanCleanWaiter
 
     const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
@@ -77,7 +77,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     //Check clean status
     const resultResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-    );
+    )
     expect(resultResponse.status).to.equal(200)
     expect(ScanStates.some(s => s === 'Clean')).to.be.true
   })
@@ -145,7 +145,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(sampleDocID).to.not.be.null
 
     // Wait for scanning to complete
-    await scanCleanWaiter;
+    await scanCleanWaiter
 
     //check the content of the uploaded attachment in main table
     const contentResponse = await GET(
@@ -161,11 +161,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
 
-    const db = await cds.connect.to('db');
+    const db = await cds.connect.to('db')
     const attachmentIDs = []
     db.before('*', req => {
       if (req.event === 'CREATE' && req.target?.name === 'cds.outbox.Messages') {
-        const msg = JSON.parse(req.query.INSERT.entries[0].msg);
+        const msg = JSON.parse(req.query.INSERT.entries[0].msg)
         attachmentIDs.push(msg.data.url)
       }
     })
@@ -177,8 +177,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       )
     await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
 
-    expect(attachmentIDs[0]).to.equal(attachmentData.data.url);
-    expect(attachmentIDs.length).to.equal(1);
+    expect(attachmentIDs[0]).to.equal(attachmentData.data.url)
+    expect(attachmentIDs.length).to.equal(1)
 
     //read attachments list for Incident
     const response = await GET(
@@ -187,7 +187,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     //the data should have no attachments
     expect(response.status).to.equal(200)
     expect(response.data.value.length).to.equal(0)
-    
+
     //content should not be there
     await expect(
       GET(
@@ -200,9 +200,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
-        sampleID: "ABC",
-        gjahr: 2025
-      }
+      sampleID: "ABC",
+      gjahr: 2025
+    }
     )
     const doc = await POST(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
@@ -224,8 +224,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     const deleteRes = await DELETE(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)`
-    );
-    expect(deleteRes.status).to.equal(204);
+    )
+    expect(deleteRes.status).to.equal(204)
   })
 })
 
@@ -241,7 +241,7 @@ describe("Tests for attachments facet disable", () => {
       expect(res.status).to.equal(200)
       const facets =
         res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-          "@UI.Facets"
+        "@UI.Facets"
         ]
       const attachmentsFacetLabel = facets.some(
         (facet) => facet.Label === "Attachments"
@@ -261,7 +261,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).to.equal(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments"
@@ -280,7 +280,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).to.equal(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments"
@@ -299,7 +299,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).to.equal(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
 
     const attachmentFacets = facets.filter(
@@ -352,7 +352,7 @@ async function uploadDraftAttachment(
         },
       }
     )
-    return res;
+    return res
   }
 
   await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")

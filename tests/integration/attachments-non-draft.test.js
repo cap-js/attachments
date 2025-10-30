@@ -31,13 +31,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should list attachments for incident", async () => {
-    
+
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID);
+    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await scanCleanWaiter;
+    await scanCleanWaiter
 
     const response = await axios.get(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`
@@ -45,7 +45,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.status).to.equal(200)
 
     const attachment = response.data.value[0]
-    
+
     expect(attachment.up__ID).to.equal(incidentID)
     expect(attachment.filename).to.equal("sample.pdf")
     expect(attachment.status).to.equal("Clean")
@@ -54,13 +54,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
-    
+
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID);
+    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await scanCleanWaiter;
+    await scanCleanWaiter
 
     const response = await axios.get(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
@@ -77,13 +77,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should delete attachment and verify deletion", async () => {
-    
+
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID);
+    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
-    await scanCleanWaiter;
+    await scanCleanWaiter
 
     // Delete the attachment
     const deleteResponse = await axios.delete(
@@ -132,7 +132,7 @@ function createHelpers(axios) {
           },
         }
       )
-      return response;
+      return response
     },
   }
 }
