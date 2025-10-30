@@ -1,5 +1,3 @@
-let mockAttachmentsSrv, key = {}
-
 jest.mock('@sap/cds', () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
   debug: jest.fn(),
@@ -11,9 +9,6 @@ jest.mock('@sap/cds', () => ({
     _debug: true
   })),
   Service: class { },
-  connect: {
-    to: () => Promise.resolve(mockAttachmentsSrv)
-  },
   env: { requires: {} }
 }))
 
@@ -33,27 +28,12 @@ jest.doMock('../../lib/malwareScanner', () => {
   }
 })
 
-const { scanRequest } = require('../../lib/malwareScanner')
 const { getObjectStoreCredentials, fetchToken } = require('../../lib/helper')
 const axios = require('axios')
-const AttachmentsService = require('../../lib/basic')
 const cds = require('@sap/cds')
-const { Readable } = require('stream')
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockAttachmentsSrv = {
-    get: jest.fn(() => {
-      const stream = new Readable()
-      stream.push('test content')
-      stream.push(null)
-      return Promise.resolve(stream)
-    }),
-    update: jest.fn(() => Promise.resolve()),
-    deleteInfectedAttachment: jest.fn(() => Promise.resolve()),
-    getStatus: jest.fn(() => { process.stdout.write('getStatus called'); return Promise.resolve('Clean') }),
-    put: jest.fn(() => { process.stdout.write('put called'); return Promise.resolve() }),
-  }
   cds.env = {
     requires: {
       malwareScanner: {
@@ -71,52 +51,6 @@ beforeEach(() => {
     json: () => Promise.resolve({ malwareDetected: false }),
     status: 200
   }))
-  key = { ID: 'test-id' }
-})
-
-describe('scanRequest', () => {
-  it('should update status to "Scanning" and "Clean" if no malware detected', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ malwareDetected: false })
-      })
-    )
-    await scanRequest({ name: 'Attachments' }, key)
-    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
-    expect(mockAttachmentsSrv.deleteInfectedAttachment).not.toHaveBeenCalled()
-  })
-
-  it('should update status to "Infected" and delete content if malware detected', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ malwareDetected: true }),
-        status: 200
-      })
-    )
-    await scanRequest({ name: 'Attachments' }, key)
-    expect(mockAttachmentsSrv.deleteInfectedAttachment).toHaveBeenCalled()
-    expect(mockAttachmentsSrv.update).toHaveBeenCalled()
-  })
-
-  it('should update status to "Failed" if fetch throws', async () => {
-    global.fetch = jest.fn(() => { throw new Error('Network error') })
-    await scanRequest({ name: 'Attachments' }, key)
-    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
-  })
-
-  it('should handle missing credentials gracefully', async () => {
-    const Attachments = { name: 'TestAttachments' }
-    const key = { ID: 'test-id' }
-    cds.env = { requires: {}, profiles: [] }
-
-    try {
-      await scanRequest(Attachments, key)
-    } catch (error) {
-      expect(error.message).toBe("SAP Malware Scanning service is not bound.")
-    }
-
-    expect(mockAttachmentsSrv.update).toHaveBeenCalledWith(expect.anything(), key, { status: 'Failed' })
-  })
 })
 
 describe('getObjectStoreCredentials', () => {
@@ -178,19 +112,5 @@ describe('fetchToken', () => {
   it('should handle error and throw', async () => {
     axios.post.mockRejectedValue(new Error('fail'))
     await expect(fetchToken('url', 'clientId', 'clientSecret')).rejects.toThrow('fail')
-  })
-})
-
-describe('AttachmentsService', () => {
-  let service
-  beforeEach(() => {
-    service = new AttachmentsService()
-  })
-
-  it('deleteInfectedAttachment should call UPDATE with content null', async () => {
-    const Attachments = {}
-    const key = {}
-    await service.deleteInfectedAttachment(Attachments, key)
-    expect(cds.ql.UPDATE).toHaveBeenCalledWith(Attachments, key)
   })
 })

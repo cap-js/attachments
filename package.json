@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest --runInBand"
+    "test": "npx jest --silent=false --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.918.0",
@@ -43,6 +43,12 @@
         }
       },
       "kinds": {
+        "malwareScanner-mock": {
+          "impl": "@cap-js/attachments/lib/malwareScanner-mocked"
+        },
+        "malwareScanner-btp": {
+          "impl": "@cap-js/attachments/lib/malwareScanner"
+        },
         "attachments-db": {
           "impl": "@cap-js/attachments/lib/basic"
         },
@@ -71,12 +77,18 @@
         }
       },
       "[development]": {
+        "malwareScanner": {
+          "kind": "malwareScanner-mock"
+        },
         "attachments": {
           "scan": false,
           "kind": "db"
         }
       },
       "[production]": {
+        "malwareScanner": {
+          "kind": "malwareScanner-btp"
+        },
         "attachments": {
           "kind": "s3",
           "objectStore": {
@@ -85,6 +97,9 @@
         }
       },
       "[hybrid]": {
+        "malwareScanner": {
+          "kind": "malwareScanner-btp"
+        },
         "attachments": {
           "kind": "s3",
           "scan": true,

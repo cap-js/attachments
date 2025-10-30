@@ -2,6 +2,7 @@
   "name": "@capire/incidents",
   "version": "1.0.0",
   "dependencies": {
+    "@cap-js/hana": "*",
     "@cap-js/attachments": "file:../../."
   },
   "cds": {
@@ -22,6 +23,9 @@
             }
           }
         }
+      },
+      "attachments": {
+        "hyperscaler": "AWS"
       }
     }
   },
