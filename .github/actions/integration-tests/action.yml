@@ -73,7 +73,7 @@ runs:
       run: cf create-service malware-scanner clamav cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA
     - name: Create mTLS Malware scanner
       shell: bash
-      run: cf create-service malware-scanner clamav cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -c '{"auth": "mTLS"}'
+      run: cf create-service malware-scanner clamav cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -c '{"auth":"mTLS"}'
     - name: Create HDI Container
       shell: bash
       run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA
