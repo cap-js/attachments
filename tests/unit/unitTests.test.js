@@ -30,9 +30,7 @@ jest.doMock('../../lib/malwareScanner', () => {
 
 const { getObjectStoreCredentials, fetchToken } = require('../../lib/helper')
 const axios = require('axios')
-const AttachmentsService = require('../../lib/basic')
 const cds = require('@sap/cds')
-const { Readable } = require('stream')
 
 beforeEach(() => {
   jest.clearAllMocks()
