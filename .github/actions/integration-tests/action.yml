@@ -22,6 +22,9 @@ inputs:
   OBJECT_STORE_KIND:
     description: "Hyperscaler to use for tests"
     required: true
+  SCANNER_AUTH:
+    description: "Malware scanner authentication type"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -69,9 +72,11 @@ runs:
       shell: bash
       run: cf create-service objectstore standard cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA
     - name: Create Basic Auth Malware scanner
+      if: ${{ inputs.SCANNER_AUTH == 'basic' }}
       shell: bash
       run: cf create-service malware-scanner clamav cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA
     - name: Create mTLS Malware scanner
+      if: ${{ inputs.SCANNER_AUTH == 'mtls' }}
       shell: bash
       run: cf create-service malware-scanner clamav cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -c '{"auth":"mTLS"}'
     - name: Create HDI Container
