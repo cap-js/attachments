@@ -105,15 +105,15 @@ runs:
     # Cleanup
     - name: Delete Malware Scanner instance
       if: ${{ always() }}
-      run: cf delete-service cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -f
+      run: cf delete-service cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -f
       shell: bash
     - name: Delete Object store
       if: ${{ always() }}
-      run: cf delete-service cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -f
+      run: cf delete-service cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -f
       shell: bash
     - name: Delete HDI Container Key
       if: ${{ always() }}
-      run: cf delete-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA-key -f
+      run: cf delete-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA-key -f
       shell: bash
     # Somehow first delete always fails with a "ongoing operation on service binding" error
     - name: Delete HDI Container
@@ -121,7 +121,7 @@ runs:
       shell: bash
       run: |
         for i in {1..3}; do
-          cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-$NODE_VERSION_HANA -f && break
+          cf delete-service cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -f && break
           echo "HDI container delete failed, retrying ($i/3)..."
           sleep 10
           if [ "$i" -eq 3 ]; then
