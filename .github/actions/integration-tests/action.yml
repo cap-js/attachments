@@ -89,7 +89,7 @@ runs:
       shell: bash
     - run: cds bind objectStore -2 cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -o package.json
       shell: bash
-    - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -o package.json
+    - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ matrix.scanner_auth }}-$NODE_VERSION_HANA -o package.json
       shell: bash
 
     # Set Hyperscaler for attachment plugin in package.json
