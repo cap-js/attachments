@@ -145,8 +145,7 @@ When testing locally, the plugin operates without a dedicated storage target, st
 
 Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
-For productive use, you need a valid object store binding. Currently, only the AWS S3 object store is supported.
-For using an AWS S3 Object Store in BTP, you must already have an SAP Object Store service instance on an AWS landscape created. To bind it in a hybrid setup, follow this setup:
+For using an Object Store in BTP, you must already have an SAP Object Store service instance on the appropriate landscape created. To bind it in a hybrid setup, follow this setup:
 
 1. Log in to Cloud Foundry:
 
@@ -335,6 +334,8 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 
 - **AWS S3**
 - **Azure Blob Storage**
+- **Google Cloud Platform**
+
 
 ### Model Texts
 
