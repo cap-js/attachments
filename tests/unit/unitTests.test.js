@@ -36,13 +36,6 @@ beforeEach(() => {
   jest.clearAllMocks()
   cds.env = {
     requires: {
-      malwareScanner: {
-        credentials: {
-          uri: 'scanner.example.com',
-          username: 'user',
-          password: 'pass'
-        }
-      },
       attachments: { scan: true }
     },
     profiles: []
