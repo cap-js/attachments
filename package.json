@@ -21,7 +21,7 @@
     "@aws-sdk/client-s3": "^3.918.0",
     "@aws-sdk/lib-storage": "^3.918.0",
     "@azure/storage-blob": "^12.29.1",
-    "@google-cloud/storage": "^7.12.0",
+    "@google-cloud/storage": "^7.17.3",
     "axios": "^1.4.0"
   },
   "devDependencies": {
@@ -105,7 +105,7 @@
           "kind": "malwareScanner-btp"
         },
         "attachments": {
-          "kind": "google",
+          "kind": "s3",
           "scan": true,
           "objectStore": {
             "kind": "separate"
