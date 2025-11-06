@@ -114,10 +114,10 @@ jobs:
       - name: Deploy to SAP BTP Cloud Foundry
         uses: ./.github/actions/deploy
         with:
-          CF_API: ${{ secrets[format('CF_API_{0}', matrix.tenant == 'singletenant')] }}
-          CF_USERNAME: ${{ secrets[format('CF_USERNAME_{0}', matrix.tenant == 'singletenant')] }}
-          CF_PASSWORD: ${{ secrets[format('CF_PASSWORD_{0}', matrix.tenant == 'singletenant')] }}
-          CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.tenant == 'singletenant')] }}
-          CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.tenant == 'singletenant')] }}
+          CF_API: ${{ secrets.CF_API_AWS }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG: ${{ secrets.CF_ORG_AWS }}
+          CF_SPACE: ${{ secrets.CF_SPACE_AWS }}
           CF_APP_NAME: ${{ matrix.tenant == 'singletenant' && 'incidents-testing' || 'incidents-testing-mtx' }}
         
