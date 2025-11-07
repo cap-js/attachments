@@ -59,7 +59,7 @@
         "attachments-azure": {
           "impl": "@cap-js/attachments/lib/azure-blob-storage"
         },
-        "attachments-google": {
+        "attachments-gcp": {
           "impl": "@cap-js/attachments/lib/gcp"
         }
       },
