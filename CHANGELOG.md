@@ -8,7 +8,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Support for mTLS authentication in malware scanning service
+- Implemented integration with additional cloud providers for attachment storage:
+    - Azure Blob Storage (`kind: azure`).
+    - Google Cloud Platform Object Store (`kind: gcp`).
+- Added support for mTLS authentication for the malware scanning service.
+- Added criticality status to the attachment scan status.
+- Provided translations for all SAP-supported languages.
+
+### Fixed
 
 ## Version 3.1.0
 
