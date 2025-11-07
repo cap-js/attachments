@@ -21,6 +21,7 @@
     "@aws-sdk/client-s3": "^3.918.0",
     "@aws-sdk/lib-storage": "^3.918.0",
     "@azure/storage-blob": "^12.29.1",
+    "@google-cloud/storage": "^7.17.3",
     "axios": "^1.4.0"
   },
   "devDependencies": {
@@ -58,6 +59,9 @@
         },
         "attachments-azure": {
           "impl": "@cap-js/attachments/lib/azure-blob-storage"
+        },
+        "attachments-gcp": {
+          "impl": "@cap-js/attachments/lib/gcp"
         }
       },
       "serviceManager": {

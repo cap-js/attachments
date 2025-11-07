@@ -32,14 +32,14 @@ describe('validateAttachmentSize', () => {
     const rejectFunction = chai.spy.on(req, 'reject');
     validateAttachmentSize(req)
 
-    expect(rejectFunction).to.have.been.called.with(403, 'File Size limit exceeded beyond 400 MB.')
+    expect(rejectFunction).to.have.been.called.with(400, 'File Size limit exceeded beyond 400 MB.')
   })
 
   it('should reject when content-length header is missing', () => {
     const rejectFunction = chai.spy.on(req, 'reject');
     validateAttachmentSize(req)
 
-    expect(rejectFunction).to.have.been.called.with(403, 'Invalid Content Size')
+    expect(rejectFunction).to.have.been.called.with(400, 'Invalid Content Size')
   })
 })
 
