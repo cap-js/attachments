@@ -89,8 +89,19 @@ runs:
     # Bind against BTP services
     - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
       shell: bash
-    - run: cds bind objectStore -2 cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
+
+    - name: Bind object store
       shell: bash
+      run: |
+        for i in {1..3}; do
+          cds bind objectStore -2 cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json && break
+          echo "cds bind objectStore failed, retrying ($i/3)..."
+          sleep 10
+          if [ "$i" -eq 3 ]; then
+            echo "❌ cds bind objectStore failed after 3 attempts."
+            exit 1
+          fi
+        done
     - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
       shell: bash
 
