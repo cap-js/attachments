@@ -23,13 +23,13 @@ describe('validateAttachmentSize', () => {
 
     validateAttachmentSize(req)
 
-    expect(req.reject).toHaveBeenCalledWith(403, 'File Size limit exceeded beyond 400 MB.')
+    expect(req.reject).toHaveBeenCalledWith(400, 'File Size limit exceeded beyond 400 MB.')
   })
 
   it('should reject when content-length header is missing', () => {
     validateAttachmentSize(req)
 
-    expect(req.reject).toHaveBeenCalledWith(403, 'Invalid Content Size')
+    expect(req.reject).toHaveBeenCalledWith(400, 'Invalid Content Size')
   })
 })
 
