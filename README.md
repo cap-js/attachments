@@ -333,9 +333,9 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 
 ##### Supported Storage Provider
 
-- **AWS S3**
-- **Azure Blob Storage**
-- **Google Cloud Platform**
+- **AWS S3** (`kind: "s3"`)
+- **Azure Blob Storage** (`kind: "azure"`)
+- **Google Cloud Platform** (`kind: "gcp"`)
 
 
 ### Model Texts
