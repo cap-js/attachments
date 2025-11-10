@@ -13,7 +13,7 @@ const DELETE = async function () {
   try {
     return await _DELETE(...arguments)
   } catch (e) {
-    return e.response ?? e;
+    return e.response ?? e
   }
 }
 let utils = null
