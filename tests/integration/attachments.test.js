@@ -235,25 +235,28 @@ describe("Tests for attachments facet disable", () => {
     utils = new RequestSend(POST)
   })
 
-  it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
-    try {
+  it("Hide up ID on Attachments UI", async () => {
       const res = await GET(`odata/v4/processor/$metadata?$format=json`)
       expect(res.status).to.equal(200)
-      const facets =
-        res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
-        ]
-      const attachmentsFacetLabel = facets.some(
-        (facet) => facet.Label === "Attachments"
-      )
-      const attachmentsFacetTarget = facets.some(
-        (facet) => facet.Target === "attachments/@UI.LineItem"
-      )
-      expect(attachmentsFacetLabel).to.be.true
-      expect(attachmentsFacetTarget).to.be.true
-    } catch (err) {
-      expect(err).to.be.undefined
-    }
+      expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up__ID']).to.have.property('@UI.Hidden', true)
+      expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up_']).to.have.property('@UI.Hidden', true)
+  })
+
+  it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
+    const res = await GET(`odata/v4/processor/$metadata?$format=json`)
+    expect(res.status).to.equal(200)
+    const facets =
+      res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
+      "@UI.Facets"
+      ]
+    const attachmentsFacetLabel = facets.some(
+      (facet) => facet.Label === "Attachments"
+    )
+    const attachmentsFacetTarget = facets.some(
+      (facet) => facet.Target === "attachments/@UI.LineItem"
+    )
+    expect(attachmentsFacetLabel).to.be.true
+    expect(attachmentsFacetTarget).to.be.true
   })
 
   it("Checking attachments facet when @attachments.disable_facet is enabled", async () => {
