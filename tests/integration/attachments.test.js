@@ -7,9 +7,15 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, expect, axios, GET, POST, DELETE } = cds.test(app)
+const { test, expect, axios, GET, POST, DELETE: _DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
-
+const DELETE = async function () {
+  try {
+    return await _DELETE(...arguments)
+  } catch (e) {
+    return e.response ?? e
+  }
+}
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
@@ -194,6 +200,18 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       )
     ).to.be.rejectedWith(/404/)
+  })
+
+  it("Deleting a non existing root does not crash the application", async () => {
+    const response = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+    )
+    expect(response.status).to.equal(204)
+    
+    const response2 = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+    )
+    expect(response2.status).to.equal(404)
   })
 
   it("Cancel draft where parent has composed key", async () => {
