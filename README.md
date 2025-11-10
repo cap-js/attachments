@@ -15,7 +15,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
   * [Storage Targets](#storage-targets)
   * [Malware Scanner](#malware-scanner)
   * [Visibility Control](#visibility-control-for-attachments-ui-facet-generation)
-  * [Non-Draft Uploading](non-draft-upload)
+  * [Non-Draft Uploading](#non-draft-upload)
 * [Releases](#releases)
 * [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
 * [Architecture Overview](#architecture-overview)
