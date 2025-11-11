@@ -30,7 +30,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.status).to.equal(204)
   })
 
-  it("should upload attachment content", async () => {
+  it("should fail to upload attachment to non-existent entity", async () => {
     try {
       await uploadAttachmentContent(incidentID, cds.utils.uuid())
       expect.fail("Expected 404 error")

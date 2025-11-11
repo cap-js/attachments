@@ -247,6 +247,27 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 })
 
+it("should fail to upload attachment to non-existent entity", async () => {
+  try {
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      }
+    )
+    expect.fail("Expected 404 error")
+  } catch (err) {
+    expect(err.response.status).to.equal(404)
+  }
+})
+
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables
