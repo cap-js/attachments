@@ -30,6 +30,15 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.status).to.equal(204)
   })
 
+  it("should upload attachment content", async () => {
+    try {
+      await uploadAttachmentContent(incidentID, cds.utils.uuid())
+      expect.fail("Expected 404 error")
+    } catch (err) {
+      expect(err.response.status).to.equal(404)
+    }
+  })
+
   it("should list attachments for incident", async () => {
 
     const attachmentID = await createAttachmentMetadata(incidentID)
