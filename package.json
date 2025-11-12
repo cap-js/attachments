@@ -27,7 +27,6 @@
   "devDependencies": {
     "@cap-js/cds-test": ">=0",
     "@cap-js/sqlite": "^2",
-    "chai-spies": "^1.1.0",
     "eslint": "^9.36.0",
     "express": "^4.18.2"
   },

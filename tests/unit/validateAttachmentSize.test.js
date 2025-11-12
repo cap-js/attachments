@@ -2,10 +2,7 @@ const { validateAttachmentSize } = require('../../lib/genericHandlers')
 const cds = require('@sap/cds');
 const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
-const { expect } = require("@cap-js/cds-test")(app)
-const spies = require('chai-spies');
-const chai = require('chai');
-chai.use(spies);
+require("@cap-js/cds-test")(app)
 
 describe('validateAttachmentSize', () => {
   let req // Define a mock request object
@@ -20,26 +17,23 @@ describe('validateAttachmentSize', () => {
 
   it('should pass validation for a file size under 400 MB', () => {
     req.headers['content-length'] = '51200765'
-    const rejectFunction = chai.spy.on(req, 'reject');
 
     validateAttachmentSize(req)
 
-    expect(rejectFunction).not.to.have.been.called()
+    expect(req.reject).not.toHaveBeenCalled()
   })
 
   it('should reject for a file size over 400 MB', () => {
     req.headers['content-length'] = '20480000000'
-    const rejectFunction = chai.spy.on(req, 'reject');
     validateAttachmentSize(req)
 
-    expect(rejectFunction).to.have.been.called.with(400, 'File Size limit exceeded beyond 400 MB.')
+    expect(req.reject).toHaveBeenCalledWith(400, 'File Size limit exceeded beyond 400 MB.')
   })
 
   it('should reject when content-length header is missing', () => {
-    const rejectFunction = chai.spy.on(req, 'reject');
     validateAttachmentSize(req)
 
-    expect(rejectFunction).to.have.been.called.with(400, 'Invalid Content Size')
+    expect(req.reject).toHaveBeenCalledWith(400, 'Invalid Content Size')
   })
 })
 
