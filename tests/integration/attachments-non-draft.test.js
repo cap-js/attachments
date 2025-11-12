@@ -39,6 +39,19 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     }
   })
 
+  it("should fail to update note for non-existent attachment", async () => {
+    try {
+      await axios.patch(
+        `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
+        { note: "This should fail" },
+        { headers: { "Content-Type": "application/json" } }
+      )
+      expect.fail("Expected 404 error")
+    } catch (err) {
+      expect(err.response.status).to.equal(404)
+    }
+  })
+
   it("should list attachments for incident", async () => {
 
     const attachmentID = await createAttachmentMetadata(incidentID)

@@ -268,6 +268,19 @@ it("should fail to upload attachment to non-existent entity", async () => {
   }
 })
 
+it("should fail to update note for non-existent attachment", async () => {
+  try {
+    await axios.patch(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
+      { note: "This should fail" },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect.fail("Expected 404 error")
+  } catch (err) {
+    expect(err.response.status).to.equal(404)
+  }
+})
+
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables
