@@ -36,19 +36,22 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect.fail("Expected 404 error")
     } catch (err) {
       expect(err.response.status).to.equal(404)
+      expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
     }
   })
 
   it("should fail to update note for non-existent attachment", async () => {
     try {
-      await axios.patch(
+      const response = await axios.patch(
         `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
         { note: "This should fail" },
         { headers: { "Content-Type": "application/json" } }
       )
+      console.log(response)
       expect.fail("Expected 404 error")
     } catch (err) {
       expect(err.response.status).to.equal(404)
+      expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
     }
   })
 
