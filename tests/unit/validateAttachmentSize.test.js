@@ -1,4 +1,4 @@
-const { validateAttachmentSize } = require('../../lib/genericHandlers')
+const { validateAttachmentSize } = require('../../lib/generic-handlers')
 const cds = require('@sap/cds');
 const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
