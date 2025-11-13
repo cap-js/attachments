@@ -7,11 +7,18 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, expect, axios, GET, POST, DELETE: _DELETE } = cds.test(app)
+const { test, axios, GET: _GET, POST, DELETE: _DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 const DELETE = async function () {
   try {
     return await _DELETE(...arguments)
+  } catch (e) {
+    return e.response ?? e
+  }
+}
+const GET = async function () {
+  try {
+    return await _GET(...arguments)
   } catch (e) {
     return e.response ?? e
   }
@@ -48,17 +55,17 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(!!sampleDocID).to.be.true
+    expect(!!sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
     const attachmentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     )
     //the data should have only one attachment
-    expect(attachmentResponse.status).to.equal(200)
-    expect(attachmentResponse.data.value.length).to.equal(1)
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
     //to make sure content is not read
-    expect(attachmentResponse.data.value[0].content).to.be.undefined
+    expect(attachmentResponse.data.value[0].content).toBeFalsy()
     sampleDocID = attachmentResponse.data.value[0].ID
 
     await scanStartWaiter
@@ -67,25 +74,25 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const scanResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     )
-    expect(scanResponse.status).to.equal(200)
-    expect(scanResponse.data.value.length).to.equal(1)
-    expect(ScanStates.some(s => s === 'Scanning')).to.be.true
+    expect(scanResponse.status).toEqual(200)
+    expect(scanResponse.data.value.length).toEqual(1)
+    expect(ScanStates.some(s => s === 'Scanning')).toBeTruthy()
 
     await scanCleanWaiter
 
     const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
-    expect(contentResponse.status).to.equal(200)
-    expect(contentResponse.data).to.not.be.undefined
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
 
 
     //Check clean status
     const resultResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     )
-    expect(resultResponse.status).to.equal(200)
-    expect(ScanStates.some(s => s === 'Clean')).to.be.true
+    expect(resultResponse.status).toEqual(200)
+    expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
   })
 
   it("Scan status is translated", async () => {
@@ -121,9 +128,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
     )
-    expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(1)
-    expect(response.data.value[0].statusNav.name).to.equal(
+    expect(response.status).toEqual(200)
+    expect(response.data.value.length).toEqual(1)
+    expect(response.data.value[0].statusNav.name).toEqual(
       scanStatesEN.find((state) => state.code === response.data.value[0].status)
         .name
     )
@@ -131,9 +138,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const responseDE = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
-    expect(responseDE.status).to.equal(200)
-    expect(responseDE.data.value.length).to.equal(1)
-    expect(responseDE.data.value[0].statusNav.name).to.equal(
+    expect(responseDE.status).toEqual(200)
+    expect(responseDE.data.value.length).toEqual(1)
+    expect(responseDE.data.value[0].statusNav.name).toEqual(
       scanStatesDE.find(
         (state) => state.code === responseDE.data.value[0].status
       ).name
@@ -148,7 +155,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(!!sampleDocID).to.be.true
+    expect(!!sampleDocID).toBeTruthy()
 
     // Wait for scanning to complete
     await scanCleanWaiter
@@ -157,7 +164,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
-    expect(contentResponse.status).to.equal(200)
+    expect(contentResponse.status).toEqual(200)
 
     const attachmentData = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)`
@@ -183,37 +190,34 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       )
     await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
 
-    expect(attachmentIDs[0]).to.equal(attachmentData.data.url)
-    expect(attachmentIDs.length).to.equal(1)
+    expect(attachmentIDs[0]).toEqual(attachmentData.data.url)
+    expect(attachmentIDs.length).toEqual(1)
 
     //read attachments list for Incident
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
     )
     //the data should have no attachments
-    expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(0)
+    expect(response.status).toEqual(200)
+    expect(response.data.value.length).toEqual(0)
 
     //content should not be there
-    await expect(
-      GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      )
-    ).to.be.rejectedWith(/404/)
+    const content = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(content).toMatchObject({ status: 404 })
   })
 
   it("Deleting a non existing root does not crash the application", async () => {
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
-    const {log} = require('console')
-    log(JSON.stringify(response))
-    expect(response.status).to.equal(204)
-    
+    expect(response).toMatchObject({ status: 204 })
+
     const response2 = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
-    expect(response2.status).to.equal(404)
+    expect(response2.status).toEqual(404)
   })
 
   it("Cancel draft where parent has composed key", async () => {
@@ -240,12 +244,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(doc.data.ID).to.not.be.null
+    expect(doc.data.ID).toBeTruthy()
 
     const deleteRes = await DELETE(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)`
     )
-    expect(deleteRes.status).to.equal(204)
+    expect(deleteRes.status).toEqual(204)
   })
 })
 
@@ -256,15 +260,15 @@ describe("Tests for attachments facet disable", () => {
   })
 
   it("Hide up ID on Attachments UI", async () => {
-      const res = await GET(`odata/v4/processor/$metadata?$format=json`)
-      expect(res.status).to.equal(200)
-      expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up__ID']).to.have.property('@UI.Hidden', true)
-      expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up_']).to.have.property('@UI.Hidden', true)
+    const res = await GET(`odata/v4/processor/$metadata?$format=json`)
+    expect(res.status).toEqual(200)
+    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up__ID']).toMatchObject({'@UI.Hidden': true})
+    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up_']).toMatchObject({'@UI.Hidden': true})
   })
 
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
     const res = await GET(`odata/v4/processor/$metadata?$format=json`)
-    expect(res.status).to.equal(200)
+    expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
       "@UI.Facets"
@@ -275,13 +279,13 @@ describe("Tests for attachments facet disable", () => {
     const attachmentsFacetTarget = facets.some(
       (facet) => facet.Target === "attachments/@UI.LineItem"
     )
-    expect(attachmentsFacetLabel).to.be.true
-    expect(attachmentsFacetTarget).to.be.true
+    expect(attachmentsFacetLabel).toBeTruthy()
+    expect(attachmentsFacetTarget).toBeTruthy()
   })
 
   it("Checking attachments facet when @attachments.disable_facet is enabled", async () => {
     const res = await GET(`odata/v4/processor/$metadata?$format=json`)
-    expect(res.status).to.equal(200)
+    expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
       "@UI.Facets"
@@ -294,13 +298,13 @@ describe("Tests for attachments facet disable", () => {
     const hiddenAttachmentsFacetTarget = facets.some(
       (facet) => facet.Target === "hiddenAttachments/@UI.LineItem"
     )
-    expect(hiddenAttachmentsFacetLabel).to.be.true
-    expect(hiddenAttachmentsFacetTarget).to.be.false
+    expect(hiddenAttachmentsFacetLabel).toBeTruthy()
+    expect(hiddenAttachmentsFacetTarget).toBeFalsy()
   })
 
   it("Checking attachments facet when @UI.Hidden is enabled", async () => {
     const res = await GET(`odata/v4/processor/$metadata?$format=json`)
-    expect(res.status).to.equal(200)
+    expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
       "@UI.Facets"
@@ -312,14 +316,14 @@ describe("Tests for attachments facet disable", () => {
     const hiddenAttachmentsFacetTarget = facets.find(
       (facet) => facet.Target === "hiddenAttachments2/@UI.LineItem"
     )
-    expect(hiddenAttachmentsFacetLabel).to.be.true
-    expect(!!hiddenAttachmentsFacetTarget).to.be.true
-    expect(hiddenAttachmentsFacetTarget["@UI.Hidden"]).to.equal(true)
+    expect(hiddenAttachmentsFacetLabel).toBeTruthy()
+    expect(!!hiddenAttachmentsFacetTarget).toBeTruthy()
+    expect(hiddenAttachmentsFacetTarget["@UI.Hidden"]).toEqual(true)
   })
 
   it("Attachments facet is not added when its manually added by the developer", async () => {
     const res = await GET(`odata/v4/processor/$metadata?$format=json`)
-    expect(res.status).to.equal(200)
+    expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
       "@UI.Facets"
@@ -328,8 +332,8 @@ describe("Tests for attachments facet disable", () => {
     const attachmentFacets = facets.filter(
       (facet) => facet.Target === "attachments/@UI.LineItem"
     )
-    expect(attachmentFacets.length).to.equal(1)
-    expect(attachmentFacets[0].Label).to.equal("My custom attachments")
+    expect(attachmentFacets.length).toEqual(1)
+    expect(attachmentFacets[0].Label).toEqual("My custom attachments")
   })
 })
 

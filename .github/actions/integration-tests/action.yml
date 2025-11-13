@@ -67,6 +67,9 @@ runs:
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
       shell: bash
+    - name: CDS Versions being used
+      run: cds v -i
+      shell: bash
     # Deploy model to HANA
     - name: Create Object store 
       shell: bash
