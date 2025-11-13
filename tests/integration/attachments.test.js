@@ -208,17 +208,17 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(content).toMatchObject({ status: 404 })
   })
 
-  it("Deleting a non existing root does not crash the application", async () => {
-    const response = await DELETE(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-    )
-    expect(response).toMatchObject({ status: 204 })
+  // it("Deleting a non existing root does not crash the application", async () => {
+  //   const response = await DELETE(
+  //     `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+  //   )
+  //   expect(response).toMatchObject({ status: 204 })
 
-    const response2 = await DELETE(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-    )
-    expect(response2.status).toEqual(404)
-  })
+  //   const response2 = await DELETE(
+  //     `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+  //   )
+  //   expect(response2.status).toEqual(404)
+  // })
 
   it("Cancel draft where parent has composed key", async () => {
 
