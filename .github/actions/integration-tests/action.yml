@@ -105,12 +105,6 @@ runs:
     - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
       shell: bash
 
-    # Set Hyperscaler for attachment plugin in package.json
-    - run: |
-        cd tests/incidents-app
-        npx -y json -I -f package.json -e "this['cds']['requires']['attachments'] = { 'kind': '${{inputs.OBJECT_STORE_KIND}}' }"
-      shell: bash
-
     # Run tests in hybrid mode
     - run: cds bind --exec npm run test
       shell: bash
