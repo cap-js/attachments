@@ -11,6 +11,7 @@ let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
+  let log = cds.test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
@@ -28,6 +29,17 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).to.equal(204)
+  })
+
+  it("unknown extension throws warning", async () => {
+    const response = await axios.post(
+        `/odata/v4/admin/Incidents(${incidentID})/attachments`,
+        { filename: 'sample.madeupextension' },
+        { headers: { "Content-Type": "application/json" } }
+    )
+    expect(response.status).to.equal(201);
+    expect (log.output.length).to.be.greaterThan(0)
+    expect (log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
   })
 
   it("should list attachments for incident", async () => {
