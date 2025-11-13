@@ -206,6 +206,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
+    const {log} = require('console')
+    log(JSON.stringify(response))
     expect(response.status).to.equal(204)
     
     const response2 = await DELETE(
