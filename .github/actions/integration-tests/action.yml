@@ -80,10 +80,10 @@ runs:
     - run: cd tests/incidents-app/ && cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
       shell: bash
     # Create service key
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
       if: ${{ inputs.SCANNER_AUTH == 'basic' }}
       shell: bash 
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA gcp-cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
       if: ${{ inputs.SCANNER_AUTH == 'mtls' }}
       shell: bash
     # Bind against BTP services
