@@ -53,6 +53,9 @@
         "attachments-db": {
           "impl": "@cap-js/attachments/lib/basic"
         },
+        "attachments-standard": {
+          "impl": "@cap-js/attachments/lib/standard"
+        },
         "attachments-s3": {
           "impl": "@cap-js/attachments/lib/aws-s3"
         },
@@ -94,7 +97,7 @@
           "kind": "malwareScanner-btp"
         },
         "attachments": {
-          "kind": "s3",
+          "kind": "standard",
           "objectStore": {
             "kind": "separate"
           }
@@ -105,7 +108,7 @@
           "kind": "malwareScanner-btp"
         },
         "attachments": {
-          "kind": "s3",
+          "kind": "standard",
           "scan": true,
           "objectStore": {
             "kind": "separate"

@@ -48,7 +48,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(sampleDocID).to.not.be.null
+    expect(!!sampleDocID).to.be.true
 
     //read attachments list for Incident
     const attachmentResponse = await GET(
@@ -148,7 +148,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(sampleDocID).to.not.be.null
+    expect(!!sampleDocID).to.be.true
 
     // Wait for scanning to complete
     await scanCleanWaiter
