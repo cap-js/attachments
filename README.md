@@ -56,7 +56,7 @@ For a quick local development setup with in-memory storage:
         // (...)
         "[hybrid]": {  
           "attachments": {  
-            "kind": "s3"  
+            "kind": "standard"  
             // (...)
           }  
         }  
@@ -333,10 +333,10 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 
 ##### Supported Storage Provider
 
-- **AWS S3** (`kind: "s3"`)
-- **Azure Blob Storage** (`kind: "azure"`)
-- **Google Cloud Platform** (`kind: "gcp"`)
-
+- **Standard** (`kind: "standard"`) | Depending on the bound object store credentials, uses AWS S3, Azure Blob Storage or GCP Cloud Storage. You can manually specify the implementation by adjusting the type to:
+    - **AWS S3** (`kind: "s3"`)
+    - **Azure Blob Storage** (`kind: "azure"`)
+    - **GCP Cloud Storage** (`kind: "gcp"`)
 
 ### Model Texts
 
