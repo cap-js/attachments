@@ -3,10 +3,10 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request_target:
-    branches: [ main ]
-    types: [ reopened, synchronize, opened ]
+    branches: [main]
+    types: [reopened, synchronize, opened]
 
 jobs:
   requires-approval:
@@ -26,10 +26,9 @@ jobs:
       matrix:
         node-version: [20.x, 22.x]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v5
       with:
-        ref: "${{ github.event.pull_request.merge_commit_sha }}"
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
@@ -50,18 +49,18 @@ jobs:
         hyperscaler: [AWS, AZURE, GCP]
         scanner-auth: [basic, mtls]
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5
-      with:
-        ref: "${{ github.event.pull_request.merge_commit_sha }}"
-    - name: Integration tests
-      uses: ./.github/actions/integration-tests
-      with:
-        CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
-        CF_USERNAME: ${{ secrets['CF_USERNAME'] }}
-        CF_PASSWORD: ${{ secrets['CF_PASSWORD'] }}
-        CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.hyperscaler)] }}
-        CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.hyperscaler)] }}
-        OBJECT_STORE_KIND: ${{ vars[format('OBJECT_STORE_KIND_{0}', matrix.hyperscaler)] }}
-        NODE_VERSION: ${{ matrix.node-version }}
-        SCANNER_AUTH: ${{ matrix.scanner-auth }}
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Integration tests
+        uses: ./.github/actions/integration-tests
+        with:
+          CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
+          CF_USERNAME: ${{ secrets['CF_USERNAME'] }}
+          CF_PASSWORD: ${{ secrets['CF_PASSWORD'] }}
+          CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.hyperscaler)] }}
+          CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.hyperscaler)] }}
+          OBJECT_STORE_KIND: ${{ vars[format('OBJECT_STORE_KIND_{0}', matrix.hyperscaler)] }}
+          NODE_VERSION: ${{ matrix.node-version }}
+          SCANNER_AUTH: ${{ matrix.scanner-auth }}
