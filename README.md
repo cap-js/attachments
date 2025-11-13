@@ -258,12 +258,21 @@ The typical sequence includes:
 ## Architecture Overview
 ### Multitenancy
 
-The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
+The plugin supports multi-tenancy scenarios, allowing both shared and tenant-specific object store instances.
 
 > [!Note]
-> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
+> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multi-tenancy.  
 
-For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
+For multi-tenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
+
+#### Separate object store instances
+
+By default the plugin creates for each tenant its own object store instance during the tenants subscription.
+
+When the tenant unsubscribes the object store instance is deleted.
+
+> [!WARNING]
+> When you remove the plugin from an application after separate object stores already have been created, the object stores are not automatically removed!
 
 #### Shared Object Store Instance
 
