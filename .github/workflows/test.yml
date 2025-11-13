@@ -26,9 +26,10 @@ jobs:
       matrix:
         node-version: [20.x, 22.x]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: "${{ github.event.pull_request.merge_commit_sha }}"
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
@@ -51,6 +52,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: "${{ github.event.pull_request.merge_commit_sha }}"
       - name: Integration tests
         uses: ./.github/actions/integration-tests
         with:
