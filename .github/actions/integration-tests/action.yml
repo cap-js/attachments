@@ -70,6 +70,9 @@ runs:
     - name: CDS Versions being used
       run: cds v -i
       shell: bash
+    - name: Git ref
+      run: git rev-parse HEAD
+      shell: bash
     # Deploy model to HANA
     - name: Create Object store 
       shell: bash
