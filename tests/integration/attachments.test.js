@@ -245,6 +245,29 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(deleteRes.status).to.equal(204)
   })
+
+  it("Inserting attachments via srv.run works", async () => {
+
+    const {data} = await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    const Catalog = await cds.connect.to('ProcessorService')
+    const fileContent = fs.createReadStream(
+      join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await Catalog.run(INSERT.into(Catalog.entities.Attachments.drafts).entities({
+      ID: cds.utils.uuid(),
+      up__ID: incidentID,
+      IsActiveEntity: false,
+      DraftAdministrativeData_DraftUUID: data.DraftAdministrativeData_DraftUUID,
+      filename: "sample.pdf",
+      content: fileContent,
+      mimeType: "application/pdf",
+      createdAt: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+      ),
+      createdBy: "alice",
+    }))
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
