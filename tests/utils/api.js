@@ -5,7 +5,7 @@ class RequestSend {
   async draftModeEdit(serviceName, entityName, id, path) {
     try {
       // Create draft from active entity
-      await this.post(
+      return await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/${path}.draftEdit`,
         {
           PreserveChanges: true,
@@ -30,7 +30,7 @@ class RequestSend {
       )
 
       // Activate the draft
-      await this.post(
+      return await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftActivate`,
         {}
       )
