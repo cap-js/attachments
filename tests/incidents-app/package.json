@@ -23,9 +23,6 @@
             }
           }
         }
-      },
-      "attachments": {
-        "kind": "azure"
       }
     }
   },

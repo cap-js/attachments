@@ -249,7 +249,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   it("Inserting attachments via srv.run works", async () => {
     const Catalog = await cds.connect.to('ProcessorService')
 
-    const {data} = await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
     const incident = await SELECT.one.from(Catalog.entities.Incidents.drafts).where({ID: incidentID})
 
     const scanCleanWaiter = waitForScanStatus('Clean')
