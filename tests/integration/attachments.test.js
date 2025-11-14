@@ -247,18 +247,24 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Inserting attachments via srv.run works", async () => {
+    const Catalog = await cds.connect.to('ProcessorService')
 
     const {data} = await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    const incident = await SELECT.one.from(Catalog.entities.Incidents.drafts).where({ID: incidentID})
 
-    const Catalog = await cds.connect.to('ProcessorService')
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
     const fileContent = fs.createReadStream(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await Catalog.run(INSERT.into(Catalog.entities.Attachments.drafts).entities({
-      ID: cds.utils.uuid(),
+    const attachmentsID = cds.utils.uuid();
+    const user = new cds.User({ id: 'alice', roles: {support: 1} })
+    user._is_privileged = true
+    const req = new cds.Request ({ query: INSERT.into(Catalog.entities['Incidents.attachments'].drafts).entries({
+      ID: attachmentsID,
       up__ID: incidentID,
       IsActiveEntity: false,
-      DraftAdministrativeData_DraftUUID: data.DraftAdministrativeData_DraftUUID,
+      DraftAdministrativeData_DraftUUID: incident.DraftAdministrativeData_DraftUUID,
       filename: "sample.pdf",
       content: fileContent,
       mimeType: "application/pdf",
@@ -266,7 +272,23 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
       ),
       createdBy: "alice",
-    }))
+    }), user: user })
+    await Catalog.dispatch (req)
+
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${attachmentsID},IsActiveEntity=true)/content`
+    )
+    expect(responseContent.status).to.equal(200)
   })
 })
 
