@@ -114,6 +114,53 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect(err.response.status).to.equal(404)
     }
   })
+
+  it("Updating attachments via srv.run works", async () => {
+    const Catalog = await cds.connect.to('ProcessorService')
+    
+    const attachmentsID = cds.utils.uuid();
+    const doc = await axios.post(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+      {
+        ID: attachmentsID,
+        up__ID: incidentID,
+      }
+    )
+
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const fileContent = fs.createReadStream(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    const user = new cds.User({ id: 'alice', roles: { support: 1 } })
+    const req = new cds.Request({
+      query: UPDATE.entity({ref: [{id: 'ProcessorService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
+        filename: "sample.pdf",
+        content: fileContent,
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }), user: user
+    })
+    await Catalog.dispatch(req)
+
+    const response = await axios.get(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await axios.get(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${attachmentsID},IsActiveEntity=true)/content`
+    )
+    expect(responseContent.status).to.equal(200)
+  })
 })
 
 function createHelpers(axios) {
