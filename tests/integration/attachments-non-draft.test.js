@@ -116,7 +116,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Updating attachments via srv.run works", async () => {
-    const Catalog = await cds.connect.to('ProcessorService')
+    const AdminSrv = await cds.connect.to('AdminService')
     
     const attachmentsID = cds.utils.uuid();
     const doc = await axios.post(
@@ -132,9 +132,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const fileContent = fs.createReadStream(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    const user = new cds.User({ id: 'alice', roles: { support: 1 } })
+    const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
     const req = new cds.Request({
-      query: UPDATE.entity({ref: [{id: 'ProcessorService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
+      query: UPDATE.entity({ref: [{id: 'AdminService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
         filename: "sample.pdf",
         content: fileContent,
         mimeType: "application/pdf",
@@ -144,7 +144,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         createdBy: "alice",
       }), user: user, headers: {"content-length": 55782}
     })
-    await Catalog.dispatch(req)
+    await AdminSrv.dispatch(req)
 
     const response = await axios.get(
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
