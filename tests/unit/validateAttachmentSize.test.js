@@ -11,6 +11,7 @@ describe('validateAttachmentSize', () => {
   beforeEach(() => {
     req = {
       headers: {},
+      data: {content: 'abc'},
       target: cds.model.definitions['ProcessorService.Incidents'].elements.attachments._target,
       reject: jest.fn(), // Mocking the reject function
     }
