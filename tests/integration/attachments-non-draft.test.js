@@ -3,7 +3,6 @@ const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
 const { waitForScanStatus } = require("../utils/testUtils")
-const { context } = require("@sap/cds/lib/srv/middlewares")
 
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios } = require("@cap-js/cds-test")(app)
@@ -146,6 +145,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       }), user: user, headers: {"content-length": 55782}
     })
     const ctx = cds.EventContext.for ({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    ctx.user = user
     await cds._with(ctx, () => AdminSrv.dispatch(req))
 
     const response = await axios.get(
