@@ -142,12 +142,12 @@ describe("Tests for uploading/deleting and fetching attachments through API call
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
-      }), user: user
+      }), user: user, headers: {"content-length": 55782}
     })
     await Catalog.dispatch(req)
 
     const response = await axios.get(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
     )
     //the data should have no attachments
     expect(response.status).to.equal(200)
@@ -157,7 +157,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     //content should not be there
     const responseContent = await axios.get(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${attachmentsID},IsActiveEntity=true)/content`
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
     )
     expect(responseContent.status).to.equal(200)
   })
