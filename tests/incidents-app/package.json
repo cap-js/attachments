@@ -24,7 +24,7 @@
           }
         },
         "[hybrid]": {
-          "auth": "mock",
+          "kind": "mocked",
           "users": {
             "alice": {
               "roles": [
