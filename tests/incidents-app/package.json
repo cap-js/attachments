@@ -22,6 +22,22 @@
               ]
             }
           }
+        },
+        "[hybrid]": {
+          "auth": "mock",
+          "users": {
+            "alice": {
+              "roles": [
+                "support",
+                "admin"
+              ]
+            },
+            "bob": {
+              "roles": [
+                "support"
+              ]
+            }
+          }
         }
       }
     }
