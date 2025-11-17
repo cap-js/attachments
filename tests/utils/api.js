@@ -16,11 +16,8 @@ class RequestSend {
     }
   }
 
-  async draftModeSave(serviceName, entityName, id, action, path) {
+  async draftModeSave(serviceName, entityName, id, path) {
     try {
-      // Execute the action (e.g., POST attachment)
-      await action()
-
       // Prepare the draft
       await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftPrepare`,

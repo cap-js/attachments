@@ -29,13 +29,18 @@ const GET = async function () {
       throw e
   }
 }
+const GET = async function () {
+  try {
+    return await _GET(...arguments)
+  } catch (e) {
+    return e.response ?? e
+  }
+}
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   beforeAll(async () => {
-    // Initialize test variables
-
     utils = new RequestSend(POST)
   })
 
@@ -61,7 +66,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(!!sampleDocID).toBeTruthy()
+    expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
     const attachmentResponse = await GET(
@@ -102,25 +107,23 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Scan status is translated", async () => {
-    //function to upload attachment
-    let action = () =>
-      POST(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-        {
-          up__ID: incidentID,
-          filename: "sample.pdf",
-          mimeType: "application/pdf",
-          content: createReadStream(join(__dirname, "content/sample.pdf")),
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-          ),
-          createdBy: "alice",
-        }
-      )
-
     //trigger to upload attachment
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
-    await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
 
     const scanStatesEN = await cds.run(
       SELECT.from("sap.attachments.ScanStates")
@@ -161,7 +164,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
-    expect(!!sampleDocID).toBeTruthy()
+    expect(sampleDocID).toBeTruthy()
 
     // Wait for scanning to complete
     await scanCleanWaiter
@@ -190,11 +193,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
 
     //delete attachment
-    let action = () =>
-      DELETE(
-        `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
-      )
-    await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
+    await DELETE(
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`
+    )
+
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
 
     expect(attachmentIDs[0]).toEqual(attachmentData.data.url)
     expect(attachmentIDs.length).toEqual(1)
@@ -207,24 +210,26 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(response.status).toEqual(200)
     expect(response.data.value.length).toEqual(0)
 
-    //content should not be there
     const content = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
-    expect(content).toMatchObject({ status: 404 })
+
+    expect(content).toMatchObject({
+      status: 404
+    })
   })
 
-  // it("Deleting a non existing root does not crash the application", async () => {
-  //   const response = await DELETE(
-  //     `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-  //   )
-  //   expect(response).toMatchObject({ status: 204 })
+  it("Deleting a non existing root does not crash the application", async () => {
+    const response = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+    )
+    expect(response).toMatchObject({ status: 204 })
 
-  //   const response2 = await DELETE(
-  //     `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-  //   )
-  //   expect(response2.status).toEqual(404)
-  // })
+    const response2 = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+    )
+    expect(response2.status).toEqual(404)
+  })
 
   it("Cancel draft where parent has composed key", async () => {
 
@@ -257,6 +262,53 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(deleteRes.status).toEqual(204)
   })
+
+  it("Inserting attachments via srv.run works", async () => {
+    const Catalog = await cds.connect.to('ProcessorService')
+
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    const incident = await SELECT.one.from(Catalog.entities.Incidents.drafts).where({ ID: incidentID })
+
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const fileContent = fs.createReadStream(
+      join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    const attachmentsID = cds.utils.uuid();
+    const user = new cds.User({ id: 'alice', roles: { support: 1 } })
+    user._is_privileged = true
+    const req = new cds.Request({
+      query: INSERT.into(Catalog.entities['Incidents.attachments'].drafts).entries({
+        ID: attachmentsID,
+        up__ID: incidentID,
+        IsActiveEntity: false,
+        DraftAdministrativeData_DraftUUID: incident.DraftAdministrativeData_DraftUUID,
+        filename: "sample.pdf",
+        content: fileContent,
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }), user: user
+    })
+    await Catalog.dispatch(req)
+
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).toEqual(200)
+    expect(response.data.value.length).toEqual(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${attachmentsID},IsActiveEntity=true)/content`
+    )
+    expect(responseContent.status).toEqual(200)
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
@@ -268,8 +320,8 @@ describe("Tests for attachments facet disable", () => {
   it("Hide up ID on Attachments UI", async () => {
     const res = await GET(`odata/v4/processor/$metadata?$format=json`)
     expect(res.status).toEqual(200)
-    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up__ID']).toMatchObject({'@UI.Hidden': true})
-    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up_']).toMatchObject({'@UI.Hidden': true})
+    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up__ID']?.['@UI.Hidden']).toEqual(true)
+    expect(res.data.ProcessorService.$Annotations['ProcessorService.Incidents_attachments/up_']?.['@UI.Hidden']).toEqual(true)
   })
 
   it("Checking attachments facet metadata when @UI.Hidden is undefined", async () => {
@@ -359,37 +411,35 @@ async function uploadDraftAttachment(
   incidentId,
   filename = "sample.pdf"
 ) {
-  const action = async () => {
-    const res = await POST(
-      `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentId,
-        filename: filename,
-        mimeType: "application/pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    )
-    const fileContent = fs.readFileSync(
-      join(__dirname, "..", "integration", "content/sample.pdf")
-    )
-    await axios.put(
-      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
-      fileContent,
-      {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Length": fileContent.length,
-        },
-      }
-    )
-    return res
-  }
-
   await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
-  await utils.draftModeSave("processor", "Incidents", incidentID, action, "ProcessorService")
+
+  const res = await POST(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
+    {
+      up__ID: incidentId,
+      filename: filename,
+      mimeType: "application/pdf",
+      createdAt: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+      ),
+      createdBy: "alice",
+    }
+  )
+  const fileContent = fs.readFileSync(
+    join(__dirname, "..", "integration", "content/sample.pdf")
+  )
+  await axios.put(
+    `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    fileContent,
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": fileContent.length,
+      },
+    }
+  )
+
+  await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
 
   // Get the uploaded attachment ID
   const response = await GET(
