@@ -188,6 +188,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     ).catch(e => {
       expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
     })
   })
 
@@ -201,6 +202,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     ).catch(e => {
       expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
     })
   })
 
@@ -281,35 +283,38 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(responseContent.status).toEqual(200)
   })
-})
 
-it("should fail to upload attachment to non-existent entity", async () => {
-  const fileContent = fs.readFileSync(
-    path.join(__dirname, "..", "integration", "content/sample.pdf")
-  )
-  await axios.put(
-    `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
-    fileContent,
-    {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Length": fileContent.length,
-      },
-    }
-  ).catch(e => {
-    expect(e.status).toEqual(404)
+  it("should fail to upload attachment to non-existent entity", async () => {
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
+  })
+  
+  it("should fail to update note for non-existent attachment", async () => {
+    await axios.patch(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
+      { note: "This should fail" },
+      { headers: { "Content-Type": "application/json" } }
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
   })
 })
 
-it("should fail to update note for non-existent attachment", async () => {
-  await axios.patch(
-    `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
-    { note: "This should fail" },
-    { headers: { "Content-Type": "application/json" } }
-  ).catch(e => {
-    expect(e.status).toEqual(404)
-  })
-})
 
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {

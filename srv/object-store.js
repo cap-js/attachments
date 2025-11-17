@@ -39,7 +39,7 @@ module.exports = class RemoteAttachmentsService extends require("./basic") {
             }
             metadata = metadata[0]
             if (!metadata) {
-              return req.error(404, 'AttachmentNotFound')
+              return req.reject(404)
             }
             req.data.ID = metadata.ID
             req.data.url ??= metadata.url
