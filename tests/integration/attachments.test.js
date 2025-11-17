@@ -29,13 +29,6 @@ const GET = async function () {
       throw e
   }
 }
-const GET = async function () {
-  try {
-    return await _GET(...arguments)
-  } catch (e) {
-    return e.response ?? e
-  }
-}
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
