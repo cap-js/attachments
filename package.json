@@ -9,13 +9,14 @@
   "main": "cds-plugin.js",
   "files": [
     "index.cds",
+    "_i18n",
     "lib",
     "db",
     "srv"
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest --silent=false --runInBand"
+    "test": "npx jest --silent=true --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.918.0",
@@ -45,25 +46,25 @@
       },
       "kinds": {
         "malwareScanner-mock": {
-          "impl": "@cap-js/attachments/lib/malwareScanner-mocked"
+          "impl": "@cap-js/attachments/srv/malwareScanner-mocked"
         },
         "malwareScanner-btp": {
-          "impl": "@cap-js/attachments/lib/malwareScanner"
+          "impl": "@cap-js/attachments/srv/malwareScanner"
         },
         "attachments-db": {
-          "impl": "@cap-js/attachments/lib/basic"
+          "impl": "@cap-js/attachments/srv/basic"
         },
         "attachments-standard": {
-          "impl": "@cap-js/attachments/lib/standard"
+          "impl": "@cap-js/attachments/srv/standard"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/lib/aws-s3"
+          "impl": "@cap-js/attachments/srv/aws-s3"
         },
         "attachments-azure": {
-          "impl": "@cap-js/attachments/lib/azure-blob-storage"
+          "impl": "@cap-js/attachments/srv/azure-blob-storage"
         },
         "attachments-gcp": {
-          "impl": "@cap-js/attachments/lib/gcp"
+          "impl": "@cap-js/attachments/srv/gcp"
         }
       },
       "serviceManager": {

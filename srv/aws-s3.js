@@ -2,7 +2,7 @@ const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/cl
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
-const utils = require('./helper.js')
+const utils = require('../lib/helper')
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
 
