@@ -322,7 +322,7 @@ it("should fail to upload attachment to non-existent entity", async () => {
     expect.fail("Expected 404 error")
   } catch (err) {
     expect(err.response.status).to.equal(404)
-    expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
+    expect(err.response.data.error.code).to.equal('Attachment not found')
   }
 })
 
@@ -336,7 +336,7 @@ it("should fail to update note for non-existent attachment", async () => {
     expect.fail("Expected 404 error")
   } catch (err) {
     expect(err.response.status).to.equal(404)
-    expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
+    expect(err.response.data.error.code).to.equal('Attachment not found')
   }
 })
 
