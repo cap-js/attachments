@@ -79,11 +79,9 @@ describe('getObjectStoreCredentials', () => {
   })
 
   it('should throw error if credentials are missing', async () => {
-    try {
-      await getObjectStoreCredentials('tenant')
-    } catch (err) {
-      expect(err.message).toBe('Service Manager Instance is not bound')
-    }
+    await getObjectStoreCredentials('tenant').catch(e => {
+      expect(e.message).to.equal('Service Manager Instance is not bound')
+    })
   })
 })
 

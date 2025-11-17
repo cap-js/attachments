@@ -7,28 +7,9 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios, GET: _GET, POST, DELETE: _DELETE } = cds.test(app)
+const { test, axios, GET, POST, DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
-const DELETE = async function () {
-  try {
-    return await _DELETE(...arguments)
-  } catch (e) {
-    if (e.response)
-      return e.response
-    else
-      throw e
-  }
-}
-const GET = async function () {
-  try {
-    return await _GET(...arguments)
-  } catch (e) {
-    if (e.response)
-      return e.response
-    else
-      throw e
-  }
-}
+
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
@@ -203,12 +184,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(response.status).toEqual(200)
     expect(response.data.value.length).toEqual(0)
 
-    const content = await GET(
+    await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-    )
-
-    expect(content).toMatchObject({
-      status: 404
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
     })
   })
 
@@ -216,22 +196,23 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
-    expect(response).toMatchObject({ status: 204 })
+    expect(response.status).toEqual(204)
 
-    const response2 = await DELETE(
+    await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-    )
-    expect(response2.status).toEqual(404)
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
   })
 
   it("Cancel draft where parent has composed key", async () => {
-
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
       sampleID: "ABC",
       gjahr: 2025
-    }
-    )
+    })
+
     const doc = await POST(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
       {
@@ -302,7 +283,38 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(responseContent.status).toEqual(200)
   })
+
+  it("should fail to upload attachment to non-existent entity", async () => {
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
+  })
+  
+  it("should fail to update note for non-existent attachment", async () => {
+    await axios.patch(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
+      { note: "This should fail" },
+      { headers: { "Content-Type": "application/json" } }
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
+  })
 })
+
 
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
