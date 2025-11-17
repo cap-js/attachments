@@ -1,7 +1,6 @@
 const cds = require('@sap/cds')
-const { SELECT, UPSERT, UPDATE } = cds.ql
-const { logConfig } = require('./logger')
-const { computeHash } = require('./helper')
+const LOG = cds.log('attachments')
+const { computeHash } = require('../lib/helper')
 
 class AttachmentsService extends cds.Service {
 
@@ -16,7 +15,7 @@ class AttachmentsService extends cds.Service {
       if (attachment) { //Might happen that a draft object is the target
         await this.delete(attachment.url)
       } else {
-        logConfig.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
+        LOG.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
       }
     })
     return super.init()
@@ -33,7 +32,7 @@ class AttachmentsService extends cds.Service {
       data = [data]
     }
 
-    logConfig.debug('Starting database attachment upload', {
+    LOG.debug('Starting database attachment upload', {
       attachmentEntity: attachments.name,
       fileCount: data.length,
       filenames: data.map((d) => d.filename || 'unknown'),
@@ -55,13 +54,13 @@ class AttachmentsService extends cds.Service {
         })
       )
 
-      logConfig.debug('Attachment records upserted to database successfully', {
+      LOG.debug('Attachment records upserted to database successfully', {
         attachmentEntity: attachments.name,
         recordCount: data.length
       })
 
     } catch (error) {
-      logConfig.withSuggestion('error',
+      LOG.error(
         'Failed to upsert attachment records to database', error,
         'Check database connectivity and attachment entity configuration',
         { attachmentEntity: attachments.name, recordCount: data.length, errorMessage: error.message })
@@ -69,7 +68,7 @@ class AttachmentsService extends cds.Service {
     }
 
     // Initiate malware scanning for database-stored files
-    logConfig.debug('Initiating malware scans for database-stored files', {
+    LOG.debug('Initiating malware scans for database-stored files', {
       fileCount: data.length,
       fileIds: data.map(d => d.ID)
     })
@@ -95,7 +94,7 @@ class AttachmentsService extends cds.Service {
     if (attachments.isDraft) {
       attachments = attachments.actives
     }
-    logConfig.debug("Downloading attachment for", {
+    LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys
     })
@@ -158,7 +157,7 @@ class AttachmentsService extends cds.Service {
         const IDval = cqn.SELECT.from.ref.at(-1).where.find((r, idx) => r.val && cqn.SELECT.from.ref.at(-1).where[idx - 1] === '=' && cqn.SELECT.from.ref.at(-1).where[idx - 2]?.ref?.[0] === 'ID')
         ID = IDval.val
       }
-      logConfig.debug('Initiating malware scans for database-stored file', {
+      LOG.debug('Initiating malware scans for database-stored file', {
         fileId: ID
       })
       const MalwareScanner = await cds.connect.to('malwareScanner')
@@ -189,7 +188,7 @@ class AttachmentsService extends cds.Service {
    * @returns {Promise} - Result of the update operation
    */
   async update(Attachments, key, data) {
-    logConfig.debug("Updating attachment for", {
+    LOG.debug("Updating attachment for", {
       attachmentName: Attachments.name,
       attachmentKey: key
     })
@@ -221,7 +220,7 @@ class AttachmentsService extends cds.Service {
         const attachmentsSrv = await cds.connect.to('attachments')
         await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url })
       } else {
-        logConfig.warn(`Attachment cannot be deleted because URL is missing`, attachment)
+        LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
     })
   }

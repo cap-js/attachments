@@ -1,7 +1,7 @@
 const { BlobServiceClient } = require('@azure/storage-blob')
 const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
-const utils = require('./helper')
+const utils = require('../lib/helper')
 
 module.exports = class AzureAttachmentsService extends require("./object-store") {
 
