@@ -13,14 +13,20 @@ const DELETE = async function () {
   try {
     return await _DELETE(...arguments)
   } catch (e) {
-    return e.response ?? e
+    if (e.response)
+      return e.response
+    else
+      throw e
   }
 }
 const GET = async function () {
   try {
     return await _GET(...arguments)
   } catch (e) {
-    return e.response ?? e
+    if (e.response)
+      return e.response
+    else
+      throw e
   }
 }
 let utils = null

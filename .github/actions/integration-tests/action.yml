@@ -69,8 +69,11 @@ runs:
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
       shell: bash
+    - name: CDS Versions being used
+      run: cds v -i
+      shell: bash
     # Deploy model to HANA
-    - name: Create Object store 
+    - name: Create Object store
       shell: bash
       run: cf create-service objectstore standard cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
     - name: Create Basic Auth Malware scanner
@@ -82,10 +85,10 @@ runs:
     - run: cd tests/incidents-app/ && cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
       shell: bash
     # Create service key
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
       if: ${{ inputs.SCANNER_AUTH == 'basic' }}
-      shell: bash 
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA gcp-cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
+      shell: bash
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
       if: ${{ inputs.SCANNER_AUTH == 'mtls' }}
       shell: bash
     # Bind against BTP services
@@ -105,12 +108,6 @@ runs:
           fi
         done
     - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
-      shell: bash
-
-    # Set Hyperscaler for attachment plugin in package.json
-    - run: |
-        cd tests/incidents-app
-        npx -y json -I -f package.json -e "this['cds']['requires']['attachments'] = { 'kind': '${{inputs.OBJECT_STORE_KIND}}' }"
       shell: bash
 
     # Run tests in hybrid mode
