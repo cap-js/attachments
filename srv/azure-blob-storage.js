@@ -1,9 +1,9 @@
 const { BlobServiceClient } = require('@azure/storage-blob')
 const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
-const utils = require('./helper')
+const utils = require('../lib/helper')
 
-module.exports = class AzureAttachmentsService extends require("./object-store") {
+module.exports = class AzureAttachmentsService extends require("../lib/object-store") {
 
   /**
    * Creates or retrieves a cached Azure Blob Storage client for the given tenant
