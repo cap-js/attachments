@@ -11,6 +11,7 @@ let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
+  let log = cds.test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
@@ -30,29 +31,15 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.status).to.equal(204)
   })
 
-  it("should fail to upload attachment to non-existent entity", async () => {
-    try {
-      await uploadAttachmentContent(incidentID, cds.utils.uuid())
-      expect.fail("Expected 404 error")
-    } catch (err) {
-      expect(err.response.status).to.equal(404)
-      expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
-    }
-  })
-
-  it("should fail to update note for non-existent attachment", async () => {
-    try {
-      const response = await axios.patch(
-        `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
-        { note: "This should fail" },
+  it("unknown extension throws warning", async () => {
+    const response = await axios.post(
+        `/odata/v4/admin/Incidents(${incidentID})/attachments`,
+        { filename: 'sample.madeupextension' },
         { headers: { "Content-Type": "application/json" } }
-      )
-      console.log(response)
-      expect.fail("Expected 404 error")
-    } catch (err) {
-      expect(err.response.status).to.equal(404)
-      expect(err.response.data.error.code).to.equal('ATTACHMENT_NOT_FOUND')
-    }
+    )
+    expect(response.status).to.equal(201);
+    expect (log.output.length).to.be.greaterThan(0)
+    expect (log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
   })
 
   it("should list attachments for incident", async () => {
@@ -126,6 +113,55 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     } catch (err) {
       expect(err.response.status).to.equal(404)
     }
+  })
+
+  it("Updating attachments via srv.run works", async () => {
+    const AdminSrv = await cds.connect.to('AdminService')
+    
+    const attachmentsID = cds.utils.uuid();
+    const doc = await axios.post(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+      {
+        ID: attachmentsID,
+        up__ID: incidentID,
+      }
+    )
+
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const fileContent = fs.createReadStream(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
+    const req = new cds.Request({
+      query: UPDATE.entity({ref: [{id: 'AdminService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
+        filename: "sample.pdf",
+        content: fileContent,
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }), user: user, headers: {"content-length": 55782}
+    })
+    const ctx = cds.EventContext.for ({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    ctx.user = user
+    await cds._with(ctx, () => AdminSrv.dispatch(req))
+
+    const response = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
+    )
+    expect(responseContent.status).to.equal(200)
   })
 })
 

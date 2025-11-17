@@ -1,4 +1,9 @@
-const { validateAttachmentSize } = require('../../lib/plugin')
+const { validateAttachmentSize } = require('../../lib/generic-handlers')
+require('../../lib/csn-runtime-extension')
+const cds = require('@sap/cds');
+const path = require("path")
+const app = path.resolve(__dirname, "../incidents-app")
+require("@cap-js/cds-test")(app)
 
 describe('validateAttachmentSize', () => {
   let req // Define a mock request object
@@ -6,6 +11,8 @@ describe('validateAttachmentSize', () => {
   beforeEach(() => {
     req = {
       headers: {},
+      data: {content: 'abc'},
+      target: cds.model.definitions['ProcessorService.Incidents'].elements.attachments._target,
       reject: jest.fn(), // Mocking the reject function
     }
   })
@@ -20,7 +27,6 @@ describe('validateAttachmentSize', () => {
 
   it('should reject for a file size over 400 MB', () => {
     req.headers['content-length'] = '20480000000'
-
     validateAttachmentSize(req)
 
     expect(req.reject).toHaveBeenCalledWith(400, 'File Size limit exceeded beyond 400 MB.')
