@@ -4,7 +4,7 @@ const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
 const utils = require('../lib/helper.js')
 
-module.exports = class AWSAttachmentsService extends require("./object-store.js") {
+module.exports = class AWSAttachmentsService extends require("./object-store") {
 
   /**
    * Creates or retrieves a cached S3 client for the specified tenant
