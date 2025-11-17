@@ -114,6 +114,55 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect(err.response.status).to.equal(404)
     }
   })
+
+  it("Updating attachments via srv.run works", async () => {
+    const AdminSrv = await cds.connect.to('AdminService')
+    
+    const attachmentsID = cds.utils.uuid();
+    const doc = await axios.post(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+      {
+        ID: attachmentsID,
+        up__ID: incidentID,
+      }
+    )
+
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const fileContent = fs.createReadStream(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
+    const req = new cds.Request({
+      query: UPDATE.entity({ref: [{id: 'AdminService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
+        filename: "sample.pdf",
+        content: fileContent,
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }), user: user, headers: {"content-length": 55782}
+    })
+    const ctx = cds.EventContext.for ({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    ctx.user = user
+    await cds._with(ctx, () => AdminSrv.dispatch(req))
+
+    const response = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
+    )
+    expect(responseContent.status).to.equal(200)
+  })
 })
 
 function createHelpers(axios) {
