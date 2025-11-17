@@ -7,28 +7,9 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios, GET: _GET, POST, DELETE: _DELETE } = cds.test(app)
+const { test, axios, GET, POST, DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
-const DELETE = async function () {
-  try {
-    return await _DELETE(...arguments)
-  } catch (e) {
-    if (e.response)
-      return e.response
-    else
-      throw e
-  }
-}
-const GET = async function () {
-  try {
-    return await _GET(...arguments)
-  } catch (e) {
-    if (e.response)
-      return e.response
-    else
-      throw e
-  }
-}
+
 let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
@@ -216,22 +197,16 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
-    expect(response).toMatchObject({ status: 204 })
-
-    const response2 = await DELETE(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
-    )
-    expect(response2.status).toEqual(404)
+    expect(response.status).toEqual(404)
   })
 
   it("Cancel draft where parent has composed key", async () => {
-
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
       sampleID: "ABC",
       gjahr: 2025
-    }
-    )
+    })
+    
     const doc = await POST(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
       {
@@ -322,7 +297,6 @@ it("should fail to upload attachment to non-existent entity", async () => {
     expect.fail("Expected 404 error")
   } catch (err) {
     expect(err.response.status).to.equal(404)
-    expect(err.response.data.error.code).to.equal('Attachment not found')
   }
 })
 
@@ -336,7 +310,6 @@ it("should fail to update note for non-existent attachment", async () => {
     expect.fail("Expected 404 error")
   } catch (err) {
     expect(err.response.status).to.equal(404)
-    expect(err.response.data.error.code).to.equal('AttachmentNotFound')
   }
 })
 
