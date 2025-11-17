@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Added `standard` kind and set it as the default so that the configuration needs no adjustment when switching hyper-scalers.
+- Added [`standard`](./README.md#supported-storage-provider) kind and set it as the default so that the configuration needs no adjustment when switching hyper-scalers.
 - Added support for uploading and updating attachments via `srv.run(INSERT.into(Attachments).entries())` or `srv.run(UPDATE.entity(Attachments).set())`
 
 ### Fixed
@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Fixed a server crash when the filename would not be given when creating new attachment metadata.
 - Fixed an issue where attachment handlers would be missing when all Attachments entity were behind feature toggles.
 - Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
+- Fixed an issue where the content could be uploaded for a not existing attachments entity. 
 
 ## Version 3.2.0
 
