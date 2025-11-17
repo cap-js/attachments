@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+
+## Version 3.3.0
+
+### Added
+
+- Added [`standard`](./README.md#supported-storage-provider) kind and set it as the default so that the configuration needs no adjustment when switching hyper-scalers.
+- Added support for uploading and updating attachments via `srv.run(INSERT.into(Attachments).entries())` or `srv.run(UPDATE.entity(Attachments).set())`
+
+### Fixed
+
+- Fixed an issue that in multi-tenancy scenarios with separate object stores duplicate object stores per tenant were created when updating the tenant binding via the SaaS dependency service.
+- Fixed a race-condition where tenant isolation in separate object store mode could be broken.
+- Fixed a case where attachments were not correctly deleted.
+- Fixed a server crash when using the `AttachmentsSrv.put` API to upload an attachment.
+- Fixed a server crash when no object store would be bound to the application on BTP.
+- Fixed a server crash when the filename would not be given when creating new attachment metadata.
+- Fixed an issue where attachment handlers would be missing when all Attachments entity were behind feature toggles.
+- Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
+- Fixed an issue where the content could be uploaded for a not existing attachments entity. 
+
 ## Version 3.2.0
 
 ### Added
@@ -14,8 +34,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Added support for mTLS authentication for the malware scanning service.
 - Added criticality status to the attachment scan status.
 - Provided translations for all SAP-supported languages.
-
-### Fixed
 
 ## Version 3.1.0
 
