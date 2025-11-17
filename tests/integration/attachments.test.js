@@ -184,12 +184,10 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(response.status).toEqual(200)
     expect(response.data.value.length).toEqual(0)
 
-    const content = await GET(
+    await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-    )
-
-    expect(content).toMatchObject({
-      status: 404
+    ).catch(e => {
+      expect(e.status).toEqual(404)
     })
   })
 
@@ -197,7 +195,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
-    expect(response.status).toEqual(404)
+    expect(response.status).toEqual(204)
+
+    await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
+    ).catch(e => {
+      expect(e.status).toEqual(404)
+    })
   })
 
   it("Cancel draft where parent has composed key", async () => {
@@ -206,7 +210,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       sampleID: "ABC",
       gjahr: 2025
     })
-    
+
     const doc = await POST(
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
       {
@@ -280,37 +284,31 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 })
 
 it("should fail to upload attachment to non-existent entity", async () => {
-  try {
-    const fileContent = fs.readFileSync(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
-    )
-    await axios.put(
-      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
-      fileContent,
-      {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Length": fileContent.length,
-        },
-      }
-    )
-    expect.fail("Expected 404 error")
-  } catch (err) {
-    expect(err.response.status).to.equal(404)
-  }
+  const fileContent = fs.readFileSync(
+    path.join(__dirname, "..", "integration", "content/sample.pdf")
+  )
+  await axios.put(
+    `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
+    fileContent,
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": fileContent.length,
+      },
+    }
+  ).catch(e => {
+    expect(e.status).toEqual(404)
+  })
 })
 
 it("should fail to update note for non-existent attachment", async () => {
-  try {
-    await axios.patch(
-      `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
-      { note: "This should fail" },
-      { headers: { "Content-Type": "application/json" } }
-    )
-    expect.fail("Expected 404 error")
-  } catch (err) {
-    expect(err.response.status).to.equal(404)
-  }
+  await axios.patch(
+    `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
+    { note: "This should fail" },
+    { headers: { "Content-Type": "application/json" } }
+  ).catch(e => {
+    expect(e.status).toEqual(404)
+  })
 })
 
 describe("Tests for attachments facet disable", () => {

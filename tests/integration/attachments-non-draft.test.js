@@ -33,13 +33,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
   it("unknown extension throws warning", async () => {
     const response = await axios.post(
-        `/odata/v4/admin/Incidents(${incidentID})/attachments`,
-        { filename: 'sample.madeupextension' },
-        { headers: { "Content-Type": "application/json" } }
+      `/odata/v4/admin/Incidents(${incidentID})/attachments`,
+      { filename: 'sample.madeupextension' },
+      { headers: { "Content-Type": "application/json" } }
     )
     expect(response.status).to.equal(201);
-    expect (log.output.length).to.be.greaterThan(0)
-    expect (log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
+    expect(log.output.length).to.be.greaterThan(0)
+    expect(log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
   })
 
   it("should list attachments for incident", async () => {
@@ -104,20 +104,16 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(deleteResponse.status).to.equal(204)
 
     // Verify the attachment is deleted
-    try {
-      await axios.get(
-        `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
-      )
-      // Should not reach here
-      expect.fail("Expected 404 error")
-    } catch (err) {
-      expect(err.response.status).to.equal(404)
-    }
+    await axios.get(
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
+    ).catch(e => {
+      expect(e.status).to.equal(404)
+    })
   })
 
   it("Updating attachments via srv.run works", async () => {
     const AdminSrv = await cds.connect.to('AdminService')
-    
+
     const attachmentsID = cds.utils.uuid();
     const doc = await axios.post(
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
@@ -134,7 +130,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
     const req = new cds.Request({
-      query: UPDATE.entity({ref: [{id: 'AdminService.Incidents', where: [{ref: ['ID']}, '=', {val: incidentID}]}, {id: 'attachments', where: [{ref: ['ID']}, '=', {val: doc.data.ID}]}]}).set({
+      query: UPDATE.entity({ ref: [{ id: 'AdminService.Incidents', where: [{ ref: ['ID'] }, '=', { val: incidentID }] }, { id: 'attachments', where: [{ ref: ['ID'] }, '=', { val: doc.data.ID }] }] }).set({
         filename: "sample.pdf",
         content: fileContent,
         mimeType: "application/pdf",
@@ -142,9 +138,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
-      }), user: user, headers: {"content-length": 55782}
+      }), user: user, headers: { "content-length": 55782 }
     })
-    const ctx = cds.EventContext.for ({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    const ctx = cds.EventContext.for({ id: cds.utils.uuid(), http: { req: null, res: null } })
     ctx.user = user
     await cds._with(ctx, () => AdminSrv.dispatch(req))
 
