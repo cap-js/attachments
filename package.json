@@ -9,6 +9,7 @@
   "main": "cds-plugin.js",
   "files": [
     "index.cds",
+    "_i18n",
     "lib",
     "db",
     "srv"
