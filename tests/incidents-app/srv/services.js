@@ -4,6 +4,11 @@ const { SELECT } = cds.ql
 class ProcessorService extends cds.ApplicationService {
   /** Registering custom event handlers */
   init() {
+    this.on('PUT', this.entities['SampleRootWithComposedEntity.attachments'].drafts, async (req, next) => {
+      cds.log('overwrite-put-handler').info('Overwritten PUT handler called')
+      return next();
+    });
+
     this.before('UPDATE', 'Incidents', req => this.onUpdate(req))
     this.before(['CREATE', 'UPDATE'], 'Incidents', req => this.changeUrgencyDueToSubject(req.data))
     return super.init()
