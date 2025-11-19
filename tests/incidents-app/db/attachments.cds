@@ -12,7 +12,7 @@ extend my.Incidents with {
 }
 
 annotate my.Incidents.hiddenAttachments with {
-  content @Validation.Maximum : '20MB';
+  content @Validation.Maximum : '2MB';
 }
 
 @UI.Facets : [
