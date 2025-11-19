@@ -155,7 +155,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
   */
   async get(attachments, keys) {
     const startTime = Date.now()
-    LOG.info('Starting stream from Google Cloud Platform', {
+    LOG.debug('Starting stream from Google Cloud Platform', {
       attachmentEntity: attachments.name,
       keys,
       tenant: cds.context.tenant
