@@ -20,6 +20,19 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     await test.data.reset()
   })
 
+  it("Create new entity and ensuring nothing attachment related crashes", async () => {
+    const resCreate = await axios.post('/odata/v4/admin/Incidents', {
+      title: 'New Incident'
+    })
+    expect(resCreate.status).to.equal(201)
+    expect(resCreate.data.title).to.equal('New Incident')
+  })
+
+  it("should create attachment metadata", async () => {
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    expect(attachmentID).to.exist
+  })
+
   it("should create attachment metadata", async () => {
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).to.exist

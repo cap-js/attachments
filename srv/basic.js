@@ -76,7 +76,7 @@ class AttachmentsService extends cds.Service {
     const MalwareScanner = await cds.connect.to('malwareScanner')
     await Promise.all(
       data.map(async (d) => {
-        await MalwareScanner.emit('ScanFile', { target: attachments.name, keys: { ID: d.ID } })
+        await MalwareScanner.emit('ScanAttachmentsFile', { target: attachments.name, keys: { ID: d.ID } })
       })
     )
 
@@ -91,17 +91,17 @@ class AttachmentsService extends cds.Service {
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
    */
   async get(attachments, keys) {
-    if (attachments.isDraft) {
-      attachments = attachments.actives
-    }
     LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys
     })
-    const result = await SELECT.from(attachments, keys).columns("content")
+    let result = await SELECT.from(attachments, keys).columns("content")
+    if (!result && attachments.isDraft) {
+      attachments = attachments.actives
+      result = await SELECT.from(attachments, keys).columns("content")
+    }
     return (result?.content) ? result.content : null
   }
-
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {cds.Entity} attachments - Attachments entity definition
@@ -149,35 +149,23 @@ class AttachmentsService extends cds.Service {
    * @param {cds.Service} srv - The CDS service instance
    */
   registerHandlers(srv) {
-    srv.after(["CREATE", "UPDATE"], async (res, req) => {
-      if (!req.target._attachments.isAttachmentsEntity) return
-      let ID = req.data.ID
-      if (res?.content?.url?.endsWith("/content")) {
-        const cqn = cds.odata.parse(res.content.url, { service: srv })
-        const IDval = cqn.SELECT.from.ref.at(-1).where.find((r, idx) => r.val && cqn.SELECT.from.ref.at(-1).where[idx - 1] === '=' && cqn.SELECT.from.ref.at(-1).where[idx - 2]?.ref?.[0] === 'ID')
-        ID = IDval.val
-      }
-      LOG.debug('Initiating malware scans for database-stored file', {
-        fileId: ID
-      })
-      const MalwareScanner = await cds.connect.to('malwareScanner')
-      await MalwareScanner.emit('ScanFile', { target: req.target.name, keys: { ID: ID } })
-    })
-
-    srv.after("SAVE", async function saveDraftAttachments(res, req) {
-      if (
-        req.target.isDraft ||
-        !req.target._attachments.hasAttachmentsComposition ||
-        !req.target._attachments.attachmentCompositions
-      ) {
-        return
-      }
-      await Promise.all(
-        Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>
-          this.draftSaveHandler(req.target.elements[attachmentsEle]._target)(res, req)
+    if (!cds.env.fiori.move_media_data_in_db) {
+      srv.after("SAVE", async function saveDraftAttachments(res, req) {
+        if (
+          req.target.isDraft ||
+          !req.target.drafts ||
+          !req.target._attachments.hasAttachmentsComposition ||
+          !req.target._attachments.attachmentCompositions
+        ) {
+          return
+        }
+        await Promise.all(
+          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>
+            this.draftSaveHandler(req.target.elements[attachmentsEle]._target)(res, req)
+          )
         )
-      )
-    }.bind(this))
+      }.bind(this))
+    }
   }
 
   /**

@@ -128,7 +128,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         contentSize: content.length || content.size || 'unknown'
       })
 
-      // The file upload has to be done first, so super.put can compute the hash
+      // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       await file.save(content)
       await super.put(attachments, metadata)
 
@@ -140,15 +140,6 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         blobName,
         duration
       })
-
-      // Initiate malware scan if configured
-      LOG.debug('Initiating malware scan for uploaded file', {
-        fileId: metadata.ID,
-        filename: metadata.filename
-      })
-
-      const MalwareScanner = await cds.connect.to('malwareScanner')
-      await MalwareScanner.emit('ScanFile', { target: attachments.name, keys: { ID: metadata.ID } })
     } catch (err) {
       const duration = Date.now() - startTime
       LOG.error(
