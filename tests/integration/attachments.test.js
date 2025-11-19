@@ -357,6 +357,51 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       expect(e.response.data.error.message).toMatch(/Not Found/)
     })
   })
+
+  it("Malware scanning does not happen when scan is disabled", async () => {
+    cds.env.requires.attachments.scan = false
+    
+    let sampleDocID = null
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+
+    //read attachments list for Incident
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    //to make sure content is not read
+    expect(attachmentResponse.data.value[0].content).toBeFalsy()
+    sampleDocID = attachmentResponse.data.value[0].ID
+
+    // Check Scanning status
+    const scanResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(scanResponse.status).toEqual(200)
+    expect(scanResponse.data.value.length).toEqual(1)
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+
+    const resultResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(resultResponse.status).toEqual(200)
+
+
+    expect(log.output.length).toBeGreaterThan(0)
+    expect(log.output).not.toContain('Initiating malware scan request')
+    expect(log.output).toContain('Malware scanner is disabled! Please consider enabling it')
+
+    cds.env.requires.attachments.scan = true
+  })
 })
 
 
