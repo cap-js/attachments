@@ -247,7 +247,7 @@ The typical sequence includes:
 
 ### Specify the maximum file size
 
-You can specify the maximum file size by annotation the attachments content property with `@Validation.Maximum`
+You can specify the maximum file size by annotating the attachments content property with `@Validation.Maximum`
 
 ```cds
 entity Incidents {
