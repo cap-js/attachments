@@ -4,3 +4,5 @@ Scanning;Scanning;The file is currently being scanned for malware.;2
 Infected;Infected;The file contains malware! Do not download!;1
 Clean;Clean;The file does not contain any malware.;3
 Failed;Failed;The file could not be scanned for malware.;1
+DisallowedContentType;Disallowed Content Type;The file has a not allowed content type.;1
+UnexpectedContentType;Unexpected Content Type;The file has an unexpected content type.;1

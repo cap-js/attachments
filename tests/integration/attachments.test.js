@@ -400,6 +400,34 @@ describe("Tests for attachments facet disable", () => {
   })
 })
 
+describe("Tests for acceptable media types", () => {
+  beforeAll(async () => {
+    // Initialize test variables
+    utils = new RequestSend(POST)
+  })
+
+  it("Uploading attachment with disallowed mime type", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+})
+
 /**
  * Uploads attachment in draft mode using CDS test utilities
  * @param {Object} utils - RequestSend utility instance
@@ -414,12 +442,13 @@ async function uploadDraftAttachment(
   POST,
   GET,
   incidentId,
-  filename = "sample.pdf"
+  filename = "sample.pdf",
+  entityName = 'attachments'
 ) {
   await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
   const res = await POST(
-    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
     {
       up__ID: incidentId,
       filename: filename,
@@ -434,7 +463,7 @@ async function uploadDraftAttachment(
     join(__dirname, "..", "integration", "content/sample.pdf")
   )
   await axios.put(
-    `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
     fileContent,
     {
       headers: {
@@ -448,7 +477,7 @@ async function uploadDraftAttachment(
 
   // Get the uploaded attachment ID
   const response = await GET(
-    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/attachments`
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/${entityName}`
   )
   return response.data.value[0]?.ID
 }

@@ -9,7 +9,13 @@ extend my.Incidents with {
 
   @UI.Hidden
   hiddenAttachments2: Composition of many Attachments;
+
+  mediaTypeAttachments: Composition of many Attachments;
 }
+
+annotate my.Incidents.mediaTypeAttachments with @Core.AcceptableMediaTypes: [
+  'image/jpeg'
+];
 
 @UI.Facets : [
   {
