@@ -245,6 +245,83 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(deleteRes.status).to.equal(204)
   })
+
+  it("Uploading attachment to Test works and scan status is set", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity"
+    })
+
+    // Upload attachment
+    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
+    const res = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).to.not.be.null
+
+    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+
+    // Test that attachment exists and scan status
+    const getRes = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)/attachments`
+    )
+    expect(getRes.status).to.equal(200)
+    expect(getRes.data.value.length).to.equal(1)
+    expect(getRes.data.value[0].status).to.be.oneOf(["Scanning", "Clean", "Unscanned"])
+  })
+
+  it("Uploading attachment to TestDetails works and scan status is set (expected to fail)", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity"
+    })
+
+    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
+
+    // Add TestDetails entity
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      {
+        ID: detailsID,
+        description: "Test Details Entity"
+      }
+    )
+
+    // Upload attachment
+    const res = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "detailsfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).to.not.be.null
+
+    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+
+    // Test that attachment exists and scan status
+    const getRes = await GET(
+      `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)/attachments`
+    )
+    expect(getRes.status).to.equal(200)
+    expect(getRes.data.value.length).to.equal(1)
+    expect(getRes.data.value[0].status).to.be.oneOf(["Scanning", "Clean", "Unscanned"])
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
