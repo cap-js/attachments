@@ -397,7 +397,8 @@ To configure logging for the attachments plugin, add the following configuration
     "log": {
       "levels": {
          // (...)
-         "attachments": "debug"
+         "attachments": "debug",
+         "malware-scanning": "debug"
       }
     }
   }
