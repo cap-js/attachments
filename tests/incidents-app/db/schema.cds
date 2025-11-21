@@ -70,3 +70,14 @@ entity SampleRootWithComposedEntity {
   key sampleID: String;
   key gjahr: Integer;
 }
+
+entity Test : cuid, managed {
+  key ID      : String;
+  name        : String;
+  details     : Composition of many TestDetails on details.test = $self;
+}
+
+entity TestDetails : cuid, managed {
+  test        : Association to Test;
+  description : String;
+}
