@@ -16,6 +16,7 @@ extend my.Incidents with {
 annotate my.Incidents.mediaTypeAttachments with @Core.AcceptableMediaTypes: [
   'image/jpeg'
 ];
+annotate my.Incidents.hiddenAttachments @Validation.Maximum : '2MB';
 
 @UI.Facets : [
   {

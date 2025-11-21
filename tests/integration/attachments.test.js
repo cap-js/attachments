@@ -14,6 +14,7 @@ let utils = null
 const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
+  let log = cds.test.log()
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
@@ -218,8 +219,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       {
         up__sampleID: 'ABC',
         up__gjahr: 2025,
-        filename: 'myfancyfile',
-        mimeType: "application/pdf",
+        filename: 'myfancyfile.pdf',
         content: createReadStream(
           join(__dirname, "..", "integration", "content/sample.pdf")
         ),
@@ -235,6 +235,50 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)`
     )
     expect(deleteRes.status).toEqual(204)
+  })
+
+  it("On handler for attachments can be overwritten", async () => {
+    await POST(
+      `odata/v4/processor/SampleRootWithComposedEntity`, {
+      sampleID: "ABC",
+      gjahr: 2025
+    })
+
+    const doc = await POST(
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
+      {
+        up__sampleID: 'ABC',
+        up__gjahr: 2025,
+        filename: 'myfancyfile.pdf',
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    expect(doc.data.ID).toBeTruthy()
+
+    const fileContent = fs.readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='ABC',up__gjahr=2025,ID=${doc.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      }
+    )
+    expect(log.output.length).toBeGreaterThan(0)
+    expect(log.output).toContain('overwrite-put-handler')
+
+    const file = await axios.get(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='ABC',up__gjahr=2025,ID=${doc.data.ID},IsActiveEntity=false)/content`,
+    )
+
+    expect(file.status).toEqual(200)
   })
 
   it("Inserting attachments via srv.run works", async () => {
@@ -302,7 +346,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       expect(e.response.data.error.message).toMatch(/Not Found/)
     })
   })
-  
+
   it("should fail to update note for non-existent attachment", async () => {
     await axios.patch(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
@@ -312,6 +356,51 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       expect(e.status).toEqual(404)
       expect(e.response.data.error.message).toMatch(/Not Found/)
     })
+  })
+
+  it("Malware scanning does not happen when scan is disabled", async () => {
+    cds.env.requires.attachments.scan = false
+    
+    let sampleDocID = null
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+
+    //read attachments list for Incident
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    //to make sure content is not read
+    expect(attachmentResponse.data.value[0].content).toBeFalsy()
+    sampleDocID = attachmentResponse.data.value[0].ID
+
+    // Check Scanning status
+    const scanResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(scanResponse.status).toEqual(200)
+    expect(scanResponse.data.value.length).toEqual(1)
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+
+    const resultResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(resultResponse.status).toEqual(200)
+
+
+    expect(log.output.length).toBeGreaterThan(0)
+    expect(log.output).not.toContain('Initiating malware scan request')
+    expect(log.output).toContain('Malware scanner is disabled! Please consider enabling it')
+
+    cds.env.requires.attachments.scan = true
   })
 })
 

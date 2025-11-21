@@ -200,8 +200,10 @@ Scan status codes:
 - `Failed`: Scanning failed. 
 
 > [!Note]
-> The plugin currently supports file uploads up to 400 MB in size per attachment as this is a limitation of the [malware scanning service](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). Please note: this limitation remains even with the malware scanner disabled. 
 > The malware scanner supports mTLS authentication which requires an annual renewal of the certificate. Previously, basic authentication was used which has now been deprecated.
+
+> [!Note]
+> If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
 
 
 ### Visibility Control for Attachments UI Facet Generation
@@ -242,6 +244,23 @@ The typical sequence includes:
 
 1. **POST** -> create attachment metadata, returns ID  
 2. **PUT** -> upload file content using the ID
+
+### Specify the maximum file size
+
+You can specify the maximum file size by annotating the attachments content property with `@Validation.Maximum`
+
+```cds
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+annotate Incidents.attachments with {
+  content @Validation.Maximum : '20MB';
+}
+```
+
+The default is 400MB
 
 ## Releases
 
