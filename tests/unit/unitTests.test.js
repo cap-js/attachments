@@ -28,7 +28,7 @@ jest.doMock('../../srv/malwareScanner', () => {
   }
 })
 
-const { getObjectStoreCredentials, fetchToken } = require('../../lib/helper')
+const { getObjectStoreCredentials, fetchToken, sizeInBytes } = require('../../lib/helper')
 const axios = require('axios')
 const cds = require('@sap/cds')
 
@@ -103,5 +103,27 @@ describe('fetchToken', () => {
   it('should handle error and throw', async () => {
     axios.post.mockRejectedValue(new Error('fail'))
     await expect(fetchToken('url', 'clientId', 'clientSecret')).rejects.toThrow('fail')
+  })
+})
+
+describe('size to byte converter', () => {
+  test('conversion of size string converts correctly to file size', () => {
+    expect(sizeInBytes('20MB')).toEqual(20 * 1024 * 1024)
+    expect(sizeInBytes('20MiB')).toEqual(20 * 1024 * 1024)
+    expect(sizeInBytes('20kiB')).toEqual(20 * 1024)
+    expect(sizeInBytes('20kB')).toEqual(20 * 1024)
+    expect(sizeInBytes('20GB')).toEqual(20 * 1024 * 1024 * 1024)
+  })
+
+  test('conversion of size string returns number if the input param is a number', () => {
+    expect(sizeInBytes(1234)).toEqual(1234)
+  })
+
+  test('conversion of size string returns undefined if no size could be determined', () => {
+    expect(sizeInBytes('ABCDEFG')).toEqual(undefined)
+
+    expect(sizeInBytes(undefined)).toEqual(undefined)
+
+    expect(sizeInBytes({$edmJson: 'Dummy Value'})).toEqual(undefined)
   })
 })

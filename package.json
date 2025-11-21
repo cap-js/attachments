@@ -46,9 +46,11 @@
       },
       "kinds": {
         "malwareScanner-mock": {
+          "model": "@cap-js/attachments/srv/malwareScanner-mocked",
           "impl": "@cap-js/attachments/srv/malwareScanner-mocked"
         },
         "malwareScanner-btp": {
+          "model": "@cap-js/attachments/srv/malwareScanner",
           "impl": "@cap-js/attachments/srv/malwareScanner"
         },
         "attachments-db": {
@@ -89,7 +91,6 @@
           "kind": "malwareScanner-mock"
         },
         "attachments": {
-          "scan": false,
           "kind": "db"
         }
       },

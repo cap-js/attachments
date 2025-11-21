@@ -11,6 +11,10 @@ extend my.Incidents with {
   hiddenAttachments2: Composition of many Attachments;
 }
 
+annotate my.Incidents.hiddenAttachments with {
+  content @Validation.Maximum : '2MB';
+}
+
 @UI.Facets : [
   {
     $Type : 'UI.ReferenceFacet',

@@ -140,7 +140,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         params: input,
       })
 
-      // The file upload has to be done first, so super.put can compute the hash
+      // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       await multipartUpload.done()
       await super.put(attachments, metadata)
 
@@ -152,14 +152,6 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         key: Key,
         duration
       })
-
-      // Initiate malware scan if configured
-      LOG.debug('Initiating malware scan for uploaded file', {
-        fileId: metadata.ID,
-        filename: metadata.filename
-      })
-      const MalwareScanner = await cds.connect.to('malwareScanner')
-      await MalwareScanner.emit('ScanFile', { target: attachments.name, keys: { ID: metadata.ID } })
     } catch (err) {
       const duration = Date.now() - startTime
       LOG.error(
