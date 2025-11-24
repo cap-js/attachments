@@ -10,14 +10,16 @@ extend my.Incidents with {
   @UI.Hidden
   hiddenAttachments2: Composition of many Attachments;
 
+  @UI.Hidden
   mediaTypeAttachments: Composition of many Attachments;
 }
 
 annotate my.Incidents.hiddenAttachments with {
   content @Validation.Maximum : '2MB';
-  content @Core.AcceptableMediaTypes: [
-    'image/jpeg'
-  ];
+}
+
+annotate my.Incidents.mediaTypeAttachments with {
+  content @Core.AcceptableMediaTypes : ['image/jpeg'];
 }
 
 @UI.Facets : [

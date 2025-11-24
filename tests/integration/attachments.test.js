@@ -89,9 +89,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentID,
-        filename: "sample.pdf",
+        filename: "test.pdf",
         mimeType: "application/pdf",
-        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        content: createReadStream(join(__dirname, "content/test.pdf")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
@@ -108,6 +108,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         .from("sap.attachments.ScanStates")
         .columns("code", `texts[locale='de'].name as name`)
     )
+    
     // Check Scanning status
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
@@ -118,7 +119,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       scanStatesEN.find((state) => state.code === response.data.value[0].status)
         .name
     )
-
+    
     const responseDE = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
