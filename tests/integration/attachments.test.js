@@ -108,7 +108,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         .from("sap.attachments.ScanStates")
         .columns("code", `texts[locale='de'].name as name`)
     )
-    
+
     // Check Scanning status
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
@@ -119,7 +119,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       scanStatesEN.find((state) => state.code === response.data.value[0].status)
         .name
     )
-    
+
     const responseDE = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)&sap-locale=de`
     )
@@ -361,7 +361,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Malware scanning does not happen when scan is disabled", async () => {
     cds.env.requires.attachments.scan = false
-    
+
     let sampleDocID = null
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
@@ -506,6 +506,48 @@ describe("Tests for acceptable media types", () => {
         filename: "sample.pdf",
         mimeType: "application/pdf",
         content: createReadStream(join(__dirname, "content/sample.pdf")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+
+  it("Uploading attachment with disallowed mime type and boundary specified", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; boundary=something",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+
+  it("Uploading attachment with disallowed mime type and charset specified", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
