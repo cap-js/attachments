@@ -6,6 +6,11 @@
     "@cap-js/attachments": "file:../../."
   },
   "cds": {
+    "log": {
+      "levels": {
+        "cds": "info"
+      }
+    },
     "requires": {
       "auth": {
         "[development]": {
@@ -22,10 +27,23 @@
               ]
             }
           }
+        },
+        "[hybrid]": {
+          "kind": "mocked",
+          "users": {
+            "alice": {
+              "roles": [
+                "support",
+                "admin"
+              ]
+            },
+            "bob": {
+              "roles": [
+                "support"
+              ]
+            }
+          }
         }
-      },
-      "attachments": {
-        "hyperscaler": "AWS"
       }
     }
   },

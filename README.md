@@ -56,7 +56,7 @@ For a quick local development setup with in-memory storage:
         // (...)
         "[hybrid]": {  
           "attachments": {  
-            "kind": "s3"  
+            "kind": "standard"  
             // (...)
           }  
         }  
@@ -200,8 +200,10 @@ Scan status codes:
 - `Failed`: Scanning failed. 
 
 > [!Note]
-> The plugin currently supports file uploads up to 400 MB in size per attachment as this is a limitation of the [malware scanning service](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/what-is-sap-malware-scanning-service). Please note: this limitation remains even with the malware scanner disabled. 
 > The malware scanner supports mTLS authentication which requires an annual renewal of the certificate. Previously, basic authentication was used which has now been deprecated.
+
+> [!Note]
+> If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
 
 
 ### Visibility Control for Attachments UI Facet Generation
@@ -243,6 +245,56 @@ The typical sequence includes:
 1. **POST** -> create attachment metadata, returns ID  
 2. **PUT** -> upload file content using the ID
 
+### Specify the maximum file size
+
+You can specify the maximum file size by annotating the attachments content property with `@Validation.Maximum`
+
+```cds
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+annotate Incidents.attachments with {
+  content @Validation.Maximum : '20MB';
+}
+```
+
+The default is 400MB
+
+### Restrict allowed MIME types
+
+You can restrict which MIME types are allowed for attachments by annotating the content property with `@Core.AcceptableMediaTypes`. This validation is performed during file upload.
+
+```cds
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['image/jpeg', 'image/png', 'application/pdf'];
+}
+```
+
+Wildcard patterns are supported:
+
+```cds
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['image/*', 'application/pdf'];
+}
+```
+
+To allow all MIME types (default behavior), either omit the annotation or use:
+
+```cds
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['*/*'];
+}
+```
+
+When a file with a disallowed MIME type is uploaded, the request will be rejected with a `400` error.
+
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments).
@@ -258,12 +310,21 @@ The typical sequence includes:
 ## Architecture Overview
 ### Multitenancy
 
-The plugin supports multitenancy scenarios, allowing both shared and tenant-specific object store instances.
+The plugin supports multi-tenancy scenarios, allowing both shared and tenant-specific object store instances.
 
 > [!Note]
-> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multitenancy.  
+> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multi-tenancy.  
 
-For multitenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
+For multi-tenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
+
+#### Separate object store instances
+
+By default the plugin creates for each tenant its own object store instance during the tenants subscription.
+
+When the tenant unsubscribes the object store instance is deleted.
+
+> [!WARNING]
+> When you remove the plugin from an application after separate object stores already have been created, the object stores are not automatically removed!
 
 #### Shared Object Store Instance
 
@@ -333,10 +394,10 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 
 ##### Supported Storage Provider
 
-- **AWS S3** (`kind: "s3"`)
-- **Azure Blob Storage** (`kind: "azure"`)
-- **Google Cloud Platform** (`kind: "gcp"`)
-
+- **Standard** (`kind: "standard"`) | Depending on the bound object store credentials, uses AWS S3, Azure Blob Storage or GCP Cloud Storage. You can manually specify the implementation by adjusting the type to:
+    - **AWS S3** (`kind: "s3"`)
+    - **Azure Blob Storage** (`kind: "azure"`)
+    - **GCP Cloud Storage** (`kind: "gcp"`)
 
 ### Model Texts
 

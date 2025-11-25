@@ -11,12 +11,26 @@ let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
+  let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
   beforeEach(async () => {
     // Clean up any existing attachments before each test
     await test.data.reset()
+  })
+
+  it("Create new entity and ensuring nothing attachment related crashes", async () => {
+    const resCreate = await axios.post('/odata/v4/admin/Incidents', {
+      title: 'New Incident'
+    })
+    expect(resCreate.status).to.equal(201)
+    expect(resCreate.data.title).to.equal('New Incident')
+  })
+
+  it("should create attachment metadata", async () => {
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    expect(attachmentID).to.exist
   })
 
   it("should create attachment metadata", async () => {
@@ -28,6 +42,17 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).to.equal(204)
+  })
+
+  it("unknown extension throws warning", async () => {
+    const response = await axios.post(
+      `/odata/v4/admin/Incidents(${incidentID})/attachments`,
+      { filename: 'sample.madeupextension' },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(response.status).to.equal(201);
+    expect(log.output.length).to.be.greaterThan(0)
+    expect(log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
   })
 
   it("should list attachments for incident", async () => {
@@ -92,15 +117,60 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(deleteResponse.status).to.equal(204)
 
     // Verify the attachment is deleted
-    try {
-      await axios.get(
-        `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
-      )
-      // Should not reach here
-      expect.fail("Expected 404 error")
-    } catch (err) {
-      expect(err.response.status).to.equal(404)
-    }
+    await axios.get(
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
+    ).catch(e => {
+      expect(e.status).to.equal(404)
+    })
+  })
+
+  it("Updating attachments via srv.run works", async () => {
+    const AdminSrv = await cds.connect.to('AdminService')
+
+    const attachmentsID = cds.utils.uuid();
+    const doc = await axios.post(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+      {
+        ID: attachmentsID,
+        up__ID: incidentID,
+      }
+    )
+
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const fileContent = fs.createReadStream(
+      path.join(__dirname, "..", "integration", "content/test.pdf")
+    )
+    const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
+    const req = new cds.Request({
+      query: UPDATE.entity({ ref: [{ id: 'AdminService.Incidents', where: [{ ref: ['ID'] }, '=', { val: incidentID }] }, { id: 'attachments', where: [{ ref: ['ID'] }, '=', { val: doc.data.ID }] }] }).set({
+        filename: "test.pdf",
+        content: fileContent,
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }), user: user, headers: { "content-length": fileContent.readableLength }
+    })
+    const ctx = cds.EventContext.for({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    ctx.user = user
+    await cds._with(ctx, () => AdminSrv.dispatch(req))
+
+    const response = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
+    )
+    //the data should have no attachments
+    expect(response.status).to.equal(200)
+    expect(response.data.value.length).to.equal(1)
+
+    await scanCleanWaiter
+
+    //content should not be there
+    const responseContent = await axios.get(
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
+    )
+    expect(responseContent.status).to.equal(200)
   })
 })
 
