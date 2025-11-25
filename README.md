@@ -262,6 +262,39 @@ annotate Incidents.attachments with {
 
 The default is 400MB
 
+### Restrict allowed MIME types
+
+You can restrict which MIME types are allowed for attachments by annotating the content property with `@Core.AcceptableMediaTypes`. This validation is performed during file upload.
+
+```cds
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['image/jpeg', 'image/png', 'application/pdf'];
+}
+```
+
+Wildcard patterns are supported:
+
+```cds
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['image/*', 'application/pdf'];
+}
+```
+
+To allow all MIME types (default behavior), either omit the annotation or use:
+
+```cds
+annotate Incidents.attachments with {
+  content @Core.AcceptableMediaTypes : ['*/*'];
+}
+```
+
+When a file with a disallowed MIME type is uploaded, the request will be rejected with a `400` error.
+
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments).
