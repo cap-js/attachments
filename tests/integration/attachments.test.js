@@ -424,7 +424,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(res.data.ID).to.not.be.null
+    expect(res.data.ID).not.toBeNull()
 
     await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
 
@@ -468,7 +468,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(res.data.ID).to.not.be.null
+    expect(res.data.ID).not.toBeNull()
 
     await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
 
@@ -496,7 +496,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachRes.data.ID).to.not.be.null
+    expect(attachRes.data.ID).not.toBeNull()
     await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
 
     // Delete the parent Test entity
@@ -538,7 +538,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachRes.data.ID).to.not.be.null
+    expect(attachRes.data.ID).not.toBeNull()
     await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
 
     // Delete the child TestDetails entity
@@ -574,7 +574,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachResTest.data.ID).to.not.be.null
+    expect(attachResTest.data.ID).not.toBeNull()
 
     const detailsID = cds.utils.uuid()
     await POST(
@@ -592,7 +592,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).to.not.be.null
+    expect(attachResDetails.data.ID).not.toBeNull()
     await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
 
     // Delete the child TestDetails entity
