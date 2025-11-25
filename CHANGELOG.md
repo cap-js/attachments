@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.4.0
+
+### Added
+
+- Introduced support for the `@Core.AcceptableMediaTypes` annotation, allowing specification of permitted MIME types for attachment uploads:
+    ```cds
+    annotate my.Books.attachments with {
+        content @Core.AcceptableMediaTypes: ['image/jpeg'];
+    }
+    ```
+- Added support for the `@Validation.Maximum` annotation to define the maximum allowed file size for attachments:
+    ```cds
+    annotate my.Books.attachments with {
+        content @Validation.Maximum: '2MB';
+    }
+    ```
+
+### Fixed
+
+- Removed the previous hard limit of `400 MB` for file uploads. Files exceeding this size may still fail during malware scanning and will be marked with a `Failed` status.
+- Resolved issues with generic handler registration, enabling services to intercept the attachments plugin using middleware.
 
 ## Version 3.3.0
 

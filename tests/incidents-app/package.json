@@ -6,6 +6,11 @@
     "@cap-js/attachments": "file:../../."
   },
   "cds": {
+    "log": {
+      "levels": {
+        "cds": "info"
+      }
+    },
     "requires": {
       "auth": {
         "[development]": {

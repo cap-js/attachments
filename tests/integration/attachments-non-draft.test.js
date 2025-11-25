@@ -11,7 +11,7 @@ let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
-  let log = cds.test.log()
+  let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
@@ -139,19 +139,19 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const scanCleanWaiter = waitForScanStatus('Clean')
 
     const fileContent = fs.createReadStream(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
+      path.join(__dirname, "..", "integration", "content/test.pdf")
     )
     const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
     const req = new cds.Request({
       query: UPDATE.entity({ ref: [{ id: 'AdminService.Incidents', where: [{ ref: ['ID'] }, '=', { val: incidentID }] }, { id: 'attachments', where: [{ ref: ['ID'] }, '=', { val: doc.data.ID }] }] }).set({
-        filename: "sample.pdf",
+        filename: "test.pdf",
         content: fileContent,
         mimeType: "application/pdf",
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
-      }), user: user, headers: { "content-length": 55782 }
+      }), user: user, headers: { "content-length": fileContent.readableLength }
     })
     const ctx = cds.EventContext.for({ id: cds.utils.uuid(), http: { req: null, res: null } })
     ctx.user = user

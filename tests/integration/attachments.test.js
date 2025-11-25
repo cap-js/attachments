@@ -89,9 +89,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentID,
-        filename: "sample.pdf",
+        filename: "test.pdf",
         mimeType: "application/pdf",
-        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        content: createReadStream(join(__dirname, "content/test.pdf")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
@@ -108,6 +108,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         .from("sap.attachments.ScanStates")
         .columns("code", `texts[locale='de'].name as name`)
     )
+
     // Check Scanning status
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments?$expand=statusNav($select=name,code)`
@@ -360,7 +361,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Malware scanning does not happen when scan is disabled", async () => {
     cds.env.requires.attachments.scan = false
-    
+
     let sampleDocID = null
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
@@ -489,6 +490,76 @@ describe("Tests for attachments facet disable", () => {
   })
 })
 
+describe("Tests for acceptable media types", () => {
+  beforeAll(async () => {
+    // Initialize test variables
+    utils = new RequestSend(POST)
+  })
+
+  it("Uploading attachment with disallowed mime type", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+
+  it("Uploading attachment with disallowed mime type and boundary specified", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; boundary=something",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+
+  it("Uploading attachment with disallowed mime type and charset specified", async () => {
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+})
+
 /**
  * Uploads attachment in draft mode using CDS test utilities
  * @param {Object} utils - RequestSend utility instance
@@ -503,12 +574,13 @@ async function uploadDraftAttachment(
   POST,
   GET,
   incidentId,
-  filename = "sample.pdf"
+  filename = "sample.pdf",
+  entityName = 'attachments'
 ) {
   await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
   const res = await POST(
-    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/attachments`,
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
     {
       up__ID: incidentId,
       filename: filename,
@@ -523,7 +595,7 @@ async function uploadDraftAttachment(
     join(__dirname, "..", "integration", "content/sample.pdf")
   )
   await axios.put(
-    `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
     fileContent,
     {
       headers: {
@@ -537,7 +609,7 @@ async function uploadDraftAttachment(
 
   // Get the uploaded attachment ID
   const response = await GET(
-    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/attachments`
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/${entityName}`
   )
   return response.data.value[0]?.ID
 }
