@@ -1,38 +1,35 @@
-
-using { sap.capire.incidents as my } from './schema';
-using { Attachments } from '@cap-js/attachments';
+using {sap.capire.incidents as my} from './schema';
+using {Attachments} from '@cap-js/attachments';
 
 extend my.Incidents with {
-  attachments: Composition of many Attachments;
+  attachments          : Composition of many Attachments;
   @attachments.disable_facet
-  hiddenAttachments: Composition of many Attachments;
+  hiddenAttachments    : Composition of many Attachments;
 
   @UI.Hidden
-  hiddenAttachments2: Composition of many Attachments;
+  hiddenAttachments2   : Composition of many Attachments;
 
   @UI.Hidden
-  mediaTypeAttachments: Composition of many Attachments;
+  mediaTypeAttachments : Composition of many Attachments;
 }
 
 annotate my.Incidents.hiddenAttachments with {
-  content @Validation.Maximum : '2MB';
+  content @Validation.Maximum: '2MB';
 }
 
 annotate my.Incidents.mediaTypeAttachments with {
-  content @Core.AcceptableMediaTypes : ['image/jpeg'];
+  content @Core.AcceptableMediaTypes: ['image/jpeg'];
 }
 
-@UI.Facets : [
-  {
-    $Type : 'UI.ReferenceFacet',
-    Target : 'attachments/@UI.LineItem',
-    Label : 'My custom attachments',
-  }
-]
+@UI.Facets: [{
+  $Type : 'UI.ReferenceFacet',
+  Target: 'attachments/@UI.LineItem',
+  Label : 'My custom attachments',
+}]
 extend my.Customers with {
-  attachments: Composition of many Attachments;
+  attachments : Composition of many Attachments;
 }
 
 extend my.SampleRootWithComposedEntity with {
-  attachments: Composition of many Attachments;
+  attachments : Composition of many Attachments;
 }
