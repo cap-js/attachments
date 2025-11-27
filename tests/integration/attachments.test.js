@@ -496,8 +496,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       }
     )
     expect(attachRes.data.ID).not.toBeNull()
-    const abc = await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
-    console.log(abc)
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
     // Delete the parent Test entity
     const delRes = await DELETE(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)`
