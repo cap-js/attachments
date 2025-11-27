@@ -413,7 +413,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
 
     // Upload attachment
-    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
     const res = await POST(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
       {
@@ -424,17 +423,17 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(res.data.ID).to.not.be.null
+    expect(res.data.ID).not.toBeNull()
 
-    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Test that attachment exists and scan status
     const getRes = await GET(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)/attachments`
     )
-    expect(getRes.status).to.equal(200)
-    expect(getRes.data.value.length).to.equal(1)
-    expect(getRes.data.value[0].status).to.be.oneOf(["Scanning", "Clean", "Unscanned"])
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
   it("Uploading attachment to TestDetails works and scan status is set (expected to fail)", async () => {
@@ -468,17 +467,17 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(res.data.ID).to.not.be.null
+    expect(res.data.ID).not.toBeNull()
 
-    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Test that attachment exists and scan status
     const getRes = await GET(
       `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)/attachments`
     )
-    expect(getRes.status).to.equal(200)
-    expect(getRes.data.value.length).to.equal(1)
-    expect(getRes.data.value[0].status).to.be.oneOf(["Scanning", "Clean", "Unscanned"])
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
   it("Deleting Test deletes Test attachment", async () => {
@@ -496,14 +495,14 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachRes.data.ID).to.not.be.null
-    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
-
+    expect(attachRes.data.ID).not.toBeNull()
+    const abc = await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+    console.log(abc)
     // Delete the parent Test entity
     const delRes = await DELETE(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)`
     )
-    expect(delRes.status).to.equal(204)
+    expect(delRes.status).toEqual(204)
 
     // Check that the attachment is deleted
     let error
@@ -514,7 +513,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     } catch (e) {
       error = e
     }
-    expect(error?.response?.status || error?.status).to.equal(404)
+    expect(error?.response?.status || error?.status).toEqual(404)
   })
 
   it("Deleting TestDetails deletes TestDetails attachment", async () => {
@@ -538,14 +537,14 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachRes.data.ID).to.not.be.null
-    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+    expect(attachRes.data.ID).not.toBeNull()
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Delete the child TestDetails entity
     const delRes = await DELETE(
       `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)`
     )
-    expect(delRes.status).to.equal(204)
+    expect(delRes.status).toEqual(204)
 
     // Check that the attachment is deleted
     let error
@@ -556,7 +555,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     } catch (e) {
       error = e
     }
-    expect(error?.response?.status || error?.status).to.equal(404)
+    expect(error?.response?.status || error?.status).toEqual(404)
   })
 
   it("Deleting Test deletes both Test and TestDetails attachments", async () => {
@@ -574,7 +573,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachResTest.data.ID).to.not.be.null
+    expect(attachResTest.data.ID).not.toBeNull()
 
     const detailsID = cds.utils.uuid()
     await POST(
@@ -592,14 +591,14 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).to.not.be.null
-    await utils.draftModeSave("processor", "Test", testID, () => {}, "ProcessorService")
+    expect(attachResDetails.data.ID).not.toBeNull()
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Delete the child TestDetails entity
     const delRes = await DELETE(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)`
     )
-    expect(delRes.status).to.equal(204)
+    expect(delRes.status).toEqual(204)
 
     // Check that the attachment is deleted
     let error
@@ -610,7 +609,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     } catch (e) {
       error = e
     }
-    expect(error?.response?.status || error?.status).to.equal(404)
+    expect(error?.response?.status || error?.status).toEqual(404)
     error = null
 
     try {
@@ -620,7 +619,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     } catch (e) {
       error = e
     }
-    expect(error?.response?.status || error?.status).to.equal(404)
+    expect(error?.response?.status || error?.status).toEqual(404)
   })
 })
 

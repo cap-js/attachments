@@ -73,8 +73,8 @@ type PhoneNumber  : String;
 
 
 entity SampleRootWithComposedEntity {
-    key sampleID : String;
-    key gjahr    : Integer;
+  key sampleID : String;
+  key gjahr    : Integer;
 }
 
 entity Test : cuid, managed {
