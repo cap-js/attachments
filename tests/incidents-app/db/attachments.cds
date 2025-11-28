@@ -33,3 +33,11 @@ extend my.Customers with {
 extend my.SampleRootWithComposedEntity with {
   attachments : Composition of many Attachments;
 }
+
+extend my.Test with {
+  attachments: Composition of many Attachments;
+}
+
+extend my.TestDetails with {
+  attachments: Composition of many Attachments;
+}

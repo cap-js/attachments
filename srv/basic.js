@@ -6,7 +6,7 @@ class AttachmentsService extends cds.Service {
 
   init() {
     this.on('DeleteAttachment', async msg => {
-      await this.delete(msg.data.url, msg.data.target)
+      await this.delete(msg.data.url, msg.data.target) //HERE
     })
 
     this.on('DeleteInfectedAttachment', async msg => {
@@ -159,10 +159,25 @@ class AttachmentsService extends cds.Service {
         ) {
           return
         }
+        function resolveElementByPath(entity, path) {
+          const parts = path.split('.')
+          let current = entity
+          for (const part of parts) {
+            if (!current.elements || !current.elements[part]) return undefined
+            current = current.elements[part]._target
+            if (!current) return undefined
+          }
+          return current
+        }
         await Promise.all(
-          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>
-            this.draftSaveHandler(req.target.elements[attachmentsEle]._target)(res, req)
-          )
+          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>{
+            const target = resolveElementByPath(req.target, attachmentsEle)
+            if (!target) {
+              LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
+              return
+            }
+            return this.draftSaveHandler(target)(res, req)
+          })
         )
       }.bind(this))
     }

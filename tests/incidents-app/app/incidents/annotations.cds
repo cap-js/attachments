@@ -172,3 +172,48 @@ annotate service.Incidents.conversation with @(
             Label : '{i18n>Message}',
         },]
 );
+
+annotate service.Test with @(
+    UI.SemanticKey : [name],
+    UI.LineItem : [
+        {
+            Value : name,
+            Label : 'Name',
+        },
+    ]
+);
+
+annotate service.TestDetails with @(
+    UI.SemanticKey : [description],
+    UI.LineItem : [
+        {
+            Value : description,
+            Label : 'Description',
+        },
+    ]
+);
+
+annotate service.Test with @(
+  UI.Facets : [
+    {
+      $Type : 'UI.ReferenceFacet',
+      Label : 'Details',
+      Target : 'details/@UI.LineItem'
+    },
+    {
+      $Type : 'UI.ReferenceFacet',
+      Label : 'Attachments',
+      Target : 'attachments/@UI.LineItem'
+    }
+  ]
+);
+
+annotate service.TestDetails with @(
+  UI.Facets : [
+    {
+      $Type : 'UI.ReferenceFacet',
+      Label : 'Attachments',
+      Target : 'attachments/@UI.LineItem'
+    }
+  ]
+);
