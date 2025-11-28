@@ -436,7 +436,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
-  it("Uploading attachment to TestDetails works and scan status is set (expected to fail)", async () => {
+  it("Uploading attachment to TestDetails works and scan status is set", async () => {
     // Create a Test entity
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, {
@@ -478,6 +478,29 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes.status).toEqual(200)
     expect(getRes.data.value.length).toEqual(1)
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
+  })
+
+  it("should reflect all attachment compositions on parent entity", async () => {
+    const Catalog = await cds.connect.to('ProcessorService')
+    const Test = Catalog.entities.Test
+    const TestDetails = Catalog.entities.TestDetails
+
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+
+    // Add a TestDetails entity with attachments
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Test Details Entity" }
+    )
+
+    // Now check the parent's _attachments properties
+    expect(Test._attachments.hasAttachmentsComposition).toBe(true)
+    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(2)
+    expect(TestDetails._attachments.hasAttachmentsComposition).toBe(true)
+    expect(Object.keys(TestDetails._attachments.attachmentCompositions).length).toBe(1)
   })
 
   it("Deleting Test deletes Test attachment", async () => {
