@@ -159,10 +159,25 @@ class AttachmentsService extends cds.Service {
         ) {
           return
         }
+        function resolveElementByPath(entity, path) {
+          const parts = path.split('.')
+          let current = entity
+          for (const part of parts) {
+            if (!current.elements || !current.elements[part]) return undefined
+            current = current.elements[part]._target
+            if (!current) return undefined
+          }
+          return current
+        }
         await Promise.all(
-          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>
-            this.draftSaveHandler(req.target.elements[attachmentsEle]._target)(res, req)
-          )
+          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>{
+            const target = resolveElementByPath(req.target, attachmentsEle)
+            if (!target) {
+              LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
+              return
+            }
+            return this.draftSaveHandler(target)(res, req)
+          })
         )
       }.bind(this))
     }
@@ -214,12 +229,44 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
+   * Traverses an object or entity by a dot-path.
+   * - For entity traversal, returns the final entity (for targetEntity).
+   * - For data traversal, returns all matching leaf arrays (for deletedAttachments).
+   * @param {object} root - The object or entity to traverse.
+   * @param {string} path - The dot-separated path.
+   * @param {object} [options] - Options: { entityMode: boolean }
+   * @returns {*} - The resolved value(s).
+   */
+  traverseByPath(root, path, options = {}) {
+    const parts = path.split('.')
+    let current = root
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if (options.entityMode) {
+        // Entity traversal
+        if (!current.elements || !current.elements[part]) return undefined
+        current = current.elements[part]._target
+        if (!current) return undefined
+      } else {
+        // Data traversal
+        if (Array.isArray(current)) {
+          return current.flatMap(item =>
+            this.traverseByPath(item, parts.slice(i).join('.'), options)
+          )
+        }
+        if (!current || !(part in current)) return []
+        current = current[part]
+      }
+    }
+    return current
+  }
+
+  /**
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
-    const attachmentCompositions = Object.keys(req?.target?.associations)
-      .filter(assoc => req?.target?.associations[assoc]._target['@_is_media_data'])
+    const attachmentCompositions = Object.keys(req?.target?._attachments.attachmentCompositions)
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
       if (!diffData || Object.keys(diffData).length === 0) {
@@ -227,15 +274,13 @@ class AttachmentsService extends cds.Service {
       }
       const queries = []
       for (const attachmentsComp of attachmentCompositions) {
-        let deletedAttachments = []
-        diffData[attachmentsComp]?.forEach(object => {
-          if (object._op === "delete") {
-            deletedAttachments.push(object.ID)
-          }
-        })
+        const deletedAttachments = (() => {
+          const leaf = this.traverseByPath(diffData, attachmentsComp)
+          return Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
+        })()
         if (deletedAttachments.length) {
           queries.push(
-            SELECT.from(req.target.associations[attachmentsComp]._target).columns("url").where({ ID: { in: [...deletedAttachments] } })
+            SELECT.from(this.traverseByPath(req.target, attachmentsComp, { entityMode: true })).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
         }
       }
