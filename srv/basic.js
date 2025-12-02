@@ -6,14 +6,14 @@ class AttachmentsService extends cds.Service {
 
   init() {
     this.on('DeleteAttachment', async msg => {
-      await this.delete(msg.data.url, msg.data.target) //HERE
+      await this.delete(msg.data.url, msg.data.target)
     })
 
     this.on('DeleteInfectedAttachment', async msg => {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
       if (attachment) { //Might happen that a draft object is the target
-        await this.delete(attachment.url)
+        await this.delete(attachment.url, target)
       } else {
         LOG.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
       }
@@ -159,19 +159,9 @@ class AttachmentsService extends cds.Service {
         ) {
           return
         }
-        function resolveElementByPath(entity, path) {
-          const parts = path.split('.')
-          let current = entity
-          for (const part of parts) {
-            if (!current.elements || !current.elements[part]) return undefined
-            current = current.elements[part]._target
-            if (!current) return undefined
-          }
-          return current
-        }
         await Promise.all(
           Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>{
-            const target = resolveElementByPath(req.target, attachmentsEle)
+            const target = this.traverseByPath(req.target, attachmentsEle, { entityMode: true })
             if (!target) {
               LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
               return
@@ -221,7 +211,7 @@ class AttachmentsService extends cds.Service {
     req.attachmentsToDelete?.forEach(async (attachment) => {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to('attachments')
-        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url })
+        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url, target: attachment.target })
       } else {
         LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
@@ -273,6 +263,7 @@ class AttachmentsService extends cds.Service {
         return
       }
       const queries = []
+      const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
         const deletedAttachments = (() => {
           const leaf = this.traverseByPath(diffData, attachmentsComp)
@@ -282,10 +273,15 @@ class AttachmentsService extends cds.Service {
           queries.push(
             SELECT.from(this.traverseByPath(req.target, attachmentsComp, { entityMode: true })).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
+          queryTargets.push(this.traverseByPath(req.target, attachmentsComp, { entityMode: true }).name)
         }
       }
       if (queries.length > 0) {
-        const attachmentsToDelete = (await Promise.all(queries)).flat()
+        const attachmentsToDelete = (await Promise.all(queries)).reduce((acc, attachments, idx) => {
+          attachments.forEach(attachment => attachment.target = queryTargets[idx])
+          acc = acc.concat(attachments)
+          return acc;
+        }, [])
         if (attachmentsToDelete.length > 0) {
           req.attachmentsToDelete = attachmentsToDelete
         }
@@ -307,7 +303,7 @@ class AttachmentsService extends cds.Service {
     const activeUrls = new Set(activeAttachments.map(a => a.url))
     return draftAttachments
       .filter(({ url }) => !activeUrls.has(url))
-      .map(({ url }) => ({ url }))
+      .map(({ url }) => ({ url, target: draftEntity.name }))
   }
 
   /**
