@@ -13,7 +13,7 @@ class AttachmentsService extends cds.Service {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
       if (attachment) { //Might happen that a draft object is the target
-        await this.delete(attachment.url)
+        await this.delete(attachment.url, target)
       } else {
         LOG.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
       }
@@ -206,7 +206,7 @@ class AttachmentsService extends cds.Service {
     req.attachmentsToDelete?.forEach(async (attachment) => {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to('attachments')
-        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url })
+        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url, target: attachment.target })
       } else {
         LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
@@ -226,6 +226,7 @@ class AttachmentsService extends cds.Service {
         return
       }
       const queries = []
+      const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
         let deletedAttachments = []
         diffData[attachmentsComp]?.forEach(object => {
@@ -237,10 +238,15 @@ class AttachmentsService extends cds.Service {
           queries.push(
             SELECT.from(req.target.associations[attachmentsComp]._target).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
+          queryTargets.push(req.target.associations[attachmentsComp]._target.name)
         }
       }
       if (queries.length > 0) {
-        const attachmentsToDelete = (await Promise.all(queries)).flat()
+        const attachmentsToDelete = (await Promise.all(queries)).reduce((acc, attachments, idx) => {
+          attachments.forEach(attachment => attachment.target = queryTargets[idx])
+          acc = acc.concat(attachments)
+          return acc;
+        }, [])
         if (attachmentsToDelete.length > 0) {
           req.attachmentsToDelete = attachmentsToDelete
         }
@@ -262,7 +268,7 @@ class AttachmentsService extends cds.Service {
     const activeUrls = new Set(activeAttachments.map(a => a.url))
     return draftAttachments
       .filter(({ url }) => !activeUrls.has(url))
-      .map(({ url }) => ({ url }))
+      .map(({ url }) => ({ url, target: draftEntity.name }))
   }
 
   /**
