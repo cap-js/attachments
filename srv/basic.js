@@ -6,7 +6,7 @@ class AttachmentsService extends cds.Service {
 
   init() {
     this.on('DeleteAttachment', async msg => {
-      await this.delete(msg.data.url, msg.data.target)
+      await this.delete(msg.data.url, msg.data.target) //HERE
     })
 
     this.on('DeleteInfectedAttachment', async msg => {
