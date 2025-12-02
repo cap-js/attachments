@@ -337,27 +337,25 @@ class AttachmentsService extends cds.Service {
    */
   async attachDraftDiscardDeletionData(req) {
     const parentEntity = req.target.name.split('.').slice(0, -1).join('.')
-    const draftEntity = cds.model.definitions[`${parentEntity}.attachments.drafts`]
-    const activeEntity = cds.model.definitions[`${parentEntity}.attachments`]
-    if (!draftEntity || !activeEntity) return
+    const parentDef = cds.model.definitions[parentEntity]
+    if (!parentDef) return
 
-    const whereXpr = []
-    for (const foreignKey of activeEntity.keys['up_']._foreignKeys) {
-      if (whereXpr.length) {
-        whereXpr.push('and')
-      }
-      whereXpr.push(
-        { ref: [foreignKey.parentElement.name] },
-        '=',
-        { val: req.data[foreignKey.childElement.name] }
-      )
+    const attachmentCompositions = Object.keys(parentDef._attachments.attachmentCompositions)
+    let attachmentsToDelete = []
+
+    for (const compPath of attachmentCompositions) {
+      const attachmentEntity = this.traverseByPath(parentDef, compPath, { entityMode: true })
+      const draftEntity = attachmentEntity?.drafts
+      if (!draftEntity) continue
+
+      // Get ALL draft attachments for this composition since 
+      const attachments = await this.getAttachmentsToDelete({
+        draftEntity,
+        activeEntity: attachmentEntity,
+        whereXpr: {}
+      })
+      attachmentsToDelete = attachmentsToDelete.concat(attachments)
     }
-
-    const attachmentsToDelete = await this.getAttachmentsToDelete({
-      draftEntity,
-      activeEntity,
-      whereXpr
-    })
 
     if (attachmentsToDelete.length > 0) {
       req.attachmentsToDelete = attachmentsToDelete
