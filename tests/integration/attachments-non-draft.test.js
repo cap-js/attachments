@@ -137,9 +137,10 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
 
     const scanCleanWaiter = waitForScanStatus('Clean')
+    const testPath = path.join(__dirname, "content/sample.pdf")
 
     const fileContent = fs.createReadStream(
-      path.join(__dirname, "..", "integration", "content/test.pdf")
+      testPath
     )
     const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
     const req = new cds.Request({
