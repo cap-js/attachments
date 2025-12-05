@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.5.0
+
+## Fixed
+
+- Enforced the use of the `Content-Length` header to prevent server errors.
+- Designated the `content` property in the Attachments table as a `NonSortableProperty` to prevent database errors when sorting LargeBinary fields.
+- Delete operations now always include the storage target (entity name) alongside the attachment URL — ensures consistent and correct deletion of attachments across all entity types (including drafts / composed entities).
+
 ## Version 3.4.0
 
 ### Added
