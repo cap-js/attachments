@@ -139,8 +139,12 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const scanCleanWaiter = waitForScanStatus('Clean')
 
     const fileContent = fs.createReadStream(
-      path.join(__dirname, "..", "integration", "content/test.pdf")
+      path.join(__dirname, "content/sample.pdf")
     )
+    const contentLength = fs.statSync(
+      path.join(__dirname, "content/sample.pdf")
+    ).size
+
     const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
     const req = new cds.Request({
       query: UPDATE.entity({ ref: [{ id: 'AdminService.Incidents', where: [{ ref: ['ID'] }, '=', { val: incidentID }] }, { id: 'attachments', where: [{ ref: ['ID'] }, '=', { val: doc.data.ID }] }] }).set({
@@ -151,7 +155,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
         createdBy: "alice",
-      }), user: user, headers: { "content-length": fileContent.readableLength }
+      }), user: user, headers: { "content-length": contentLength }
     })
     const ctx = cds.EventContext.for({ id: cds.utils.uuid(), http: { req: null, res: null } })
     ctx.user = user
