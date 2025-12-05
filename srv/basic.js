@@ -160,7 +160,7 @@ class AttachmentsService extends cds.Service {
           return
         }
         await Promise.all(
-          Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle =>{
+          req.target._attachments.attachmentCompositions.map(attachmentsEle =>{
             const target = traverseEntity(req.target, attachmentsEle)
             if (!target) {
               LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
@@ -221,7 +221,7 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
-    const attachmentCompositions = Object.keys(req?.target?._attachments.attachmentCompositions)
+    const attachmentCompositions = req?.target?._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
       if (!diffData || Object.keys(diffData).length === 0) {
@@ -232,12 +232,11 @@ class AttachmentsService extends cds.Service {
       for (const attachmentsComp of attachmentCompositions) {
         const deletedAttachments = (() => {
           function traverseDataByPath(root, path) {
-            const parts = path.split('.')
             let current = root
-            for (let i = 0; i < parts.length; i++) {
-              const part = parts[i]
+            for (let i = 0; i < path.length; i++) {
+              const part = path[i]
               if (Array.isArray(current)) {
-                return current.flatMap(item => traverseDataByPath(item, parts.slice(i).join('.')))
+                return current.flatMap(item => traverseDataByPath(item, path.slice(i)))
               }
               if (!current || !(part in current)) return []
               current = current[part]
