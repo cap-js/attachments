@@ -495,7 +495,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // Now check the parent's _attachments properties
     expect(Test._attachments.hasAttachmentsComposition).toBe(true)
-    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(3)
+    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(2)
     expect(TestDetails._attachments.hasAttachmentsComposition).toBe(true)
     expect(Object.keys(TestDetails._attachments.attachmentCompositions).length).toBe(1)
   })
