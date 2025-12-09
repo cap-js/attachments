@@ -132,7 +132,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
   })
 
-  //Deleting the attachment
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
@@ -444,8 +443,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       name: "Test Entity"
     })
 
-    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
-
     // Add TestDetails entity
     const detailsID = cds.utils.uuid()
     await POST(
@@ -480,7 +477,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
-  it("should reflect all attachment compositions on parent entity", async () => {
+  it("Should reflect all attachment compositions on parent entity", async () => {
     const Catalog = await cds.connect.to('ProcessorService')
     const Test = Catalog.entities.Test
     const TestDetails = Catalog.entities.TestDetails
@@ -498,7 +495,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // Now check the parent's _attachments properties
     expect(Test._attachments.hasAttachmentsComposition).toBe(true)
-    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(2)
+    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(3)
     expect(TestDetails._attachments.hasAttachmentsComposition).toBe(true)
     expect(Object.keys(TestDetails._attachments.attachmentCompositions).length).toBe(1)
   })
@@ -507,7 +504,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Create Test entity and add attachment
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
-    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
     const attachRes = await POST(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
       {
@@ -542,7 +538,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Create Test and TestDetails entities
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
-    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
     const detailsID = cds.utils.uuid()
     await POST(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
@@ -584,7 +579,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Create Test and TestDetails entities
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
-    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
+
     const attachResTest = await POST(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
       {
@@ -642,6 +637,146 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       error = e
     }
     expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Canceling a draft removes all unsaved added attachments from parent and child entities", async () => {
+    // Create parent entity in draft mode
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Draft Cancel Test" })
+
+    // Add attachment to parent
+    const attachResParent = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResParent.data.ID).toBeTruthy()
+
+    // Add child entity and attachment
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Draft Cancel Child" }
+    )
+    const attachResChild = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResChild.data.ID).toBeTruthy()
+
+    // Cancel the draft
+    const cancelRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)`
+    )
+    expect(cancelRes.status).toEqual(204)
+
+    // Check that parent attachment is deleted
+    let error
+    try {
+      await GET(
+        `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+    error = null
+
+    // Check that child attachment is deleted
+    try {
+      await GET(
+        `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Canceling a draft does not remove any unsaved deleted attachments from parent and child entities", async () => {
+    // Create parent entity in draft mode
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Draft Cancel Test" })
+
+    // Add child entity and attachment
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Draft Cancel Child" }
+    )
+
+    // Add attachment to parent
+    const attachResParent = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResParent.data.ID).toBeTruthy()
+
+    const attachResChild = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResChild.data.ID).toBeTruthy()
+
+    // Save the draft
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Start editing again (create a new draft)
+    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
+
+    // Delete attachments in the draft
+    await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=false)`
+    )
+    await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=false)`
+    )
+
+    // Discard the draft (do NOT save)
+    const discardRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)`
+    )
+    expect(discardRes.status).toEqual(204)
+
+    // Check that parent attachment is still present
+    const parentAttachment = await GET(
+      `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=true)`
+    )
+    expect(parentAttachment.status).toEqual(200)
+    expect(parentAttachment.data.ID).toEqual(attachResParent.data.ID)
+    expect(parentAttachment.data.filename).toBe("parentfile.pdf")
+
+    // Check that child attachment is still present
+    const childAttachment = await GET(
+      `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=true)`
+    )
+    expect(childAttachment.status).toEqual(200)
+    expect(childAttachment.data.ID).toEqual(attachResChild.data.ID)
+    expect(childAttachment.data.filename).toBe("childfile.pdf")
+
   })
 })
 

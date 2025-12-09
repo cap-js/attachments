@@ -176,6 +176,59 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(responseContent.status).to.equal(200)
   })
+  //TEST FOR MANY-TO-ONE
+  it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await axios.post(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Non-draft Test",
+      singledetails: { ID: detailsID, abc: "child" }
+    })
+
+    const attachResTest = await axios.post(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(attachResTest.data.ID).to.be.ok
+    
+    // 4. Add attachment to SingleTestDetails
+    const attachResDetails = await axios.post(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).to.be.ok
+
+    // 5. Fetch and confirm parent attachment
+    const parentAttachment = await axios.get(
+      `odata/v4/processor/NonDraftTest_attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    )
+    expect(parentAttachment.status).to.equal(200)
+    expect(parentAttachment.data.ID).to.equal(attachResTest.data.ID)
+    expect(parentAttachment.data.filename).to.equal("parentfile.pdf")
+
+    // 6. Fetch and confirm child attachment
+    const childAttachment = await axios.get(
+      `odata/v4/processor/SingleTestDetails_attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    )
+    expect(childAttachment.status).to.equal(200)
+    expect(childAttachment.data.ID).to.equal(attachResDetails.data.ID)
+    expect(childAttachment.data.filename).to.equal("childfile.pdf")
+  })
+  
 })
 
 function createHelpers(axios) {
