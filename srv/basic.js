@@ -217,6 +217,25 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
+   * Traverses nested data by a given path array.
+   * @param {Object} root - The root object or array to traverse.
+   * @param {Array} path - The array of keys representing the path.
+   * @returns {*} - The value found at the path, or [] if not found.
+   */
+  traverseDataByPath(root, path) {
+    let current = root
+    for (let i = 0; i < path.length; i++) {
+      const part = path[i]
+      if (Array.isArray(current)) {
+        return current.flatMap(item => this.traverseDataByPath(item, path.slice(i)))
+      }
+      if (!current || !(part in current)) return []
+      current = current[part]
+    }
+    return current
+  }
+
+  /**
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Request} req - The request object
    */
@@ -230,21 +249,9 @@ class AttachmentsService extends cds.Service {
       const queries = []
       const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
-        function traverseDataByPath(root, path) {
-          let current = root
-          for (let i = 0; i < path.length; i++) {
-            const part = path[i]
-            if (Array.isArray(current)) {
-              return current.flatMap(item => traverseDataByPath(item, path.slice(i)))
-            }
-            if (!current || !(part in current)) return []
-            current = current[part]
-          }
-          return current
-        }
-        const leaf = traverseDataByPath(diffData, attachmentsComp)
+        const leaf = this.traverseDataByPath(diffData, attachmentsComp)
         const deletedAttachments = Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
-        
+
         const entityTarget = traverseEntity(req.target, attachmentsComp)
         if (deletedAttachments.length) {
           queries.push(
