@@ -215,7 +215,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Add non-draft deletion data to the request
-   * @param {*} req - The request object
+   * @param {import('@sap/cds').Request} req - The request object
    */
   async attachNonDraftDeletionData(req) {
     if (!req.target?.['@_is_media_data']) return
