@@ -244,6 +244,11 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         Key,
       })
     )
-    return response.DeleteMarker
+
+    if (!response.DeleteMarker) {
+      throw new Error(`Failed to delete file ${Key} from bucket ${bucket}`)
+    }
+
+    return true
   }
 }
