@@ -220,10 +220,9 @@ class AttachmentsService extends cds.Service {
   async attachNonDraftDeletionData(req) {
     if (!req.target?.['@_is_media_data']) return
 
-    const diff = await req.diff()
-    if (diff._op !== "delete" || !diff.ID) return
+    if (!req.subject) return
 
-    const attachments = await SELECT.from(req.target.name).columns("url").where({ ID: diff.ID })
+    const attachments = await SELECT.from(req.subject).columns("url").where({ ID: diff.ID })
     if (attachments.length) {
       req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
     }
