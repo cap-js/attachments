@@ -222,7 +222,7 @@ class AttachmentsService extends cds.Service {
       .filter(assoc => req?.target?.associations[assoc]._target['@_is_media_data'])
 
     // Non-draft attachment entity
-    if (req.target?.['@_is_media_data']) {
+    if (attachmentCompositions.length == 0 && req.target?.['@_is_media_data']) {
       attachmentCompositions.push('')
     }
 
