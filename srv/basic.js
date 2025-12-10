@@ -230,22 +230,21 @@ class AttachmentsService extends cds.Service {
       const queries = []
       const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
-        const deletedAttachments = (() => {
-          function traverseDataByPath(root, path) {
-            let current = root
-            for (let i = 0; i < path.length; i++) {
-              const part = path[i]
-              if (Array.isArray(current)) {
-                return current.flatMap(item => traverseDataByPath(item, path.slice(i)))
-              }
-              if (!current || !(part in current)) return []
-              current = current[part]
+        function traverseDataByPath(root, path) {
+          let current = root
+          for (let i = 0; i < path.length; i++) {
+            const part = path[i]
+            if (Array.isArray(current)) {
+              return current.flatMap(item => traverseDataByPath(item, path.slice(i)))
             }
-            return current
+            if (!current || !(part in current)) return []
+            current = current[part]
           }
-          const leaf = traverseDataByPath(diffData, attachmentsComp)
-          return Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
-        })()
+          return current
+        }
+        const leaf = traverseDataByPath(diffData, attachmentsComp)
+        const deletedAttachments = Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
+        
         const entityTarget = traverseEntity(req.target, attachmentsComp)
         if (deletedAttachments.length) {
           queries.push(
