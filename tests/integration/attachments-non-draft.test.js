@@ -176,6 +176,172 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(responseContent.status).to.equal(200)
   })
+
+  it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await axios.post(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Non-draft Test",
+      singledetails: { ID: detailsID, abc: "child" }
+    })
+
+    const attachResTest = await axios.post(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(attachResTest.data.ID).to.be.ok
+    
+    const attachResDetails = await axios.post(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).to.be.ok
+
+    const parentAttachment = await axios.get(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    )
+
+    expect(parentAttachment.status).to.equal(200)
+    expect(parentAttachment.data.ID).to.equal(attachResTest.data.ID)
+    expect(parentAttachment.data.filename).to.equal("parentfile.pdf")
+
+    const childAttachment = await axios.get(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    )
+    expect(childAttachment.status).to.equal(200)
+    expect(childAttachment.data.ID).to.equal(attachResDetails.data.ID)
+    expect(childAttachment.data.filename).to.equal("childfile.pdf")
+  })
+
+  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await axios.post(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Non-draft Test",
+      singledetails: { ID: detailsID, abc: "child" }
+    })
+
+    const attachResTest = await axios.post(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(attachResTest.data.ID).to.be.ok
+    
+    const attachResDetails = await axios.post(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).to.be.ok
+
+    // Delete parent attachment
+    const delParent = await axios.delete(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    )
+    expect(delParent.status).to.equal(204)
+
+    // Delete child attachment
+    const delChild = await axios.delete(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    )
+    expect(delChild.status).to.equal(204)
+
+    // Confirm parent attachment is deleted
+    await axios.get(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).to.equal(404)
+    })
+
+    // Confirm child attachment is deleted
+    await axios.get(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).to.equal(404)
+    })
+  })
+
+  it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await axios.post(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Non-draft Test",
+      singledetails: { ID: detailsID, abc: "child" }
+    })
+
+    const attachResTest = await axios.post(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(attachResTest.data.ID).to.be.ok
+    
+    const attachResDetails = await axios.post(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).to.be.ok
+
+    // Delete the parent entity
+    const delParentEntity = await axios.delete(
+      `odata/v4/processor/NonDraftTest(ID=${testID})`
+    )
+    expect(delParentEntity.status).to.equal(204)
+
+    // Confirm parent attachment is deleted
+    await axios.get(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).to.equal(404)
+    })
+
+    // Confirm child attachment is deleted
+    await axios.get(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).to.equal(404)
+    })
+  })
 })
 
 function createHelpers(axios) {
