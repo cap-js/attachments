@@ -220,15 +220,27 @@ class AttachmentsService extends cds.Service {
   async attachDeletionData(req) {
     const attachmentCompositions = Object.keys(req?.target?.associations)
       .filter(assoc => req?.target?.associations[assoc]._target['@_is_media_data'])
+
+    // Non-draft attachment entity
+    if (req.target?.['@_is_media_data']) {
+      attachmentCompositions.push('')
+    }
+
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
+      console.log(JSON.stringify(diffData, null, 2));
       if (!diffData || Object.keys(diffData).length === 0) {
         return
       }
       const queries = []
       const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
-        let deletedAttachments = []
+        const deletedAttachments = []
+        if (attachmentsComp == '') {
+          if (diffData._op === "delete") {
+            deletedAttachments.push(diffData.ID)
+          }
+        }
         diffData[attachmentsComp]?.forEach(object => {
           if (object._op === "delete") {
             deletedAttachments.push(object.ID)
@@ -236,9 +248,9 @@ class AttachmentsService extends cds.Service {
         })
         if (deletedAttachments.length) {
           queries.push(
-            SELECT.from(req.target.associations[attachmentsComp]._target).columns("url").where({ ID: { in: [...deletedAttachments] } })
+            SELECT.from(req.target?.associations?.[attachmentsComp]?._target ?? req.target).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
-          queryTargets.push(req.target.associations[attachmentsComp]._target.name)
+          queryTargets.push(req.target.associations?.[attachmentsComp]?._target.name ?? req.target?.name)
         }
       }
       if (queries.length > 0) {
@@ -247,6 +259,7 @@ class AttachmentsService extends cds.Service {
           acc = acc.concat(attachments)
           return acc;
         }, [])
+        console.log('Attachments to delete:', attachmentsToDelete);
         if (attachmentsToDelete.length > 0) {
           req.attachmentsToDelete = attachmentsToDelete
         }
