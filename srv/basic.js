@@ -228,7 +228,6 @@ class AttachmentsService extends cds.Service {
 
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
-      console.log(JSON.stringify(diffData, null, 2));
       if (!diffData || Object.keys(diffData).length === 0) {
         return
       }
@@ -259,7 +258,6 @@ class AttachmentsService extends cds.Service {
           acc = acc.concat(attachments)
           return acc;
         }, [])
-        console.log('Attachments to delete:', attachmentsToDelete);
         if (attachmentsToDelete.length > 0) {
           req.attachmentsToDelete = attachmentsToDelete
         }
