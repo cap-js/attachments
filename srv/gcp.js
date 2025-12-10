@@ -222,7 +222,11 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
     const file = bucket.file(blobName)
     const response = await file.delete()
     if (response[0]?.statusCode !== 204) {
-      throw new Error(`Failed to delete file ${blobName} from bucket ${bucket.name}`)
+      LOG.warn('File deletion from Google Cloud Platform may not have been successful', {
+        blobName,
+        bucketName: bucket.name,
+        response
+      })
     }
     return true
   }

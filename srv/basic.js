@@ -214,18 +214,28 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
+   * Add non-draft deletion data to the request
+   * @param {*} req - The request object
+   */
+  async attachNonDraftDeletionData(req) {
+    if (!req.target?.['@_is_media_data']) return
+
+    const diff = await req.diff()
+    if (diff._op !== "delete" || !diff.ID) return
+
+    const attachments = await SELECT.from(req.target.name).columns("url").where({ ID: diff.ID })
+    if (attachments.length) {
+      req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
+    }
+  }
+
+  /**
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
     const attachmentCompositions = Object.keys(req?.target?.associations)
       .filter(assoc => req?.target?.associations[assoc]._target['@_is_media_data'])
-
-    // Non-draft attachment entity
-    if (attachmentCompositions.length == 0 && req.target?.['@_is_media_data']) {
-      attachmentCompositions.push('')
-    }
-
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
       if (!diffData || Object.keys(diffData).length === 0) {
@@ -234,12 +244,7 @@ class AttachmentsService extends cds.Service {
       const queries = []
       const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
-        const deletedAttachments = []
-        if (attachmentsComp == '') {
-          if (diffData._op === "delete") {
-            deletedAttachments.push(diffData.ID)
-          }
-        }
+        let deletedAttachments = []
         diffData[attachmentsComp]?.forEach(object => {
           if (object._op === "delete") {
             deletedAttachments.push(object.ID)
@@ -247,9 +252,9 @@ class AttachmentsService extends cds.Service {
         })
         if (deletedAttachments.length) {
           queries.push(
-            SELECT.from(req.target?.associations?.[attachmentsComp]?._target ?? req.target).columns("url").where({ ID: { in: [...deletedAttachments] } })
+            SELECT.from(req.target.associations[attachmentsComp]._target).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
-          queryTargets.push(req.target.associations?.[attachmentsComp]?._target.name ?? req.target?.name)
+          queryTargets.push(req.target.associations[attachmentsComp]._target.name)
         }
       }
       if (queries.length > 0) {
