@@ -46,12 +46,13 @@
       },
       "kinds": {
         "malwareScanner-mock": {
-          "model": "@cap-js/attachments/srv/malwareScanner-mocked",
-          "impl": "@cap-js/attachments/srv/malwareScanner-mocked"
+          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
+        },
+        "malwareScanner-mocked": {
+          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
         },
         "malwareScanner-btp": {
-          "model": "@cap-js/attachments/srv/malwareScanner",
-          "impl": "@cap-js/attachments/srv/malwareScanner"
+          "model": "@cap-js/attachments/srv/malwareScanner"
         },
         "attachments-db": {
           "impl": "@cap-js/attachments/srv/basic"
@@ -88,7 +89,7 @@
       },
       "[development]": {
         "malwareScanner": {
-          "kind": "malwareScanner-mock"
+          "kind": "malwareScanner-mocked"
         },
         "attachments": {
           "kind": "db"
