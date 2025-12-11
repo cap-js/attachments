@@ -216,7 +216,7 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
         suggestion,
         { fileId: keys?.ID, containerName: containerClient.containerName, attachmentName: attachments.name, duration })
 
-      if (error.name === 'NoSuchKey') {
+      if (error.name === 'BlobNotFound') {
         return null
       }
       throw error
