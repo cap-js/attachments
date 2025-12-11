@@ -122,6 +122,22 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
+      try {
+        await client.send(
+          new GetObjectCommand({
+            Bucket: bucket,
+            Key,
+          })
+        )
+        const error = new Error("Attachment with given ID already exists and cannot be overwritten")
+        error.status = 409
+        throw error
+      } catch (err) {
+        if (err.name !== 'NoSuchKey' && err.$metadata?.httpStatusCode !== 404) {
+          throw err
+        }
+      }
+
       const input = {
         Bucket: bucket,
         Key,
