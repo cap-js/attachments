@@ -121,6 +121,14 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const file = bucket.file(blobName)
 
+
+      const [exists] = await file.exists()
+      if (exists) {
+        const error = new Error("Attachment with given ID already exists and cannot be overwritten")
+        error.status = 409
+        throw error
+      }
+
       LOG.debug('Uploading file to Google Cloud Platform', {
         bucketName: bucket.name,
         blobName,
@@ -209,10 +217,6 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         'File download from Google Cloud Platform failed', error,
         suggestion,
         { fileId: keys?.ID, bucketName: bucket.name, attachmentName: attachments.name, duration })
-
-      if (error.message === 'BlobNotFound') {
-        return null
-      }
       
       throw error
     }
