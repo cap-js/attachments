@@ -182,6 +182,10 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
       })
 
       const file = bucket.file(blobName)
+      const [exists] = await file.exists()
+      if (!exists) {
+        throw new Error('BucketNotFound')
+      }
       const readStream = await file.createReadStream()
 
       const duration = Date.now() - startTime
@@ -195,7 +199,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
       return readStream
     } catch (error) {
       const duration = Date.now() - startTime
-      const suggestion = error.code === 'BlobNotFound' ?
+      const suggestion = error.message === 'BlobNotFound' ?
         'File may have been deleted from Google Cloud Platform or URL is incorrect' :
         error.code === 'AuthenticationFailed' ?
           'Check Google Cloud Platform credentials and SAS token' :
@@ -206,7 +210,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         suggestion,
         { fileId: keys?.ID, bucketName: bucket.name, attachmentName: attachments.name, duration })
 
-      if (error.name === 'BlobNotFound') {
+      if (error.message === 'BlobNotFound') {
         return null
       }
       
