@@ -8,6 +8,7 @@
   "cds": {
     "log": {
       "levels": {
+        "attachments": "debug",
         "cds": "info"
       }
     },

@@ -208,7 +208,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     // This should fail with a 409 Conflict
     expect(error).to.exist
     expect(error.response.status).to.equal(409)
-    expect(error.response.data.error.message).to.match(/already exists and cannot be overwritten/i)
+    expect(error.response.data.error.message).to.match(/Attachment sample.pdf already exists and cannot be overwritten/i)
   })
   
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
