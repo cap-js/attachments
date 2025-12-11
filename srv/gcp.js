@@ -124,11 +124,9 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const [exists] = await file.exists()
       if (exists) {
-        throw Object.assign(new Error(), {
-          status: 409,
-          message: "AttachmentAlreadyExistsCannotBeOverwritten",
-          args: [data.filename]
-        })
+        const error = new Error()
+        error.status = 409
+        throw error
       }
 
       LOG.debug('Uploading file to Google Cloud Platform', {
@@ -151,6 +149,9 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to Google Cloud Platform failed', err,
@@ -192,10 +193,6 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
       })
 
       const file = bucket.file(blobName)
-      const [exists] = await file.exists()
-      if (!exists) {
-        throw new Error('BucketNotFound')
-      }
       const readStream = await file.createReadStream()
 
       const duration = Date.now() - startTime
@@ -209,7 +206,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
       return readStream
     } catch (error) {
       const duration = Date.now() - startTime
-      const suggestion = error.message === 'BlobNotFound' ?
+      const suggestion = error.code === 'BlobNotFound' ?
         'File may have been deleted from Google Cloud Platform or URL is incorrect' :
         error.code === 'AuthenticationFailed' ?
           'Check Google Cloud Platform credentials and SAS token' :

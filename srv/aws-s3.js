@@ -130,11 +130,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
           })
         )
         // If no error, object exists
-        throw Object.assign(new Error(), {
-          status: 409,
-          message: "AttachmentAlreadyExistsCannotBeOverwritten",
-          args: [data.filename]
-        })
+        const error = new Error()
+        error.status = 409
+        throw error
       } catch (err) {
         // Ignore expected error when object does not exist
         if (err.name !== 'NoSuchKey' && err.$metadata?.httpStatusCode !== 404) {
@@ -173,6 +171,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to S3 failed', err,

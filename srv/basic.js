@@ -36,11 +36,9 @@ class AttachmentsService extends cds.Service {
       // Check if an attachment with this ID already has content
       const existing = await SELECT.one.from(attachments).where({ ID: d.ID, content: { '!=': null } })
       if (existing) {
-        throw Object.assign(new Error(), {
-          status: 409,
-          message: "AttachmentAlreadyExistsCannotBeOverwritten",
-          args: [d.filename]
-        })
+        const error = new Error()
+        error.status = 409
+        throw error
       }
     }
 
