@@ -222,7 +222,7 @@ class AttachmentsService extends cds.Service {
 
     if (!req.subject) return
 
-    const attachments = await SELECT.from(req.subject).columns("url").where({ ID: diff.ID })
+    const attachments = await SELECT.from(req.subject).columns("url");
     if (attachments.length) {
       req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
     }
