@@ -132,7 +132,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
   })
 
-  //Deleting the attachment
   it("Deleting the attachment", async () => {
     let sampleDocID = null
 
@@ -402,6 +401,382 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(log.output).toContain('Malware scanner is disabled! Please consider enabling it')
 
     cds.env.requires.attachments.scan = true
+  })
+
+  it("Uploading attachment to Test works and scan status is set", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity"
+    })
+
+    // Upload attachment
+    const res = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).not.toBeNull()
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Test that attachment exists and scan status
+    const getRes = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)/attachments`
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
+  })
+
+  it("Uploading attachment to TestDetails works and scan status is set", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity"
+    })
+
+    // Add TestDetails entity
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      {
+        ID: detailsID,
+        description: "Test Details Entity"
+      }
+    )
+
+    // Upload attachment
+    const res = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "detailsfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).not.toBeNull()
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Test that attachment exists and scan status
+    const getRes = await GET(
+      `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)/attachments`
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
+  })
+
+  it("Should reflect all attachment compositions on parent entity", async () => {
+    const Catalog = await cds.connect.to('ProcessorService')
+    const Test = Catalog.entities.Test
+    const TestDetails = Catalog.entities.TestDetails
+
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+
+    // Add a TestDetails entity with attachments
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Test Details Entity" }
+    )
+
+    // Now check the parent's _attachments properties
+    expect(Test._attachments.hasAttachmentsComposition).toBe(true)
+    expect(Object.keys(Test._attachments.attachmentCompositions).length).toBe(2)
+    expect(TestDetails._attachments.hasAttachmentsComposition).toBe(true)
+    expect(Object.keys(TestDetails._attachments.attachmentCompositions).length).toBe(1)
+  })
+
+  it("Deleting Test deletes Test attachment", async () => {
+    // Create Test entity and add attachment
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+    const attachRes = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachRes.data.ID).not.toBeNull()
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+    // Delete the parent Test entity
+    const delRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)`
+    )
+    expect(delRes.status).toEqual(204)
+
+    // Check that the attachment is deleted
+    let error
+    try {
+      await GET(
+        `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachRes.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Deleting TestDetails deletes TestDetails attachment", async () => {
+    // Create Test and TestDetails entities
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Test Details Entity" }
+    )
+    // Add attachment to TestDetails
+    const attachRes = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "detailsfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachRes.data.ID).not.toBeNull()
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Delete the child TestDetails entity
+    const delRes = await DELETE(
+      `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)`
+    )
+    expect(delRes.status).toEqual(204)
+
+    // Check that the attachment is deleted
+    let error
+    try {
+      await GET(
+        `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Deleting Test deletes both Test and TestDetails attachments", async () => {
+    // Create Test and TestDetails entities
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+
+    const attachResTest = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResTest.data.ID).not.toBeNull()
+
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Test Details Entity" }
+    )
+    // Add attachment to TestDetails
+    const attachResDetails = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "detailsfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).not.toBeNull()
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Delete the child TestDetails entity
+    const delRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)`
+    )
+    expect(delRes.status).toEqual(204)
+
+    // Check that the attachment is deleted
+    let error
+    try {
+      await GET(
+        `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachResTest.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+    error = null
+
+    try {
+      await GET(
+        `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Canceling a draft removes all unsaved added attachments from parent and child entities", async () => {
+    // Create parent entity in draft mode
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Draft Cancel Test" })
+
+    // Add attachment to parent
+    const attachResParent = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResParent.data.ID).toBeTruthy()
+
+    // Add child entity and attachment
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Draft Cancel Child" }
+    )
+    const attachResChild = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResChild.data.ID).toBeTruthy()
+
+    // Cancel the draft
+    const cancelRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)`
+    )
+    expect(cancelRes.status).toEqual(204)
+
+    // Check that parent attachment is deleted
+    let error
+    try {
+      await GET(
+        `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+    error = null
+
+    // Check that child attachment is deleted
+    try {
+      await GET(
+        `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=true)`
+      )
+    } catch (e) {
+      error = e
+    }
+    expect(error?.response?.status || error?.status).toEqual(404)
+  })
+
+  it("Canceling a draft does not remove any unsaved deleted attachments from parent and child entities", async () => {
+    // Create parent entity in draft mode
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Draft Cancel Test" })
+
+    // Add child entity and attachment
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Draft Cancel Child" }
+    )
+
+    // Add attachment to parent
+    const attachResParent = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResParent.data.ID).toBeTruthy()
+
+    const attachResChild = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResChild.data.ID).toBeTruthy()
+
+    // Save the draft
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Start editing again (create a new draft)
+    await utils.draftModeEdit("processor", "Test", testID, "ProcessorService")
+
+    // Delete attachments in the draft
+    await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=false)`
+    )
+    await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=false)`
+    )
+
+    // Discard the draft (do NOT save)
+    const discardRes = await DELETE(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)`
+    )
+    expect(discardRes.status).toEqual(204)
+
+    // Check that parent attachment is still present
+    const parentAttachment = await GET(
+      `odata/v4/processor/Test_attachments(up__ID=${testID},ID=${attachResParent.data.ID},IsActiveEntity=true)`
+    )
+    expect(parentAttachment.status).toEqual(200)
+    expect(parentAttachment.data.ID).toEqual(attachResParent.data.ID)
+    expect(parentAttachment.data.filename).toBe("parentfile.pdf")
+
+    // Check that child attachment is still present
+    const childAttachment = await GET(
+      `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachResChild.data.ID},IsActiveEntity=true)`
+    )
+    expect(childAttachment.status).toEqual(200)
+    expect(childAttachment.data.ID).toEqual(attachResChild.data.ID)
+    expect(childAttachment.data.filename).toBe("childfile.pdf")
+
   })
 })
 
