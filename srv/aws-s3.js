@@ -130,9 +130,11 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
           })
         )
         // If no error, object exists
-        const error = new Error("Attachment with given ID already exists and cannot be overwritten")
-        error.status = 409
-        throw error
+        throw Object.assign(new Error(), {
+          status: 409,
+          message: "AttachmentAlreadyExistsCannotBeOverwritten",
+          args: [data.filename]
+        })
       } catch (err) {
         // Ignore expected error when object does not exist
         if (err.name !== 'NoSuchKey' && err.$metadata?.httpStatusCode !== 404) {

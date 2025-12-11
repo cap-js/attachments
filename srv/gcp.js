@@ -124,9 +124,11 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const [exists] = await file.exists()
       if (exists) {
-        const error = new Error("Attachment with given ID already exists and cannot be overwritten")
-        error.status = 409
-        throw error
+        throw Object.assign(new Error(), {
+          status: 409,
+          message: "AttachmentAlreadyExistsCannotBeOverwritten",
+          args: [data.filename]
+        })
       }
 
       LOG.debug('Uploading file to Google Cloud Platform', {
