@@ -206,7 +206,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         suggestion,
         { fileId: keys?.ID, bucketName: bucket.name, attachmentName: attachments.name, duration })
 
-      if (error.name === 'NoSuchKey') {
+      if (error.name === 'BlobNotFound') {
         return null
       }
       
