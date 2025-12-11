@@ -405,7 +405,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 })
 
-
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables
