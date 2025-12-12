@@ -160,7 +160,7 @@ class AttachmentsService extends cds.Service {
           return
         }
         await Promise.all(
-          req.target._attachments.attachmentCompositions.map(attachmentsEle =>{
+          req.target._attachments.attachmentCompositions.map(attachmentsEle => {
             const target = traverseEntity(req.target, attachmentsEle)
             if (!target) {
               LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
@@ -214,6 +214,21 @@ class AttachmentsService extends cds.Service {
         LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
     })
+  }
+
+  /**
+   * Add non-draft deletion data to the request
+   * @param {import('@sap/cds').Request} req - The request object
+   */
+  async attachNonDraftDeletionData(req) {
+    if (!req.target?.['@_is_media_data']) return
+
+    if (!req.subject) return
+
+    const attachments = await SELECT.from(req.subject).columns("url");
+    if (attachments.length) {
+      req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
+    }
   }
 
   /**
