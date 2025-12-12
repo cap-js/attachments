@@ -122,6 +122,24 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
+      try {
+        await client.send(
+          new GetObjectCommand({
+            Bucket: bucket,
+            Key,
+          })
+        )
+        // If no error, object exists
+        const error = new Error('Attachment already exists')
+        error.status = 409
+        throw error
+      } catch (err) {
+        // Ignore expected error when object does not exist
+        if (err.name !== 'NoSuchKey' && err.$metadata?.httpStatusCode !== 404) {
+          throw err
+        }
+      }
+
       const input = {
         Bucket: bucket,
         Key,
@@ -153,6 +171,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to S3 failed', err,

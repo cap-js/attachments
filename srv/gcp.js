@@ -121,6 +121,14 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const file = bucket.file(blobName)
 
+
+      const [exists] = await file.exists()
+      if (exists) {
+        const error = new Error('Attachment already exists')
+        error.status = 409
+        throw error
+      }
+
       LOG.debug('Uploading file to Google Cloud Platform', {
         bucketName: bucket.name,
         blobName,
@@ -141,6 +149,9 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to Google Cloud Platform failed', err,
@@ -205,7 +216,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         'File download from Google Cloud Platform failed', error,
         suggestion,
         { fileId: keys?.ID, bucketName: bucket.name, attachmentName: attachments.name, duration })
-
+      
       throw error
     }
   }
