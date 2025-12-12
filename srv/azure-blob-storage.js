@@ -118,7 +118,6 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
       try {
         await blobClient.getProperties()
         // If no error, blob exists
-        // If no error, blob exists
         const error = new Error('Attachment already exists')
         error.status = 409
         throw error
