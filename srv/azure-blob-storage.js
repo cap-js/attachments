@@ -72,7 +72,9 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
     }
   }
 
-  async exists(blobClient) {
+  async exists(blobName) {
+    const { containerClient } = await this.retrieveClient()
+    const blobClient = containerClient.getBlockBlobClient(blobName)
     try {
       await blobClient.getProperties()
       // If no error, blob exists
@@ -129,7 +131,7 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
-      if (await this.exists(blobClient)) {
+      if (await this.exists(blobName)) {
         const error = new Error('Attachment already exists')
         error.status = 409
         throw error

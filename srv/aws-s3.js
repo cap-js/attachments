@@ -80,7 +80,8 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
     }
   }
 
-  async exists(client, bucket, Key) {
+  async exists(Key) {
+    const { client, bucket } = await this.retrieveClient()
     try {
       await client.send(
         new GetObjectCommand({
@@ -141,7 +142,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      if (await this.exists(client, bucket, Key)) {
+      if (await this.exists(Key)) {
         const error = new Error('Attachment already exists')
         error.status = 409
         throw error
