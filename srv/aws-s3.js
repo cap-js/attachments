@@ -93,7 +93,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
       return true
     } catch (err) {
       // Ignore expected error when object does not exist
-      if (err.name === 'NoSuchKey' && err.$metadata?.httpStatusCode === 404) {
+      if (err.name === 'NotFound' && err.$metadata?.httpStatusCode === 404) {
         return false
       }
       throw err
