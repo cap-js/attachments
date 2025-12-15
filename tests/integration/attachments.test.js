@@ -484,7 +484,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await axios.put(
-      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${res.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
         headers: {
