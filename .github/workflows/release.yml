@@ -2,42 +2,46 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      previous-tag:
+        description: "Previous tag (optional)"
+        required: false
+        default: "latest"
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-
   publish-npm:
     runs-on: ubuntu-latest
     environment: npm
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 24
-        registry-url: https://registry.npmjs.org/
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
 
-    - name: Run Tests
-      run: |
-        npm install
-        npm run lint
-        cd tests/incidents-app && npm install
-        cd ../..
-        npm run test
+      - name: Run Tests
+        run: |
+          npm install
+          npm run lint
+          cd tests/incidents-app && npm install
+          cd ../..
+          npm run test
 
-    - name: get-version
-      id: package-version
-      uses: martinbeentjes/npm-get-version-action@v1.2.3
-    - name: Parse changelog
-      id: parse-changelog
-      uses: schwma/parse-changelog-action@v1.0.0
-      with:
-        version: '${{ steps.package-version.outputs.current-version }}'
-    - name: Create a GitHub release
-      uses: ncipollo/release-action@v1
-      with:
-        tag: 'v${{ steps.package-version.outputs.current-version }}'
-        body: '${{ steps.parse-changelog.outputs.body }}'
-    - run: npm publish --access public --provenance 
+      - name: get-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.2.3
+      - name: Parse changelog
+        id: parse-changelog
+        uses: schwma/parse-changelog-action@v1.0.0
+        with:
+          version: "${{ steps.package-version.outputs.current-version }}"
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "v${{ steps.package-version.outputs.current-version }}"
+          body: "${{ steps.parse-changelog.outputs.body }}"
+      - run: npm publish --access public --provenance --tag ${{ github.event.inputs.previous-tag }}
