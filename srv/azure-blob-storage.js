@@ -78,11 +78,11 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
       // If no error, blob exists
       return true
     } catch (err) {
-      // Ignore expected error when blob does not exist
-      if (err.statusCode === 404 && err.code === 'BlobNotFound') {
-        return false
+      // Anything besides 404 BlobNotFound is an actual error
+      if (err.statusCode !== 404 && err.code !== 'BlobNotFound') {
+        throw err
       }
-      throw err
+      return false
     }
   }
 
