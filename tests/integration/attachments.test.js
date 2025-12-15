@@ -435,6 +435,32 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
+  it("Uploading attachment to Test when creating Test works and scan status is set", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test?$expand=attachments`, {
+      ID: testID,
+      name: "Test Entity",
+      attachments: [{
+          up__ID: testID,
+          filename: "testfile.pdf",
+          mimeType: "application/pdf",
+          createdAt: new Date(),
+          createdBy: "alice",
+      }]
+    })
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Test that attachment exists and scan status
+    const getRes = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)/attachments`
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
+  })
+
   it("Uploading attachment to TestDetails works and scan status is set", async () => {
     // Create a Test entity
     const testID = cds.utils.uuid()
