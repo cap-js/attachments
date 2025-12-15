@@ -142,7 +142,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
       }
 
       if (await this.exists(client, bucket, Key)) {
-        const error = new Error()
+        const error = new Error('Attachment already exists')
         error.status = 409
         throw error
       }

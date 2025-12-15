@@ -123,7 +123,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const [exists] = await file.exists()
       if (exists) {
-        const error = new Error()
+        const error = new Error('Attachment already exists')
         error.status = 409
         throw error
       }
