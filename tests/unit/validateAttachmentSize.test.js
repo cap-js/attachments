@@ -70,6 +70,6 @@ describe('validateAttachmentSize', () => {
       reject: jest.fn(), // Mocking the reject function
     }
     validateAttachmentSize(req)
-    expect(req.reject).toHaveBeenCalledWith(400, 'ContentLengthHeaderMissing')
+    expect(req.reject).toHaveBeenCalledWith(411, 'ContentLengthHeaderMissing')
   })
 })
