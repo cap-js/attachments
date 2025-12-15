@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3')
+const { S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3')
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
@@ -84,7 +84,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
     const { client, bucket } = await this.retrieveClient()
     try {
       await client.send(
-        new GetObjectCommand({
+        new HeadObjectCommand({
           Bucket: bucket,
           Key,
         })
