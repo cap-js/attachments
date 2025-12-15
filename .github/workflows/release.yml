@@ -6,7 +6,12 @@ on:
       previous-tag:
         description: "Previous tag (optional)"
         required: false
+        type: choice
         default: "latest"
+        options:
+          - "latest"
+          - "previous"
+          - "beta"
 
 permissions:
   contents: write
