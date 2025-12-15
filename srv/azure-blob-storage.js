@@ -129,7 +129,7 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
-      if (await this.exists(blobName)) {
+      if (await this.exists(blobClient)) {
         const error = new Error('Attachment already exists')
         error.status = 409
         throw error
