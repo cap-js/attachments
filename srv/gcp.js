@@ -121,7 +121,6 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
       const file = bucket.file(blobName)
 
-
       const [exists] = await file.exists()
       if (exists) {
         const error = new Error()

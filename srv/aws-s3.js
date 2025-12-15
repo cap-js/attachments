@@ -80,6 +80,25 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
     }
   }
 
+  async exists(client, bucket, Key) {
+    try {
+      await client.send(
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key,
+        })
+      )
+      // If no error, object exists
+      return true
+    } catch (err) {
+      // Ignore expected error when object does not exist
+      if (err.name === 'NoSuchKey' && err.$metadata?.httpStatusCode === 404) {
+        return false
+      }
+      throw err
+    }
+  }
+
   /**
    * @inheritdoc
    */
@@ -122,22 +141,10 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      try {
-        await client.send(
-          new GetObjectCommand({
-            Bucket: bucket,
-            Key,
-          })
-        )
-        // If no error, object exists
+      if (await this.exists(client, bucket, Key)) {
         const error = new Error()
         error.status = 409
         throw error
-      } catch (err) {
-        // Ignore expected error when object does not exist
-        if (err.name !== 'NoSuchKey' && err.$metadata?.httpStatusCode !== 404) {
-          throw err
-        }
       }
 
       const input = {
