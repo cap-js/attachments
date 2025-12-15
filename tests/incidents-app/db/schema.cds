@@ -97,7 +97,3 @@ entity NonDraftTest : cuid, managed {
 entity SingleTestDetails : cuid {
   abc: String;
 }
-
-entity RestrictionTest : cuid {
-  prop1 : String;
-}

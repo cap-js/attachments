@@ -593,6 +593,21 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(attachResTest.data.ID).not.toBeNull()
 
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${attachResTest.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+        auth: { username: "alice" }
+      }
+    )
+
     const detailsID = cds.utils.uuid()
     await POST(
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
@@ -942,15 +957,15 @@ describe("Row-level security on attachments composition", () => {
   beforeAll(async () => {
     utils = new RequestSend(POST)
     const scanCleanWaiter = waitForScanStatus('Clean')
-    // Create a RestrictionTest entity as a Manager
+    // Create a Incidents entity as a Manager
     restrictionID = cds.utils.uuid()
-    await POST("/odata/v4/processor/RestrictionTest", {
+    await POST("/odata/v4/restriction/DraftIcidents", {
       ID: restrictionID,
-      prop1: "ABC"
+      title: "ABC"
     }, { auth: { username: "alice" } })
 
     // Create an attachment as alice and save the ID
-    const attachRes = await POST(`/odata/v4/processor/RestrictionTest(ID=${restrictionID},IsActiveEntity=false)/attachments`, {
+    const attachRes = await POST(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments`, {
       up__ID: restrictionID,
       filename: "test.pdf",
       mimeType: "application/pdf"
@@ -961,7 +976,7 @@ describe("Row-level security on attachments composition", () => {
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await axios.put(
-      `/odata/v4/processor/RestrictionTest_attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)/content`,
       fileContent,
       {
         headers: {
@@ -973,12 +988,12 @@ describe("Row-level security on attachments composition", () => {
     )
 
     await scanCleanWaiter
-    await utils.draftModeSave("processor", "RestrictionTest", restrictionID, "ProcessorService")
+    await utils.draftModeSave("restriction", "DraftIcidents", restrictionID, "RestrictionService")
   })
 
   it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
     // Now, try to GET the attachment content as alice
-    const getRes = await GET(`/odata/v4/processor/RestrictionTest(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`, {
+    const getRes = await GET(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`, {
       auth: { username: "alice" }
     })
     expect(getRes.status).toEqual(200)
@@ -986,38 +1001,67 @@ describe("Row-level security on attachments composition", () => {
   })
 
   it("should reject CREATE attachment for unauthorized user", async () => {
-    await POST(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments`, {
+    await POST(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments`, {
       up__ID: restrictionID,
       filename: "test.pdf",
       mimeType: "application/pdf"
     }, { auth: { username: "bob" } }).catch(e => {
-      expect(e.status).toEqual(404)
+      expect(e.status).toEqual(403)
     })
   })
 
   it("should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
-    await axios.patch(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
+    await utils.draftModeEdit("restriction", "DraftIcidents", restrictionID, "RestrictionService")
+    await axios.patch(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)`, {
       note: "Should fail"
     }, { auth: { username: "bob" } }).catch(e => {
-      expect(e.status).toEqual(404)
+      expect(e.status).toEqual(403)
     })
+    await utils.draftModeSave("restriction", "DraftIcidents", restrictionID, "RestrictionService")
   })
 
   it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
-    await GET(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
+    await GET(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`, {
       auth: { username: "bob" }
     }).catch(e => {
-      expect(e.status).toEqual(404)
+      expect(e.status).toEqual(403)
     })
   })
 
   it("should reject DELETE attachment for unauthorized user", async () => {
-    await DELETE(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
+    await DELETE(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)`, {
       auth: { username: "bob" }
     }).catch(e => {
-      expect(e.status).toEqual(404)
+      expect(e.status).toEqual(403)
     })
+  })
+
+  it("should not allow bob to PUT into file alice has POSTed", async () => {
+    await utils.draftModeEdit("restriction", "DraftIcidents", restrictionID, "RestrictionService")
+    const attachRes = await POST(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments`, {
+      up__ID: restrictionID,
+      filename: "newfile.pdf",
+      mimeType: "application/pdf"
+    }, { auth: { username: "alice" } })
+
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+        auth: { username: "bob" }
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(403)
+    })
+    await utils.draftModeSave("restriction", "DraftIcidents", restrictionID, "RestrictionService")
   })
 })
 

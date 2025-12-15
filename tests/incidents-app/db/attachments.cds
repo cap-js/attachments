@@ -49,7 +49,3 @@ extend my.NonDraftTest with {
 extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
 }
-
-extend my.RestrictionTest with {
-  attachments : Composition of many Attachments;
-}

@@ -20,9 +20,6 @@ service ProcessorService {
   entity NonDraftTest as projection on my.NonDraftTest;
 
   entity SingleTestDetails as projection on my.SingleTestDetails;
-
-  @odata.draft.enabled
-  entity RestrictionTest as projection on my.RestrictionTest;
 }
 
 /**
@@ -31,6 +28,28 @@ service ProcessorService {
 service AdminService {
   entity Customers as projection on my.Customers;
   entity Incidents as projection on my.Incidents;
+}
+
+service RestrictionService {
+  @(restrict: [
+    {
+      grant: '*',
+      to: 'admin',
+      where: 'title = ''ABC'''
+    }
+  ])
+  entity Incidents as projection on my.Incidents;
+
+  @(restrict: [
+    {
+      grant: '*',
+      to: 'admin',
+      where: 'title = ''ABC'''
+    }
+  ]) 
+  @odata.draft.enabled
+  @cds.redirection.target
+  entity DraftIcidents as projection on my.Incidents;
 }
 
 annotate ProcessorService.Incidents with @odata.draft.enabled; 
