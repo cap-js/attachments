@@ -292,7 +292,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.createReadStream(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    const attachmentsID = cds.utils.uuid();
+    const attachmentsID = cds.utils.uuid()
     const user = new cds.User({ id: 'alice', roles: { support: 1 } })
     user._is_privileged = true
     const req = new cds.Request({
@@ -576,6 +576,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Deleting Test deletes both Test and TestDetails attachments", async () => {
+    const scanCleanWaiter = waitForScanStatus('Clean')
     // Create Test and TestDetails entities
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
@@ -609,6 +610,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       }
     )
     expect(attachResDetails.data.ID).not.toBeNull()
+    await scanCleanWaiter
     await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Delete the child TestDetails entity
@@ -780,7 +782,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 })
 
-
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables
@@ -900,7 +901,7 @@ describe("Tests for acceptable media types", () => {
       {
         up__ID: incidentID,
         filename: "sample.pdf",
-        mimeType: "application/jpeg; boundary=something",
+        mimeType: "application/jpeg boundary=something",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
@@ -921,7 +922,7 @@ describe("Tests for acceptable media types", () => {
       {
         up__ID: incidentID,
         filename: "sample.pdf",
-        mimeType: "application/jpeg; charset=UTF-8",
+        mimeType: "application/jpeg charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
@@ -931,6 +932,91 @@ describe("Tests for acceptable media types", () => {
     ).catch(e => {
       expect(e.status).toEqual(400)
       expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+    })
+  })
+})
+
+describe("Row-level security on attachments composition", () => {
+  let restrictionID, attachmentID
+
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+    const scanCleanWaiter = waitForScanStatus('Clean')
+    // Create a RestrictionTest entity as a Manager
+    restrictionID = cds.utils.uuid()
+    await POST("/odata/v4/processor/RestrictionTest", {
+      ID: restrictionID,
+      prop1: "ABC"
+    }, { auth: { username: "alice" } })
+
+    // Create an attachment as alice and save the ID
+    const attachRes = await POST(`/odata/v4/processor/RestrictionTest(ID=${restrictionID},IsActiveEntity=false)/attachments`, {
+      up__ID: restrictionID,
+      filename: "test.pdf",
+      mimeType: "application/pdf"
+    }, { auth: { username: "alice" } })
+    attachmentID = attachRes.data.ID
+
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/processor/RestrictionTest_attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+        auth: { username: "alice" }
+      }
+    )
+
+    await scanCleanWaiter
+    await utils.draftModeSave("processor", "RestrictionTest", restrictionID, "ProcessorService")
+  })
+
+  it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
+    // Now, try to GET the attachment content as alice
+    const getRes = await GET(`/odata/v4/processor/RestrictionTest(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`, {
+      auth: { username: "alice" }
+    })
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toBeTruthy()
+  })
+
+  it("should reject CREATE attachment for unauthorized user", async () => {
+    await POST(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments`, {
+      up__ID: restrictionID,
+      filename: "test.pdf",
+      mimeType: "application/pdf"
+    }, { auth: { username: "bob" } }).catch(e => {
+      expect(e.status).toEqual(404)
+    })
+  })
+
+  it("should reject UPDATE attachment for unauthorized user", async () => {
+    // Assume an attachment exists, try to update as bob
+    await axios.patch(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
+      note: "Should fail"
+    }, { auth: { username: "bob" } }).catch(e => {
+      expect(e.status).toEqual(404)
+    })
+  })
+
+  it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
+    await GET(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
+      auth: { username: "bob" }
+    }).catch(e => {
+      expect(e.status).toEqual(404)
+    })
+  })
+
+  it("should reject DELETE attachment for unauthorized user", async () => {
+    await DELETE(`/odata/v4/processor/RestrictionTest(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
+      auth: { username: "bob" }
+    }).catch(e => {
+      expect(e.status).toEqual(404)
     })
   })
 })

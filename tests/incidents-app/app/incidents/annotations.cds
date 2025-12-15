@@ -217,3 +217,11 @@ annotate service.TestDetails with @(
     }
   ]
 );
+
+annotate sap.capire.incidents.RestrictionTest with @restrict: [
+  {
+    grant: '*',
+    to: 'admin',
+    where: 'prop1 = ''ABC'''
+  }
+];

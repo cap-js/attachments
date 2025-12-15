@@ -20,6 +20,9 @@ service ProcessorService {
   entity NonDraftTest as projection on my.NonDraftTest;
 
   entity SingleTestDetails as projection on my.SingleTestDetails;
+
+  @odata.draft.enabled
+  entity RestrictionTest as projection on my.RestrictionTest;
 }
 
 /**
