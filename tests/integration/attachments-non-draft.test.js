@@ -347,7 +347,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
 
     // Verify delete was called
-    expect(deleteSpy).to.have.been.called()
+    expect(deleteSpy.calls).to.be.greaterThan(0)
 
     deleteSpy.mockRestore()
   })
