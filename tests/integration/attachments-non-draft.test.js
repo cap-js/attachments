@@ -326,7 +326,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(attachResDetails.data.ID).to.be.ok
 
-    await uploadAttachmentContent(detailsID, attachResDetails.data.ID)
+    await uploadAttachmentContent(testID, attachResTest.data.ID, "content/sample.pdf", "NonDraftTest")
+    await uploadAttachmentContent(detailsID, attachResDetails.data.ID, "content/sample.pdf", "SingleTestDetails")
 
     // Delete the parent entity
     const delParentEntity = await axios.delete(
@@ -369,15 +370,16 @@ function createHelpers(axios) {
       return response.data.ID
     },
     uploadAttachmentContent: async (
-      incidentID,
+      entityID,
       attachmentID,
-      contentPath = "content/sample.pdf"
+      contentPath = "content/sample.pdf",
+      entityName = "Incidents"
     ) => {
       const fileContent = fs.readFileSync(
         path.join(__dirname, "..", "integration", contentPath)
       )
       const response = await axios.put(
-        `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+        `/odata/v4/admin/${entityName}(${entityID})/attachments(up__ID=${entityID},ID=${attachmentID})/content`,
         fileContent,
         {
           headers: {
