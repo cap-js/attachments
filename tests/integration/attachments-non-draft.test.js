@@ -198,7 +198,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       { headers: { "Content-Type": "application/json" } }
     )
     expect(attachResTest.data.ID).to.be.ok
-    
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -248,7 +248,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       { headers: { "Content-Type": "application/json" } }
     )
     expect(attachResTest.data.ID).to.be.ok
-    
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -291,6 +291,10 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
+
+    const attachmentsSrv = await cds.connect.to('attachments')
+    const deleteSpy = jest.spyOn(attachmentsSrv, 'delete')
+
     await axios.post(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
@@ -309,7 +313,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       { headers: { "Content-Type": "application/json" } }
     )
     expect(attachResTest.data.ID).to.be.ok
-    
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -341,6 +345,14 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     ).catch(e => {
       expect(e.response.status).to.equal(404)
     })
+
+    // Verify delete was called
+    expect(deleteSpy).toHaveBeenCalled()
+    // Check the arguments passed to delete (url, target)
+    expect(deleteSpy.mock.calls[0][0]).toBeTruthy() // url should exist
+    expect(deleteSpy.mock.calls[0][1]).toBeTruthy() // target should exist
+
+    deleteSpy.mockRestore()
   })
 })
 
