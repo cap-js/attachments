@@ -72,6 +72,22 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
     }
   }
 
+  async exists(blobName) {
+    const { containerClient } = await this.retrieveClient()
+    const blobClient = containerClient.getBlockBlobClient(blobName)
+    try {
+      await blobClient.getProperties()
+      // If no error, blob exists
+      return true
+    } catch (err) {
+      // Anything besides 404 BlobNotFound is an actual error
+      if (err.statusCode !== 404 && err.code !== 'BlobNotFound') {
+        throw err
+      }
+      return false
+    }
+  }
+
   /**
   * @inheritdoc
   */
@@ -115,6 +131,12 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
+      if (await this.exists(blobName)) {
+        const error = new Error('Attachment already exists')
+        error.status = 409
+        throw error
+      }
+
       LOG.debug('Uploading file to Azure Blob Storage', {
         containerName: containerClient.containerName,
         blobName,
@@ -154,6 +176,9 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to Azure Blob Storage failed', err,

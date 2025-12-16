@@ -177,6 +177,40 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(responseContent.status).to.equal(200)
   })
 
+  it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
+    // Create attachment metadata
+    const attachmentID = await createAttachmentMetadata(incidentID)
+    expect(attachmentID).to.exist
+
+    // Upload the file content
+    const response = await uploadAttachmentContent(incidentID, attachmentID)
+    expect(response.status).to.equal(204)
+
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    let error
+    try {
+      await axios.put(
+        `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+        fileContent,
+        {
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Length": fileContent.length,
+          },
+        }
+      )
+    } catch (e) {
+      error = e
+    }
+
+    // This should fail with a 409 Conflict
+    expect(error).to.exist
+    expect(error.response.status).to.equal(409)
+    expect(error.response.data.error.message).to.match(/Attachment sample.pdf already exists and cannot be overwritten/i)
+  })
+  
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()

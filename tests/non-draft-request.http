@@ -27,6 +27,13 @@ Content-Type: image/jpeg
 
 < ./integration/content/sample-1.jpg
 
+### Test if we can overwrite attachment content
+PUT {{host}}/odata/v4/admin/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})/content
+Authorization: {{auth}}
+Content-Type: application/pdf
+
+< ./integration/content/sample.pdf
+
 ### Get newly created attachment metadata
 GET {{host}}/odata/v4/admin/Incidents({{incidentsID}})/attachments(ID={{attachmentsID}})
 Authorization: {{auth}}
