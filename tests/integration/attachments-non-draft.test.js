@@ -347,10 +347,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
 
     // Verify delete was called
-    expect(deleteSpy).to.be.ok
-    // Check the arguments passed to delete (url, target)
-    expect(deleteSpy.mock.calls[0][0]).to.be.not.null // url should exist
-    expect(deleteSpy.mock.calls[0][1]).to.be.not.null // target should exist
+    expect(deleteSpy).to.have.been.called()
 
     deleteSpy.mockRestore()
   })
