@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus } = require("../utils/testUtils")
+const { waitForScanStatus, delay } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
 const { expect, axios } = require("@cap-js/cds-test")(app)
@@ -326,6 +326,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(attachResDetails.data.ID).to.be.ok
 
+    await uploadAttachmentContent(detailsID, attachResDetails.data.ID)
+
     // Delete the parent entity
     const delParentEntity = await axios.delete(
       `odata/v4/processor/NonDraftTest(ID=${testID})`
@@ -345,6 +347,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     ).catch(e => {
       expect(e.response.status).to.equal(404)
     })
+
+    // Wait a bit to ensure async deletion is processed
+    await delay(2000)
 
     // Verify delete was called
     expect(deleteSpy.mock.calls.length).to.be.greaterThan(0)
