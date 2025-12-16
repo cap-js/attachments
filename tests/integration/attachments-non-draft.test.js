@@ -5,7 +5,7 @@ const { test } = cds.test()
 const { waitForScanStatus } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { expect, axios, GET, POST, DELETE } = require("@cap-js/cds-test")(app)
+const { expect, axios, GET, POST, DELETE, PUT } = require("@cap-js/cds-test")(app)
 
 let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
@@ -191,7 +191,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     let error
     try {
-      await axios.put(
+      await PUT(
         `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
         fileContent,
         {
@@ -401,7 +401,7 @@ describe("Row-level security on attachments composition", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
       fileContent,
       {
@@ -470,7 +470,7 @@ describe("Row-level security on attachments composition", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachRes.data.ID})/content`,
       fileContent,
       {
@@ -504,7 +504,7 @@ function createHelpers(axios) {
       const fileContent = fs.readFileSync(
         path.join(__dirname, "..", "integration", contentPath)
       )
-      const response = await axios.put(
+      const response = await PUT(
         `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
         fileContent,
         {

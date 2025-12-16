@@ -7,7 +7,7 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios, GET, POST, DELETE } = cds.test(app)
+const { test, axios, GET, POST, DELETE, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null
@@ -261,7 +261,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='ABC',up__gjahr=2025,ID=${doc.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -332,7 +332,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})/content`,
       fileContent,
       {
@@ -427,7 +427,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -483,7 +483,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${res.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -624,7 +624,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${attachResTest.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -1002,7 +1002,7 @@ describe("Row-level security on attachments composition", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -1075,7 +1075,7 @@ describe("Row-level security on attachments composition", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
@@ -1126,7 +1126,7 @@ async function uploadDraftAttachment(
   const fileContent = fs.readFileSync(
     join(__dirname, "..", "integration", "content/sample.pdf")
   )
-  await axios.put(
+  await PUT(
     `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
     fileContent,
     {
