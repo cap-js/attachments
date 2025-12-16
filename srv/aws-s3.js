@@ -1,4 +1,4 @@
-const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3')
+const { S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3')
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log('attachments')
@@ -80,6 +80,26 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
     }
   }
 
+  async exists(Key) {
+    const { client, bucket } = await this.retrieveClient()
+    try {
+      await client.send(
+        new HeadObjectCommand({
+          Bucket: bucket,
+          Key,
+        })
+      )
+      // If no error, object exists
+      return true
+    } catch (err) {
+      // Ignore expected error when object does not exist
+      if (err.name === 'NotFound' && err.$metadata?.httpStatusCode === 404) {
+        return false
+      }
+      throw err
+    }
+  }
+
   /**
    * @inheritdoc
    */
@@ -122,6 +142,12 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
+      if (await this.exists(Key)) {
+        const error = new Error('Attachment already exists')
+        error.status = 409
+        throw error
+      }
+
       const input = {
         Bucket: bucket,
         Key,
@@ -153,6 +179,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         duration
       })
     } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
       const duration = Date.now() - startTime
       LOG.error(
         'File upload to S3 failed', err,
