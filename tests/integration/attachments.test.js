@@ -15,7 +15,7 @@ const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
-  const isLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
+  const isNotLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
@@ -782,7 +782,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
 
 
-  isLocal("Should detect infected files and automatically delete them after scan", async () => {
+  isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const infectedFilePath = path.join(__dirname, "..", "integration", "content/testmal.exe")
     const fileContent = fs.readFileSync(infectedFilePath)
 
