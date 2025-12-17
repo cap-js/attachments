@@ -450,6 +450,24 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       }]
     })
 
+    const getAtt = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`
+    )
+
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await axios.put(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${getAtt.data.value[0].ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        }
+      }
+    )
+
     await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
 
     // Test that attachment exists and scan status
