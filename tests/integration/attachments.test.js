@@ -15,6 +15,7 @@ const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
+  const isLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
@@ -777,6 +778,54 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(childAttachment.data.ID).toEqual(attachResChild.data.ID)
     expect(childAttachment.data.filename).toBe("childfile.pdf")
 
+  })
+
+
+
+  isLocal("Should detect infected files and automatically delete them after scan", async () => {
+    const infectedFilePath = path.join(__dirname, "..", "integration", "content/testmal.exe")
+    const fileContent = fs.readFileSync(infectedFilePath)
+
+    const scanInfectedWaiter = waitForScanStatus("Infected")
+
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    const res = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "testmal.exe",
+        mimeType: "application/x-msdownload",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    await axios.put(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/x-msdownload",
+          "Content-Length": fileContent.length,
+        },
+      }
+    )
+
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
+
+    // Check that status is "infected" after scan
+    await scanInfectedWaiter
+
+    // Check that the attachment is automatically deleted (should not be found)
+    await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
+    ).then(() => {
+      fail("Attachment was not deleted after being detected as infected")
+    }).catch(e => {
+      expect(e.status).toEqual(404)
+      expect(e.response.data.error.message).toMatch(/Not Found/)
+    })
   })
 })
 
