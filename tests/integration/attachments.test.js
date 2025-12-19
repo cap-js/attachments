@@ -209,17 +209,19 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Cancel draft where parent has composed key", async () => {
+    const gjahr = Math.round(Math.random() * 1000);
+    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`;
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
-      sampleID: "ABC",
-      gjahr: 2025
+      sampleID: sampleID,
+      gjahr: gjahr
     })
 
     const doc = await POST(
-      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='${sampleID}',gjahr=${gjahr},IsActiveEntity=false)/attachments`,
       {
-        up__sampleID: 'ABC',
-        up__gjahr: 2025,
+        up__sampleID: sampleID,
+        up__gjahr: gjahr,
         filename: 'myfancyfile.pdf',
         content: createReadStream(
           join(__dirname, "..", "integration", "content/sample.pdf")
@@ -233,23 +235,25 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(doc.data.ID).toBeTruthy()
 
     const deleteRes = await DELETE(
-      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)`
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='${sampleID}',gjahr=${gjahr},IsActiveEntity=false)`
     )
     expect(deleteRes.status).toEqual(204)
   })
 
   it("On handler for attachments can be overwritten", async () => {
+    const gjahr = Math.round(Math.random() * 1000);
+    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`;
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
-      sampleID: "ABC",
-      gjahr: 2025
+      sampleID,
+      gjahr
     })
 
     const doc = await POST(
-      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='ABC',gjahr=2025,IsActiveEntity=false)/attachments`,
+      `odata/v4/processor/SampleRootWithComposedEntity(sampleID='${sampleID}',gjahr=${gjahr},IsActiveEntity=false)/attachments`,
       {
-        up__sampleID: 'ABC',
-        up__gjahr: 2025,
+        up__sampleID: sampleID,
+        up__gjahr: gjahr,
         filename: 'myfancyfile.pdf',
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
@@ -263,7 +267,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await axios.put(
-      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='ABC',up__gjahr=2025,ID=${doc.data.ID},IsActiveEntity=false)/content`,
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${sampleID}',up__gjahr=${gjahr},ID=${doc.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       {
         headers: {
@@ -276,7 +280,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(log.output).toContain('overwrite-put-handler')
 
     const file = await axios.get(
-      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='ABC',up__gjahr=2025,ID=${doc.data.ID},IsActiveEntity=false)/content`,
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${sampleID}',up__gjahr=${gjahr},ID=${doc.data.ID},IsActiveEntity=false)/content`,
     )
 
     expect(file.status).toEqual(200)
