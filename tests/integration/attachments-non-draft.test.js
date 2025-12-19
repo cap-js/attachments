@@ -5,7 +5,7 @@ const { test } = cds.test()
 const { waitForScanStatus } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { expect, axios } = require("@cap-js/cds-test")(app)
+const { axios } = require("@cap-js/cds-test")(app)
 
 let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
@@ -24,24 +24,24 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const resCreate = await axios.post('/odata/v4/admin/Incidents', {
       title: 'New Incident'
     })
-    expect(resCreate.status).to.equal(201)
-    expect(resCreate.data.title).to.equal('New Incident')
+    expect(resCreate.status).toBe(201)
+    expect(resCreate.data.title).toBe('New Incident')
   })
 
   it("should create attachment metadata", async () => {
     const attachmentID = await createAttachmentMetadata(incidentID)
-    expect(attachmentID).to.exist
+    expect(attachmentID).toBeDefined()
   })
 
   it("should create attachment metadata", async () => {
     const attachmentID = await createAttachmentMetadata(incidentID)
-    expect(attachmentID).to.exist
+    expect(attachmentID).toBeDefined()
   })
 
   it("should upload attachment content", async () => {
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
-    expect(response.status).to.equal(204)
+    expect(response.status).toBe(204)
   })
 
   it("unknown extension throws warning", async () => {
@@ -50,9 +50,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       { filename: 'sample.madeupextension' },
       { headers: { "Content-Type": "application/json" } }
     )
-    expect(response.status).to.equal(201);
-    expect(log.output.length).to.be.greaterThan(0)
-    expect(log.output).to.contain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
+    expect(response.status).toBe(201);
+    expect(log.output.length).toBeGreaterThan(0)
+    expect(log.output).toContain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
   })
 
   it("should list attachments for incident", async () => {
@@ -67,15 +67,15 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const response = await axios.get(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`
     )
-    expect(response.status).to.equal(200)
+    expect(response.status).toBe(200)
 
     const attachment = response.data.value[0]
 
-    expect(attachment.up__ID).to.equal(incidentID)
-    expect(attachment.filename).to.equal("sample.pdf")
-    expect(attachment.status).to.equal("Clean")
-    expect(attachment.content).to.be.undefined
-    expect(response.data.value[0].ID).to.equal(attachmentID)
+    expect(attachment.up__ID).toBe(incidentID)
+    expect(attachment.filename).toBe("sample.pdf")
+    expect(attachment.status).toBe("Clean")
+    expect(attachment.content).toBeUndefined()
+    expect(response.data.value[0].ID).toBe(attachmentID)
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
@@ -91,14 +91,14 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
       { responseType: "arraybuffer" }
     )
-    expect(response.status).to.equal(200)
-    expect(response.data).to.exist
-    expect(response.data.length).to.be.greaterThan(0)
+    expect(response.status).toBe(200)
+    expect(response.data).toBeDefined()
+    expect(response.data.length).toBeGreaterThan(0)
 
     const originalContent = fs.readFileSync(
       path.join(__dirname, "content/sample.pdf")
     )
-    expect(Buffer.compare(response.data, originalContent)).to.equal(0)
+    expect(Buffer.compare(response.data, originalContent)).toBe(0)
   })
 
   it("should delete attachment and verify deletion", async () => {
@@ -114,13 +114,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const deleteResponse = await axios.delete(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
     )
-    expect(deleteResponse.status).to.equal(204)
+    expect(deleteResponse.status).toBe(204)
 
     // Verify the attachment is deleted
     await axios.get(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
     ).catch(e => {
-      expect(e.status).to.equal(404)
+      expect(e.response.status).toBe(404)
     })
   })
 
@@ -165,8 +165,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
     )
     //the data should have no attachments
-    expect(response.status).to.equal(200)
-    expect(response.data.value.length).to.equal(1)
+    expect(response.status).toBe(200)
+    expect(response.data.value.length).toBe(1)
 
     await scanCleanWaiter
 
@@ -174,17 +174,17 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const responseContent = await axios.get(
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
     )
-    expect(responseContent.status).to.equal(200)
+    expect(responseContent.status).toBe(200)
   })
 
   it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
     // Create attachment metadata
     const attachmentID = await createAttachmentMetadata(incidentID)
-    expect(attachmentID).to.exist
+    expect(attachmentID).toBeDefined()
 
     // Upload the file content
     const response = await uploadAttachmentContent(incidentID, attachmentID)
-    expect(response.status).to.equal(204)
+    expect(response.status).toBe(204)
 
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
@@ -206,11 +206,11 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     }
 
     // This should fail with a 409 Conflict
-    expect(error).to.exist
-    expect(error.response.status).to.equal(409)
-    expect(error.response.data.error.message).to.match(/Attachment sample.pdf already exists and cannot be overwritten/i)
+    expect(error).toBeDefined()
+    expect(error.response.status).toBe(409)
+    expect(error.response.data.error.message).toMatch(/Attachment sample.pdf already exists and cannot be overwritten/i)
   })
-  
+
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
@@ -231,8 +231,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       },
       { headers: { "Content-Type": "application/json" } }
     )
-    expect(attachResTest.data.ID).to.be.ok
-    
+    expect(attachResTest.data.ID).toBeTruthy()
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -243,22 +243,22 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).to.be.ok
+    expect(attachResDetails.data.ID).toBeTruthy()
 
     const parentAttachment = await axios.get(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
     )
 
-    expect(parentAttachment.status).to.equal(200)
-    expect(parentAttachment.data.ID).to.equal(attachResTest.data.ID)
-    expect(parentAttachment.data.filename).to.equal("parentfile.pdf")
+    expect(parentAttachment.status).toBe(200)
+    expect(parentAttachment.data.ID).toBe(attachResTest.data.ID)
+    expect(parentAttachment.data.filename).toBe("parentfile.pdf")
 
     const childAttachment = await axios.get(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
     )
-    expect(childAttachment.status).to.equal(200)
-    expect(childAttachment.data.ID).to.equal(attachResDetails.data.ID)
-    expect(childAttachment.data.filename).to.equal("childfile.pdf")
+    expect(childAttachment.status).toBe(200)
+    expect(childAttachment.data.ID).toBe(attachResDetails.data.ID)
+    expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
   it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
@@ -281,8 +281,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       },
       { headers: { "Content-Type": "application/json" } }
     )
-    expect(attachResTest.data.ID).to.be.ok
-    
+    expect(attachResTest.data.ID).toBeTruthy()
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -293,32 +293,32 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).to.be.ok
+    expect(attachResDetails.data.ID).toBeTruthy()
 
     // Delete parent attachment
     const delParent = await axios.delete(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
     )
-    expect(delParent.status).to.equal(204)
+    expect(delParent.status).toBe(204)
 
     // Delete child attachment
     const delChild = await axios.delete(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
     )
-    expect(delChild.status).to.equal(204)
+    expect(delChild.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await axios.get(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
     ).catch(e => {
-      expect(e.response.status).to.equal(404)
+      expect(e.response.status).toBe(404)
     })
 
     // Confirm child attachment is deleted
     await axios.get(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
     ).catch(e => {
-      expect(e.response.status).to.equal(404)
+      expect(e.response.status).toBe(404)
     })
   })
 
@@ -342,8 +342,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       },
       { headers: { "Content-Type": "application/json" } }
     )
-    expect(attachResTest.data.ID).to.be.ok
-    
+    expect(attachResTest.data.ID).toBeTruthy()
+
     const attachResDetails = await axios.post(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
@@ -354,26 +354,26 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).to.be.ok
+    expect(attachResDetails.data.ID).toBeTruthy()
 
     // Delete the parent entity
     const delParentEntity = await axios.delete(
       `odata/v4/processor/NonDraftTest(ID=${testID})`
     )
-    expect(delParentEntity.status).to.equal(204)
+    expect(delParentEntity.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await axios.get(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
     ).catch(e => {
-      expect(e.response.status).to.equal(404)
+      expect(e.response.status).toBe(404)
     })
 
     // Confirm child attachment is deleted
     await axios.get(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
     ).catch(e => {
-      expect(e.response.status).to.equal(404)
+      expect(e.response.status).toBe(404)
     })
   })
 })
