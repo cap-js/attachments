@@ -376,30 +376,38 @@ describe('Testing max and min amounts of attachments', () => {
   })
 
   it('Create of record in draft gives warning when maximum is met', async () => {
-    await POST(
-      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "sample.pdf",
-        mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    )
-    await POST(
-      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "sample.pdf",
-        mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    )
+    const incidentID = await newIncident(POST, 'validation-test-non-draft', {
+      title: `Incident ${Math.floor(Math.random() * 1000)}`,
+      customer_ID: '1004155',
+      attachments: [
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        },
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        }
+      ],
+      hiddenAttachments2: [
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        },
+      ]
+    })
     await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
       {
@@ -418,6 +426,15 @@ describe('Testing max and min amounts of attachments', () => {
   })
 
   it('Delete of record in draft gives warning when minimum is not met', async () => {
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
+      {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
     const { data: newAttachment } = await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
       {
@@ -439,6 +456,15 @@ describe('Testing max and min amounts of attachments', () => {
   })
 
   it('Deep create of new draft gives warning when minimum is not met or maximum exceeded', async () => {
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
+      {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
     const { status } = await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
       {
@@ -512,10 +538,19 @@ describe('Testing max and min amounts of attachments', () => {
   })
 
   it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {
-    const conversationID = cds.utils.uuid();
-    await POST(
-      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
       {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
+    const conversationID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents.conversation']).entries(
+      {
+        up__ID: incidentID,
         ID: conversationID,
         message: "ABC",
       }
