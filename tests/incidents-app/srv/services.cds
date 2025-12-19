@@ -30,6 +30,28 @@ service AdminService {
   entity Incidents as projection on my.Incidents;
 }
 
+service RestrictionService {
+  @(restrict: [
+    {
+      grant: '*',
+      to: 'admin',
+      where: 'title = ''ABC'''
+    }
+  ])
+  entity Incidents as projection on my.Incidents;
+
+  @(restrict: [
+    {
+      grant: '*',
+      to: 'admin',
+      where: 'title = ''ABC'''
+    }
+  ]) 
+  @odata.draft.enabled
+  @cds.redirection.target
+  entity DraftIcidents as projection on my.Incidents;
+}
+
 annotate ProcessorService.Incidents with @odata.draft.enabled; 
 annotate ProcessorService with @(requires: 'support');
 annotate AdminService with @(requires: 'admin');
