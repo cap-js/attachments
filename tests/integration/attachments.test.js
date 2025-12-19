@@ -1,17 +1,16 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios, GET, POST, DELETE } = cds.test(app)
+const { axios, GET, POST, DELETE } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null
-const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
@@ -20,12 +19,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     utils = new RequestSend(POST)
   })
 
-  beforeEach(async () => {
-    await test.data.reset()
-  })
-
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     let sampleDocID = null
     const scanStartWaiter = waitForScanStatus('Scanning')
     const scanCleanWaiter = waitForScanStatus('Clean')
@@ -83,6 +79,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Scan status is translated", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     //trigger to upload attachment
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
@@ -134,6 +131,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Deleting the attachment", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     let sampleDocID = null
 
     const scanCleanWaiter = waitForScanStatus('Clean')
@@ -195,6 +193,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Deleting a non existing root does not crash the application", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
@@ -283,6 +282,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Inserting attachments via srv.run works", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const Catalog = await cds.connect.to('ProcessorService')
 
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
@@ -330,6 +330,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("should fail to upload attachment to non-existent entity", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
@@ -349,6 +350,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("should fail to update note for non-existent attachment", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     await axios.patch(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
       { note: "This should fail" },
@@ -360,6 +362,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Malware scanning does not happen when scan is disabled", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     cds.env.requires.attachments.scan = false
 
     let sampleDocID = null
@@ -872,6 +875,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
@@ -893,6 +897,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type and boundary specified", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
@@ -914,6 +919,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type and charset specified", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
@@ -952,7 +958,7 @@ async function uploadDraftAttachment(
   filename = "sample.pdf",
   entityName = 'attachments'
 ) {
-  await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+  await utils.draftModeEdit("processor", "Incidents", incidentId, "ProcessorService")
 
   const res = await POST(
     `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
@@ -970,7 +976,7 @@ async function uploadDraftAttachment(
     join(__dirname, "..", "integration", "content/sample.pdf")
   )
   await axios.put(
-    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentId},ID=${res.data.ID},IsActiveEntity=false)/content`,
     fileContent,
     {
       headers: {
@@ -980,7 +986,7 @@ async function uploadDraftAttachment(
     }
   )
 
-  await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
+  await utils.draftModeSave("processor", "Incidents", incidentId, "ProcessorService")
 
   // Get the uploaded attachment ID
   const response = await GET(

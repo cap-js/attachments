@@ -2,12 +2,10 @@ const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios } = require("@cap-js/cds-test")(app)
-
-let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
+const { axios, POST } = require("@cap-js/cds-test")(app)
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
@@ -15,13 +13,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   const { createAttachmentMetadata, uploadAttachmentContent } =
     createHelpers(axios)
 
-  beforeEach(async () => {
-    // Clean up any existing attachments before each test
-    await test.data.reset()
-  })
-
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
-    const resCreate = await axios.post('/odata/v4/admin/Incidents', {
+    const resCreate = await POST('/odata/v4/admin/Incidents', {
       title: 'New Incident'
     })
     expect(resCreate.status).toBe(201)
@@ -29,18 +22,21 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should create attachment metadata", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
   })
 
   it("should upload attachment content", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).toBe(204)
   })
 
   it("unknown extension throws warning", async () => {
-    const response = await axios.post(
+    const incidentID = await newIncident(POST, 'admin')
+    const response = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
       { filename: 'sample.madeupextension' },
       { headers: { "Content-Type": "application/json" } }
@@ -51,7 +47,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should list attachments for incident", async () => {
-
+    const incidentID = await newIncident(POST, 'admin')
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
@@ -74,7 +70,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
-
+    const incidentID = await newIncident(POST, 'admin')
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
@@ -97,7 +93,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should delete attachment and verify deletion", async () => {
-
+    const incidentID = await newIncident(POST, 'admin')
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
@@ -120,10 +116,11 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Updating attachments via srv.run works", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     const AdminSrv = await cds.connect.to('AdminService')
 
     const attachmentsID = cds.utils.uuid();
-    const doc = await axios.post(
+    const doc = await POST(
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
       {
         ID: attachmentsID,
@@ -173,6 +170,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
+    const incidentID = await newIncident(POST, 'admin')
     // Create attachment metadata
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
@@ -209,13 +207,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
-    await axios.post(`odata/v4/processor/NonDraftTest`, {
+    await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
       singledetails: { ID: detailsID, abc: "child" }
     })
 
-    const attachResTest = await axios.post(
+    const attachResTest = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
       {
         up__ID: testID,
@@ -228,7 +226,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
-    const attachResDetails = await axios.post(
+    const attachResDetails = await POST(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
         up__ID: detailsID,
@@ -259,13 +257,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
-    await axios.post(`odata/v4/processor/NonDraftTest`, {
+    await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
       singledetails: { ID: detailsID, abc: "child" }
     })
 
-    const attachResTest = await axios.post(
+    const attachResTest = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
       {
         up__ID: testID,
@@ -278,7 +276,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
-    const attachResDetails = await axios.post(
+    const attachResDetails = await POST(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
         up__ID: detailsID,
@@ -320,13 +318,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
-    await axios.post(`odata/v4/processor/NonDraftTest`, {
+    await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
       singledetails: { ID: detailsID, abc: "child" }
     })
 
-    const attachResTest = await axios.post(
+    const attachResTest = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
       {
         up__ID: testID,
@@ -339,7 +337,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
-    const attachResDetails = await axios.post(
+    const attachResDetails = await POST(
       `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
       {
         up__ID: detailsID,
@@ -376,7 +374,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 function createHelpers(axios) {
   return {
     createAttachmentMetadata: async (incidentID, filename = "sample.pdf") => {
-      const response = await axios.post(
+      const response = await POST(
         `/odata/v4/admin/Incidents(${incidentID})/attachments`,
         { filename: filename },
         { headers: { "Content-Type": "application/json" } }

@@ -33,6 +33,26 @@ async function waitForScanStatus(status, attachmentID) {
   })
 }
 
+/**
+ * 
+ * @returns Incident ID
+ */
+async function newIncident(POST, serviceName, payload = {
+  title : `Incident ${Math.floor(Math.random() * 1000)}`,
+  customer_ID: '1004155'
+}) {
+    try {
+      // Create draft from active entity
+      const res = await POST(
+        `odata/v4/${serviceName}/Incidents`,
+        payload
+      );
+      return res.data.ID;
+    } catch (err) {
+      return err
+    }
+  }
+
 module.exports = {
-  delay, waitForScanStatus
+  delay, waitForScanStatus, newIncident
 }
