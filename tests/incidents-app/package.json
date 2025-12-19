@@ -2,8 +2,9 @@
   "name": "@capire/incidents",
   "version": "1.0.0",
   "dependencies": {
-    "@cap-js/hana": "*",
-    "@cap-js/attachments": "file:../../."
+    "@cap-js/attachments": "file:../../.",
+    "@cap-js/hana": "2.4.1",
+    "@sap/hana-client": "^2.27.19"
   },
   "cds": {
     "log": {
