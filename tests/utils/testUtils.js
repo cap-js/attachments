@@ -12,7 +12,11 @@ async function delay(timeout = 1000) {
 async function waitForScanStatus(status, attachmentID) {
   const db = await cds.connect.to('db')
   return new Promise((resolve) => {
-    db.after('*', (res, req) => {
+    let resolved = false
+    const handler = (_res, req) => {
+      // Skip if already resolved to prevent memory buildup
+      if (resolved) return
+
       if (
         req.event === 'UPDATE' && req.query.UPDATE.data.status &&
         req.query.UPDATE.data.status === status && req.target.name.includes('.attachments') &&
@@ -21,12 +25,34 @@ async function waitForScanStatus(status, attachmentID) {
           (req.query.UPDATE.entity.ref.at(-1).where && req.query.UPDATE.entity.ref.at(-1).where.some(e => e.val && e.val === attachmentID)) ||
           (req.query.UPDATE.where && req.query.UPDATE.where.some(e => e.val && e.val === attachmentID)))
       ) {
+        resolved = true
         resolve(req.query.UPDATE.where || req.query.UPDATE.entity.ref)
       }
-    })
+    }
+    db.after('*', handler)
   })
 }
 
+/**
+ * 
+ * @returns Incident ID
+ */
+async function newIncident(POST, serviceName, payload = {
+  title : `Incident ${Math.floor(Math.random() * 1000)}`,
+  customer_ID: '1004155'
+}) {
+    try {
+      // Create draft from active entity
+      const res = await POST(
+        `odata/v4/${serviceName}/Incidents`,
+        payload
+      );
+      return res.data.ID;
+    } catch (err) {
+      return err
+    }
+  }
+
 module.exports = {
-  delay, waitForScanStatus
+  delay, waitForScanStatus, newIncident
 }
