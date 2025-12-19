@@ -835,6 +835,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
 
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
+    const incidentID = await newIncident(POST, 'processor')
     const infectedFilePath = path.join(__dirname, "..", "integration", "content/testmal.exe")
     const fileContent = fs.readFileSync(infectedFilePath)
 
