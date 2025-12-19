@@ -2,21 +2,17 @@ require('../../lib/csn-runtime-extension')
 const cds = require('@sap/cds');
 const path = require("path")
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios } = cds.test(app)
+const { axios, POST } = cds.test(app)
 const fs = require('fs/promises')
 const { validateAttachmentSize } = require('../../lib/generic-handlers');
-
-let incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
+const { newIncident } = require('../utils/testUtils');
 
 describe('validateAttachmentSize', () => {
   axios.defaults.auth = { username: "alice" }
-  beforeEach(async () => {
-    // Clean up any existing attachments before each test
-    await test.data.reset()
-  })
 
   it('should pass validation for a file size under 400 MB', async () => {
-    const responseCreate = await axios.post(
+    const incidentID = await newIncident(POST, 'admin')
+    const responseCreate = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
       { filename: 'sample.pdf' },
       { headers: { "Content-Type": "application/json" } }
