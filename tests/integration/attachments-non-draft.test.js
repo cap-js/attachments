@@ -10,8 +10,7 @@ const { axios, GET, POST, DELETE, PUT } = require("@cap-js/cds-test")(app)
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
   let log = test.log()
-  const { createAttachmentMetadata, uploadAttachmentContent } =
-    createHelpers(axios)
+  const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
 
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
     const resCreate = await POST('/odata/v4/admin/Incidents', {
@@ -414,8 +413,8 @@ describe("Row-level security on attachments composition", () => {
     const getRes = await GET(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
       auth: { username: "alice" }
     })
-    expect(getRes.status).to.equal(200)
-    expect(getRes.data).to.not.be.undefined
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).not.toBeUndefined()
   })
 
   it("should reject CREATE attachment for unauthorized user", async () => {
@@ -424,7 +423,7 @@ describe("Row-level security on attachments composition", () => {
       filename: "test.pdf",
       mimeType: "application/pdf"
     }, { auth: { username: "bob" } }).catch(e => {
-      expect(e.status).to.equal(403)
+      expect(e.status).toEqual(403)
     })
   })
 
@@ -433,7 +432,7 @@ describe("Row-level security on attachments composition", () => {
     await axios.patch(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
       note: "Should fail"
     }, { auth: { username: "bob" } }).catch(e => {
-      expect(e.status).to.equal(403)
+      expect(e.status).toEqual(403)
     })
   })
 
@@ -441,7 +440,7 @@ describe("Row-level security on attachments composition", () => {
     await GET(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
       auth: { username: "bob" }
     }).catch(e => {
-      expect(e.status).to.equal(403)
+      expect(e.status).toEqual(403)
     })
   })
 
@@ -449,7 +448,7 @@ describe("Row-level security on attachments composition", () => {
     await DELETE(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
       auth: { username: "bob" }
     }).catch(e => {
-      expect(e.status).to.equal(403)
+      expect(e.status).toEqual(403)
     })
   })
 
@@ -474,12 +473,12 @@ describe("Row-level security on attachments composition", () => {
         auth: { username: "bob" }
       }
     ).catch(e => {
-      expect(e.status).to.equal(403)
+      expect(e.status).toEqual(403)
     })
   })
 })
 
-function createHelpers(axios) {
+function createHelpers() {
   return {
     createAttachmentMetadata: async (incidentID, filename = "sample.pdf") => {
       const response = await POST(
