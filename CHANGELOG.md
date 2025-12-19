@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.5.0
+
+## Fixed
+
+- Enforced the use of the `Content-Length` header to prevent server errors.
+- Designated the `content` property in the Attachments table as a `NonSortableProperty` to prevent database errors when sorting LargeBinary fields.
+
+## Version 3.4.0
+
+### Added
+
+- Introduced support for the `@Core.AcceptableMediaTypes` annotation, allowing specification of permitted MIME types for attachment uploads:
+    ```cds
+    annotate my.Books.attachments with {
+        content @Core.AcceptableMediaTypes: ['image/jpeg'];
+    }
+    ```
+- Added support for the `@Validation.Maximum` annotation to define the maximum allowed file size for attachments:
+    ```cds
+    annotate my.Books.attachments with {
+        content @Validation.Maximum: '2MB';
+    }
+    ```
+
+### Fixed
+
+- Removed the previous hard limit of `400 MB` for file uploads. Files exceeding this size may still fail during malware scanning and will be marked with a `Failed` status.
+- Resolved issues with generic handler registration, enabling services to intercept the attachments plugin using middleware.
+
+## Version 3.3.0
+
+### Added
+
+- Added [`standard`](./README.md#supported-storage-provider) kind and set it as the default so that the configuration needs no adjustment when switching hyper-scalers.
+- Added support for uploading and updating attachments via `srv.run(INSERT.into(Attachments).entries())` or `srv.run(UPDATE.entity(Attachments).set())`
+
+### Fixed
+
+- Fixed an issue that in multi-tenancy scenarios with separate object stores duplicate object stores per tenant were created when updating the tenant binding via the SaaS dependency service.
+- Fixed a race-condition where tenant isolation in separate object store mode could be broken.
+- Fixed a case where attachments were not correctly deleted.
+- Fixed a server crash when using the `AttachmentsSrv.put` API to upload an attachment.
+- Fixed a server crash when no object store would be bound to the application on BTP.
+- Fixed a server crash when the filename would not be given when creating new attachment metadata.
+- Fixed an issue where attachment handlers would be missing when all Attachments entity were behind feature toggles.
+- Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
+- Fixed an issue where the content could be uploaded for a not existing attachments entity. 
+
 ## Version 3.2.0
 
 ### Added
@@ -14,8 +62,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Added support for mTLS authentication for the malware scanning service.
 - Added criticality status to the attachment scan status.
 - Provided translations for all SAP-supported languages.
-
-### Fixed
 
 ## Version 3.1.0
 

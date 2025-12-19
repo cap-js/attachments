@@ -54,6 +54,8 @@ runs:
         done
 
     - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
     - name: Use Node.js ${{ inputs.NODE_VERSION}}
       uses: actions/setup-node@v6
       with:
@@ -67,8 +69,12 @@ runs:
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
       shell: bash
+    - name: CDS Versions being used
+      run: cds v -i
+      shell: bash
+
     # Deploy model to HANA
-    - name: Create Object store 
+    - name: Create Object store
       shell: bash
       run: cf create-service objectstore standard cap-js-attachments-object-store-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
     - name: Create Basic Auth Malware scanner
@@ -79,17 +85,18 @@ runs:
       run: cf create-service hana hdi-shared cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
     - run: cd tests/incidents-app/ && cds deploy --to hana:cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA
       shell: bash
+
     # Create service key
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key
       if: ${{ inputs.SCANNER_AUTH == 'basic' }}
-      shell: bash 
-    - run: cf create-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA gcp-cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
+      shell: bash
+    - run: cf create-service-key cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -c '{"auth":"mtls"}'
       if: ${{ inputs.SCANNER_AUTH == 'mtls' }}
       shell: bash
+
     # Bind against BTP services
     - run: cds bind db -2 cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
       shell: bash
-
     - name: Bind object store
       shell: bash
       run: |
@@ -105,17 +112,11 @@ runs:
     - run: cds bind malware-scanner -2 cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -o package.json
       shell: bash
 
-    # Set Hyperscaler for attachment plugin in package.json
-    - run: |
-        cd tests/incidents-app
-        npx -y json -I -f package.json -e "this['cds']['requires']['attachments'] = { 'kind': '${{inputs.OBJECT_STORE_KIND}}' }"
-      shell: bash
-
     # Run tests in hybrid mode
     - run: cds bind --exec npm run test
       shell: bash
 
-    # Cleanup
+    # Cleanup BTP services
     - name: Delete Malware Scanner instance
       if: ${{ always() }}
       run: cf delete-service cap-js-attachments-scanner-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA -f
@@ -128,7 +129,8 @@ runs:
       if: ${{ always() }}
       run: cf delete-service-key cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA cap-js-attachments-hana-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}-${{ inputs.SCANNER_AUTH }}-$NODE_VERSION_HANA-key -f
       shell: bash
-    # Somehow first delete always fails with a "ongoing operation on service binding" error
+
+    # Note: The initial delete attempt often fails due to an "ongoing operation on service binding" error.
     - name: Delete HDI Container
       if: ${{ always() }}
       shell: bash

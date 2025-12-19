@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "3.2.0",
+  "version": "3.5.0",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -9,13 +9,14 @@
   "main": "cds-plugin.js",
   "files": [
     "index.cds",
+    "_i18n",
     "lib",
     "db",
     "srv"
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest --silent=false --runInBand"
+    "test": "npx jest --silent=true --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.918.0",
@@ -45,22 +46,28 @@
       },
       "kinds": {
         "malwareScanner-mock": {
-          "impl": "@cap-js/attachments/lib/malwareScanner-mocked"
+          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
+        },
+        "malwareScanner-mocked": {
+          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
         },
         "malwareScanner-btp": {
-          "impl": "@cap-js/attachments/lib/malwareScanner"
+          "model": "@cap-js/attachments/srv/malwareScanner"
         },
         "attachments-db": {
-          "impl": "@cap-js/attachments/lib/basic"
+          "impl": "@cap-js/attachments/srv/basic"
+        },
+        "attachments-standard": {
+          "impl": "@cap-js/attachments/srv/standard"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/lib/aws-s3"
+          "impl": "@cap-js/attachments/srv/aws-s3"
         },
         "attachments-azure": {
-          "impl": "@cap-js/attachments/lib/azure-blob-storage"
+          "impl": "@cap-js/attachments/srv/azure-blob-storage"
         },
         "attachments-gcp": {
-          "impl": "@cap-js/attachments/lib/gcp"
+          "impl": "@cap-js/attachments/srv/gcp"
         }
       },
       "serviceManager": {
@@ -82,10 +89,9 @@
       },
       "[development]": {
         "malwareScanner": {
-          "kind": "malwareScanner-mock"
+          "kind": "malwareScanner-mocked"
         },
         "attachments": {
-          "scan": false,
           "kind": "db"
         }
       },
@@ -94,7 +100,7 @@
           "kind": "malwareScanner-btp"
         },
         "attachments": {
-          "kind": "s3",
+          "kind": "standard",
           "objectStore": {
             "kind": "separate"
           }
@@ -105,7 +111,7 @@
           "kind": "malwareScanner-btp"
         },
         "attachments": {
-          "kind": "s3",
+          "kind": "standard",
           "scan": true,
           "objectStore": {
             "kind": "separate"

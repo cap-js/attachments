@@ -1,9 +1,7 @@
 const config = {
-    testTimeout: 60000,
-    testMatch: ['**/*.test.js'],
-    setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-    forceExit: true,
-    detectOpenHandles: true
-  }
+  testTimeout: 150000,
+  testMatch: ['**/*.test.js'],
+  forceExit: true
+}
 
 module.exports = config

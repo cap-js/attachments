@@ -1,22 +1,21 @@
 const cds = require('@sap/cds')
-const { SELECT, UPSERT, UPDATE } = cds.ql
-const { logConfig } = require('./logger')
-const { computeHash } = require('./helper')
+const LOG = cds.log('attachments')
+const { computeHash, traverseEntity } = require('../lib/helper')
 
 class AttachmentsService extends cds.Service {
 
   init() {
     this.on('DeleteAttachment', async msg => {
-      await this.delete(msg.url)
+      await this.delete(msg.data.url, msg.data.target)
     })
-    
+
     this.on('DeleteInfectedAttachment', async msg => {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
       if (attachment) { //Might happen that a draft object is the target
-        await this.delete(attachment.url)
+        await this.delete(attachment.url, target)
       } else {
-        logConfig.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
+        LOG.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
       }
     })
     return super.init()
@@ -26,56 +25,58 @@ class AttachmentsService extends cds.Service {
    * Uploads attachments to the database and initiates malware scans for database-stored files
    * @param {cds.Entity} attachments - Attachments entity definition
    * @param {Array|Object} data - The attachment data to be uploaded
-   * @param {Buffer|Stream} _content - The content of the attachment (if not included in data)
-   * @param {boolean} isDraftEnabled - Flag indicating if draft handling is enabled
-   * @returns {Array} - Result of the upsert operation
+   * @returns {Promise<Array>} - Result of the upsert operation
    */
-  async put(attachments, data, _content, isDraftEnabled = true) {
+  async put(attachments, data) {
     if (!Array.isArray(data)) {
-      if (_content) data.content = _content
       data = [data]
     }
 
-    logConfig.info('Starting database attachment upload', {
+    // Check if an attachment with this ID already has content
+    const existing = await SELECT.one.from(attachments).where({ID: {in: data.map(d => d.ID)}, content: { '!=': null } })
+    if (existing) {
+      const error = new Error('Attachment already exists')
+      error.status = 409
+      throw error
+    }
+
+    LOG.debug('Starting database attachment upload', {
       attachmentEntity: attachments.name,
       fileCount: data.length,
       filenames: data.map((d) => d.filename || 'unknown'),
-      isDraftEnabled
     })
 
     let res
-    if (isDraftEnabled) {
-      logConfig.debug('Upserting attachment records to database', {
+
+    try {
+      res = await Promise.all(
+        data.map(async (d) => {
+          const res = await UPSERT(d).into(attachments)
+          const attachmentForHash = await this.get(attachments, { ID: d.ID })
+          // If this is just the PUT for metadata, there is not yet any file to retrieve
+          if (attachmentForHash) {
+            const hash = await computeHash(attachmentForHash)
+            await this.update(attachments, { ID: d.ID }, { hash })
+          }
+          return res
+        })
+      )
+
+      LOG.debug('Attachment records upserted to database successfully', {
         attachmentEntity: attachments.name,
         recordCount: data.length
       })
 
-      try {
-        res = await Promise.all(
-          data.map(async (d) => {
-            const res = await UPSERT(d).into(attachments)
-            const hash = await computeHash(await this.get(attachments, { ID: d.ID }))
-            await this.update(attachments, { ID: d.ID }, { hash })
-            return res
-          })
-        )
-
-        logConfig.info('Attachment records upserted to database successfully', {
-          attachmentEntity: attachments.name,
-          recordCount: data.length
-        })
-
-      } catch (error) {
-        logConfig.withSuggestion('error',
-          'Failed to upsert attachment records to database', error,
-          'Check database connectivity and attachment entity configuration',
-          { attachmentEntity: attachments.name, recordCount: data.length, errorMessage: error.message })
-        throw error
-      }
+    } catch (error) {
+      LOG.error(
+        'Failed to upsert attachment records to database', error,
+        'Check database connectivity and attachment entity configuration',
+        { attachmentEntity: attachments.name, recordCount: data.length, errorMessage: error.message })
+      throw error
     }
 
     // Initiate malware scanning for database-stored files
-    logConfig.debug('Initiating malware scans for database-stored files', {
+    LOG.debug('Initiating malware scans for database-stored files', {
       fileCount: data.length,
       fileIds: data.map(d => d.ID)
     })
@@ -83,7 +84,7 @@ class AttachmentsService extends cds.Service {
     const MalwareScanner = await cds.connect.to('malwareScanner')
     await Promise.all(
       data.map(async (d) => {
-        await MalwareScanner.emit('ScanFile', { target: attachments.name, keys: { ID: d.ID } })
+        await MalwareScanner.emit('ScanAttachmentsFile', { target: attachments.name, keys: { ID: d.ID } })
       })
     )
 
@@ -98,17 +99,17 @@ class AttachmentsService extends cds.Service {
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
    */
   async get(attachments, keys) {
-    if (attachments.isDraft) {
-      attachments = attachments.actives
-    }
-    logConfig.debug("Downloading attachment for", {
+    LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys
     })
-    const result = await SELECT.from(attachments, keys).columns("content")
+    let result = await SELECT.from(attachments, keys).columns("content")
+    if (!result && attachments.isDraft) {
+      attachments = attachments.actives
+      result = await SELECT.from(attachments, keys).columns("content")
+    }
     return (result?.content) ? result.content : null
   }
-
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {cds.Entity} attachments - Attachments entity definition
@@ -134,23 +135,6 @@ class AttachmentsService extends cds.Service {
         await this.put(attachments, draftAttachments)
     }
   }
-
-  /**
-   * Handles non-draft attachment updates by uploading content to the database
-   * @param {Express.Request} req - The request object
-   * @param {cds.Entity} attachment - Attachments entity definition
-   * @returns {Promise} - Result of the upsert operation
-   */
-  async nonDraftHandler(req, attachment, srv) {
-    if (req?.content?.url?.endsWith("/content")) {
-      const cqn = cds.odata.parse(req.content.url, { service: srv })
-      const IDval = cqn.SELECT.from.ref.at(-1).where.find((r, idx) => r.val && cqn.SELECT.from.ref.at(-1).where[idx - 1] === '=' && cqn.SELECT.from.ref.at(-1).where[idx - 2]?.ref?.[0] === 'ID')
-      const data = { ID: IDval.val, content: req.content }
-      const isDraftEnabled = false
-      return this.put(attachment, [data], null, isDraftEnabled)
-    }
-  }
-
   /**
    * Returns the fields to be selected from Attachments entity definition
    * including the association keys if Attachments entity definition is associated to another entity
@@ -172,30 +156,29 @@ class AttachmentsService extends cds.Service {
    * Registers handlers for attachment entities in the service
    * @param {cds.Service} srv - The CDS service instance
    */
-  registerUpdateHandlers(srv) {
-    srv.after("PUT", async (res, req) => {
-      if (!req.target._attachments.isAttachmentsEntity) return;
-      await this.nonDraftHandler(res, req.target, srv)
-    })
-  }
-
-  /**
-   * Registers draft save handler for attachment entities in the service
-   * @param {cds.Service} srv - The CDS service instance
-   */
-  registerDraftUpdateHandlers(srv) {
-    srv.after("SAVE", async function saveDraftAttachments(res, req) { 
-      if (
-        req.target.isDraft || 
-        !req.target._attachments.hasAttachmentsComposition || 
-        !req.target._attachments.attachmentCompositions
-      ) return;
-      await Promise.all(
-        Object.keys(req.target._attachments.attachmentCompositions).map(attachmentsEle => 
-          this.draftSaveHandler(req.target.elements[attachmentsEle]._target)(res, req)
+  registerHandlers(srv) {
+    if (!cds.env.fiori.move_media_data_in_db) {
+      srv.after("SAVE", async function saveDraftAttachments(res, req) {
+        if (
+          req.target.isDraft ||
+          !req.target.drafts ||
+          !req.target._attachments.hasAttachmentsComposition ||
+          !req.target._attachments.attachmentCompositions
+        ) {
+          return
+        }
+        await Promise.all(
+          req.target._attachments.attachmentCompositions.map(attachmentsEle =>{
+            const target = traverseEntity(req.target, attachmentsEle)
+            if (!target) {
+              LOG.error(`Could not resolve target for attachment composition: ${attachmentsEle}`)
+              return
+            }
+            return this.draftSaveHandler(target)(res, req)
+          })
         )
-      )
-    }.bind(this))
+      }.bind(this))
+    }
   }
 
   /**
@@ -206,7 +189,7 @@ class AttachmentsService extends cds.Service {
    * @returns {Promise} - Result of the update operation
    */
   async update(Attachments, key, data) {
-    logConfig.debug("Updating attachment for", {
+    LOG.debug("Updating attachment for", {
       attachmentName: Attachments.name,
       attachmentKey: key
     })
@@ -225,8 +208,6 @@ class AttachmentsService extends cds.Service {
     return result?.status
   }
 
-
-
   /**
    * Registers attachment handlers for the given service and entity
    * @param {*} records - The records to process
@@ -236,11 +217,30 @@ class AttachmentsService extends cds.Service {
     req.attachmentsToDelete?.forEach(async (attachment) => {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to('attachments')
-        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url })
+        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url, target: attachment.target })
       } else {
-        logConfig.warn(`Attachment cannot be deleted because URL is missing`, attachment)
+        LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
     })
+  }
+
+  /**
+   * Traverses nested data by a given path array.
+   * @param {Object} root - The root object or array to traverse.
+   * @param {Array} path - The array of keys representing the path.
+   * @returns {*} - The value found at the path, or [] if not found.
+   */
+  traverseDataByPath(root, path) {
+    let current = root
+    for (let i = 0; i < path.length; i++) {
+      const part = path[i]
+      if (Array.isArray(current)) {
+        return current.flatMap(item => this.traverseDataByPath(item, path.slice(i)))
+      }
+      if (!current || !(part in current)) return []
+      current = current[part]
+    }
+    return current
   }
 
   /**
@@ -248,29 +248,32 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
-    const attachmentCompositions = Object.keys(req?.target?.associations)
-      .filter(assoc => req?.target?.associations[assoc]._target['@_is_media_data'])
+    const attachmentCompositions = req?.target?._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
       const diffData = await req.diff()
       if (!diffData || Object.keys(diffData).length === 0) {
         return
       }
       const queries = []
+      const queryTargets = []
       for (const attachmentsComp of attachmentCompositions) {
-        let deletedAttachments = []
-        diffData[attachmentsComp]?.forEach(object => {
-          if (object._op === "delete") {
-            deletedAttachments.push(object.ID)
-          }
-        })
+        const leaf = this.traverseDataByPath(diffData, attachmentsComp)
+        const deletedAttachments = Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
+
+        const entityTarget = traverseEntity(req.target, attachmentsComp)
         if (deletedAttachments.length) {
           queries.push(
-            SELECT.from(req.target.associations[attachmentsComp]._target).columns("url").where({ ID: { in: [...deletedAttachments] } })
+            SELECT.from(entityTarget).columns("url").where({ ID: { in: [...deletedAttachments] } })
           )
+          queryTargets.push(entityTarget.name)
         }
       }
       if (queries.length > 0) {
-        const attachmentsToDelete = (await Promise.all(queries)).flat()
+        const attachmentsToDelete = (await Promise.all(queries)).reduce((acc, attachments, idx) => {
+          attachments.forEach(attachment => attachment.target = queryTargets[idx])
+          acc = acc.concat(attachments)
+          return acc;
+        }, [])
         if (attachmentsToDelete.length > 0) {
           req.attachmentsToDelete = attachmentsToDelete
         }
@@ -292,7 +295,7 @@ class AttachmentsService extends cds.Service {
     const activeUrls = new Set(activeAttachments.map(a => a.url))
     return draftAttachments
       .filter(({ url }) => !activeUrls.has(url))
-      .map(({ url }) => ({ url }))
+      .map(({ url }) => ({ url, target: draftEntity.name }))
   }
 
   /**
@@ -321,45 +324,12 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
-   * Add draft discard deletion data to the request
-   * @param {import('@sap/cds').Request} req - The request object
-   */
-  async attachDraftDiscardDeletionData(req) {
-    const parentEntity = req.target.name.split('.').slice(0, -1).join('.')
-    const draftEntity = cds.model.definitions[`${parentEntity}.attachments.drafts`]
-    const activeEntity = cds.model.definitions[`${parentEntity}.attachments`]
-    if (!draftEntity || !activeEntity) return
-
-    const whereXpr = []
-    for (const foreignKey of activeEntity.keys['up_']._foreignKeys) {
-      if (whereXpr.length) {
-        whereXpr.push('and')
-      }
-      whereXpr.push(
-        { ref: [foreignKey.parentElement.name] },
-        '=',
-        { val: req.data[foreignKey.childElement.name] }
-      )
-    }
-
-    const attachmentsToDelete = await this.getAttachmentsToDelete({
-      draftEntity,
-      activeEntity,
-      whereXpr
-    })
-
-    if (attachmentsToDelete.length > 0) {
-      req.attachmentsToDelete = attachmentsToDelete
-    }
-  }
-
-  /**
    * Deletes a file from the database. Does not delete metadata
    * @param {string} url - The url of the file to delete
    * @returns {Promise} - Promise resolving when deletion is complete
    */
   async delete(url, target) {
-    return await UPDATE(target).where({url}).with({ content: null })
+    return await UPDATE(target).where({ url }).with({ content: null })
   }
 }
 
