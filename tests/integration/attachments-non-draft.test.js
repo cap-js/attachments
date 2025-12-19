@@ -33,11 +33,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(attachmentID).toBeDefined()
   })
 
-  it("should create attachment metadata", async () => {
-    const attachmentID = await createAttachmentMetadata(incidentID)
-    expect(attachmentID).toBeDefined()
-  })
-
   it("should upload attachment content", async () => {
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
