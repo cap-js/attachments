@@ -371,9 +371,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 })
 
 describe('Testing max and min amounts of attachments', () => {
-  beforeEach(async () => {
-    await test.data.reset()
-  })
 
   it('Create of record in draft gives warning when maximum is met', async () => {
     const incidentID = await newIncident(POST, 'validation-test-non-draft', {
