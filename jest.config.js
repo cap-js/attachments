@@ -1,8 +1,7 @@
 const config = {
   testTimeout: 150000,
   testMatch: ['**/*.test.js'],
-  forceExit: true,
-  detectOpenHandles: true
+  forceExit: true
 }
 
 module.exports = config
