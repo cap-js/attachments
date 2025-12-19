@@ -51,6 +51,25 @@ service ValidationTestService {
   }
 }
 
+service ValidationTestNonDraftService {
+  entity Incidents as projection on my.Incidents;
+
+  annotate Incidents with {
+    @Validation.MaxItems: 2
+    @Validation.MinItems: 1
+    attachments;
+    hiddenAttachments    @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3);
+    hiddenAttachments2   @Validation.MinItems : 1;
+    mediaTypeAttachments @Validation.MaxItems : 2;
+  };
+
+  annotate Incidents.conversation with {
+    @Validation.MaxItems: 2
+    @Validation.MinItems: 1
+    attachments;
+  }
+}
+
 annotate ProcessorService.Incidents with @odata.draft.enabled;
 annotate ProcessorService with @(requires: 'support');
 annotate AdminService with @(requires: 'admin');

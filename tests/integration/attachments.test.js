@@ -972,7 +972,7 @@ describe('Testing max and min amounts of attachments', () => {
         createdBy: "alice",
       }
     )
-    await POST(
+    const {status: postStatus} = await POST(
       `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentID,
@@ -984,10 +984,13 @@ describe('Testing max and min amounts of attachments', () => {
         ),
         createdBy: "alice",
       }
-    ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
-    })
+    )
+    expect(postStatus).toEqual(201)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('attachments'))
+    expect(err.code).toEqual('MaximumAmountExceeded')
   })
 
   it('Delete of record in draft gives warning when minimum is not met', async () => {
@@ -1006,12 +1009,16 @@ describe('Testing max and min amounts of attachments', () => {
         createdBy: "alice",
       }
     )
-    await DELETE(
+    const {status: deleteStatus} = await DELETE(
       `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${newAttachment.ID},IsActiveEntity=false)`
-    ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled')
-    })
+    )
+
+    expect(deleteStatus).toEqual(204)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('attachments'))
+    expect(err.code).toEqual('MinimumAmountNotFulfilled')
   })
 
   it('Deep create of new draft gives warning when minimum is not met or maximum exceeded', async () => {
@@ -1038,7 +1045,7 @@ describe('Testing max and min amounts of attachments', () => {
     )
     expect(status).toEqual(201)
 
-    await POST(
+    const {status:minStatus} = await POST(
       `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
       {
         up__ID: incidentID,
@@ -1046,12 +1053,15 @@ describe('Testing max and min amounts of attachments', () => {
         message: "ABC",
         attachments: []
       }
-    ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
-    })
+    );
+    expect(minStatus).toEqual(201)
 
-    await POST(
+    const { response: resMin } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(resMin.status).toEqual(400)
+    const errMin = resMin.data.error.details.find(e => e.target.startsWith('conversation'))
+    expect(errMin.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
+
+    const {status: postStatus} = await POST(
       `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
       {
         up__ID: incidentID,
@@ -1087,10 +1097,13 @@ describe('Testing max and min amounts of attachments', () => {
           }
         ]
       }
-    ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
-    })
+    )
+    expect(postStatus).toEqual(201)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('conversation') && e.code === 'MaximumAmountExceeded')
+    expect(err.code).toEqual('MaximumAmountExceeded')
   })
 
   it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {

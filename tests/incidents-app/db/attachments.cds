@@ -3,6 +3,7 @@ using {Attachments} from '@cap-js/attachments';
 
 extend my.Incidents with {
   @Validation.MaxItems : 2
+  @Validation.MinItems : 1
   attachments          : Composition of many Attachments;
   @attachments.disable_facet
   @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3)
