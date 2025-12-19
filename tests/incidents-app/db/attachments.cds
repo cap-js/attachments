@@ -2,8 +2,10 @@ using {sap.capire.incidents as my} from './schema';
 using {Attachments} from '@cap-js/attachments';
 
 extend my.Incidents with {
+  @Validation.MaxItems : 2
   attachments          : Composition of many Attachments;
   @attachments.disable_facet
+  @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3)
   hiddenAttachments    : Composition of many Attachments;
 
   @UI.Hidden
