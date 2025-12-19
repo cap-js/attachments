@@ -64,6 +64,7 @@ runs:
       shell: bash
     - run: npm i
       shell: bash
+    # Revisit once bug in 9.6 is fixed
     - run: npm i @sap/cds@9.5.1
       shell: bash
     - run: cd tests/incidents-app && npm i
