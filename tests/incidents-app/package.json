@@ -12,6 +12,11 @@
       }
     },
     "requires": {
+      "db": {
+        "pool": {
+          "acquireTimeoutMillis": 60000
+        }
+      },
       "auth": {
         "[development]": {
           "users": {

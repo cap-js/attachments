@@ -15,6 +15,7 @@ const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
+
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
