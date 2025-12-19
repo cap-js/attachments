@@ -194,6 +194,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting a non existing root does not crash the application", async () => {
     const incidentID = await newIncident(POST, 'processor')
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
