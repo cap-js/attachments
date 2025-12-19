@@ -21,7 +21,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     let sampleDocID = null
     const scanStartWaiter = waitForScanStatus('Scanning')
     const scanCleanWaiter = waitForScanStatus('Clean')
@@ -79,7 +79,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Scan status is translated", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     //trigger to upload attachment
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
@@ -131,7 +131,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Deleting the attachment", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     let sampleDocID = null
 
     const scanCleanWaiter = waitForScanStatus('Clean')
@@ -193,7 +193,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Deleting a non existing root does not crash the application", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     const response = await DELETE(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`
     )
@@ -282,7 +282,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Inserting attachments via srv.run works", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     const Catalog = await cds.connect.to('ProcessorService')
 
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
@@ -362,7 +362,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Malware scanning does not happen when scan is disabled", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     cds.env.requires.attachments.scan = false
 
     let sampleDocID = null
@@ -875,7 +875,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
@@ -897,7 +897,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type and boundary specified", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
@@ -919,7 +919,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type and charset specified", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, 'processor')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
     await POST(
