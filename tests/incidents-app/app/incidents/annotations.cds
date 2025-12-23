@@ -170,7 +170,35 @@ annotate service.Incidents.conversation with @(
             $Type : 'UI.DataField',
             Value : message,
             Label : '{i18n>Message}',
-        },]
+        }
+    ],
+    UI.HeaderInfo : {
+        TypeName : 'Conversation',
+        TypeNamePlural: '{i18n>Conversation}',
+        Title : {
+            Value : ID
+        }
+    },
+    UI.Facets : [
+        {
+            $Type : 'UI.ReferenceFacet',
+            Target : '@UI.FieldGroup#props',
+            Label : 'Props'
+        },
+    ],
+    UI.FieldGroup #props : {
+        Data : [
+            {
+                Value : author,
+            },
+            {
+                Value : message,
+            },
+            {
+                Value : timestamp,
+            },
+        ]
+    }
 );
 
 annotate service.Test with @(
