@@ -279,7 +279,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(log.output.length).toBeGreaterThan(0)
     expect(log.output).toContain('overwrite-put-handler')
 
-    const file = await axios.get(
+    const file = await GET(
       `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${sampleID}',up__gjahr=${gjahr},ID=${doc.data.ID},IsActiveEntity=false)/content`,
     )
 
@@ -480,7 +480,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const fileContent = fs.readFileSync(
       path.join(__dirname, "..", "integration", "content/sample.pdf")
     )
-    await axios.put(
+    await PUT(
       `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${getAtt.data.value[0].ID},IsActiveEntity=false)/content`,
       fileContent,
       {
