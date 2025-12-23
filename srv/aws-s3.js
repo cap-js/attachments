@@ -265,7 +265,6 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
    */
   async delete(Key) {
     const { client, bucket } = await this.retrieveClient()
-    LOG.debug(`[AWS S3] Executing delete for file ${Key} in bucket ${bucket}`)
 
     const response = await client.send(
       new DeleteObjectCommand({
@@ -273,6 +272,11 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         Key,
       })
     )
-    return response.DeleteMarker
+
+    if (!response.DeleteMarker) {
+      LOG.warn('File deletion from S3 may not have been successful', { Key, bucket, response })
+    }
+
+    return true
   }
 }

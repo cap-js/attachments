@@ -92,7 +92,7 @@ entity TestDetails : cuid, managed {
 }
 
 entity NonDraftTest : cuid, managed {
-  key ID            : String;
+  key ID            : UUID;
       name          : String;
       singledetails : Composition of one SingleTestDetails;
 }
