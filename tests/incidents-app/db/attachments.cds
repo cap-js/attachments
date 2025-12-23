@@ -2,7 +2,7 @@ using {sap.capire.incidents as my} from './schema';
 using {Attachments} from '@cap-js/attachments';
 
 extend my.Incidents with {
-  @Validation.MaxItems : 2
+  @Validation.MaxItems: 2
   attachments          : Composition of many Attachments;
   @attachments.disable_facet
   @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3)
@@ -37,15 +37,15 @@ extend my.SampleRootWithComposedEntity with {
 }
 
 extend my.Test with {
-  attachments: Composition of many Attachments;
+  attachments : Composition of many Attachments;
 }
 
 extend my.TestDetails with {
-  attachments: Composition of many Attachments;
+  attachments : Composition of many Attachments;
 }
 
 extend my.NonDraftTest with {
-  attachments: Composition of many Attachments;
+  attachments : Composition of many Attachments;
 }
 
 extend my.SingleTestDetails with {

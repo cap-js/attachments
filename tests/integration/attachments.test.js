@@ -11,8 +11,6 @@ const { test, axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null
-// const incidentID = "3ccf474c-3881-44b7-99fb-59a2a4668418"
-// const conversationID = "9583f982-d7df-4aad-ab26-301d4a158cd7"
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
