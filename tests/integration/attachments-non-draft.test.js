@@ -8,6 +8,8 @@ const app = path.resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, PATCH, DELETE, PUT } = require("@cap-js/cds-test")(app)
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
+  const isNotLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
+
   axios.defaults.auth = { username: "alice" }
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
@@ -253,7 +255,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  isNotLocal("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(POST, 'processor', {
@@ -405,7 +407,7 @@ describe('Testing max and min amounts of attachments', () => {
     await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
       {
         ID: incidentID,
-        title : 'ABCDEFG',
+        title: 'ABCDEFG',
         customer_ID: '1004155',
         urgency_code: 'M'
       }
@@ -435,7 +437,7 @@ describe('Testing max and min amounts of attachments', () => {
     await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
       {
         ID: incidentID,
-        title : 'ABCDEFG',
+        title: 'ABCDEFG',
         customer_ID: '1004155',
         urgency_code: 'M'
       }
@@ -517,7 +519,7 @@ describe('Testing max and min amounts of attachments', () => {
     await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
       {
         ID: incidentID,
-        title : 'ABCDEFG',
+        title: 'ABCDEFG',
         customer_ID: '1004155',
         urgency_code: 'M'
       }
