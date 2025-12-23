@@ -23,7 +23,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Uploads attachments to the database and initiates malware scans for database-stored files
-   * @param {cds.Entity} attachments - Attachments entity definition
+   * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @param {Array|Object} data - The attachment data to be uploaded
    * @returns {Promise<Array>} - Result of the upsert operation
    */
@@ -93,7 +93,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Registers attachment handlers for the given service and entity
-   * @param {cds.Entity} attachments - The attachment service instance
+   * @param {import('@sap/cds').Entity} attachments - The attachment service instance
    * @param {string} keys - The keys to identify the attachment
    * @param {import('@sap/cds').Request} req - The request object
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
@@ -112,7 +112,7 @@ class AttachmentsService extends cds.Service {
   }
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
-   * @param {cds.Entity} attachments - Attachments entity definition
+   * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @returns {Function} - The draft save handler function
    */
   draftSaveHandler(attachments) {
@@ -138,7 +138,7 @@ class AttachmentsService extends cds.Service {
   /**
    * Returns the fields to be selected from Attachments entity definition
    * including the association keys if Attachments entity definition is associated to another entity
-   * @param {cds.Entity} attachments - Attachments entity definition
+   * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @returns {Array} - Array of fields to be selected
    */
   getFields(attachments) {
@@ -183,7 +183,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Updates attachment metadata in the database
-   * @param {cds.Entity} Attachments - Attachments entity definition
+   * @param {import('@sap/cds').Entity} Attachments - Attachments entity definition
    * @param {string} key - The key of the attachment to update
    * @param {*} data - The data to update the attachment with
    * @returns {Promise} - Result of the update operation
@@ -199,7 +199,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Retrieves the malware scan status of an attachment
-   * @param {cds.Entity} Attachments - Attachments entity definition
+   * @param {import('@sap/cds').Entity} Attachments - Attachments entity definition
    * @param {string} key - The key of the attachment to retrieve the status for
    * @returns {string} - The malware scan status of the attachment
    */
@@ -304,7 +304,7 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Registers attachment handlers for the given service and entity
-   * @param {{draftEntity: string, activeEntity:cds.Entity, id:string}} param0 - The service and entities
+   * @param {{draftEntity: string, activeEntity:import('@sap/cds').Entity, id:string}} param0 - The service and entities
    * @returns 
    */
   async getAttachmentsToDelete({ draftEntity, activeEntity, whereXpr }) {

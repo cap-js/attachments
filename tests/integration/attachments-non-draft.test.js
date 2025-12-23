@@ -5,7 +5,7 @@ const { test } = cds.test()
 const { waitForScanStatus, newIncident, delay, waitForDeletion } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, DELETE, PUT } = require("@cap-js/cds-test")(app)
+const { axios, GET, POST, PATCH, DELETE, PUT } = require("@cap-js/cds-test")(app)
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   axios.defaults.auth = { username: "alice" }
@@ -348,6 +348,292 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 })
 
+describe('Testing max and min amounts of attachments', () => {
+
+  it('Create of record in draft gives warning when maximum is met', async () => {
+    const incidentID = await newIncident(POST, 'validation-test-non-draft', {
+      title: `Incident ${Math.floor(Math.random() * 1000)}`,
+      customer_ID: '1004155',
+      attachments: [
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        },
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        }
+      ],
+      hiddenAttachments2: [
+        {
+          filename: "sample.pdf",
+          mimeType: "application/jpeg; charset=UTF-8",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ),
+          createdBy: "alice",
+        },
+      ]
+    })
+    await POST(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+    })
+  })
+
+  it('Delete of record in draft gives warning when minimum is not met', async () => {
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
+      {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
+    const { data: newAttachment } = await POST(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    await DELETE(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${newAttachment.ID})`
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled')
+    })
+  })
+
+  it('Deep create of new draft gives warning when minimum is not met or maximum exceeded', async () => {
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
+      {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
+    const { status } = await POST(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          }
+        ]
+      }
+    )
+    expect(status).toEqual(201)
+
+    await POST(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: []
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+    })
+
+    await POST(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          }
+        ]
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+    })
+  })
+
+  it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {
+    const incidentID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
+      {
+        ID: incidentID,
+        title : 'ABCDEFG',
+        customer_ID: '1004155',
+        urgency_code: 'M'
+      }
+    )
+    const conversationID = cds.utils.uuid();
+    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents.conversation']).entries(
+      {
+        up__ID: incidentID,
+        ID: conversationID,
+        message: "ABC",
+      }
+    )
+
+    const { status } = await PATCH(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation(ID=${conversationID})`,
+      {
+        message: "DEF",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice"
+          }
+        ]
+      }
+    )
+    expect(status).toEqual(200)
+
+    await PATCH(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation(ID=${conversationID})`,
+      {
+        message: "ABC",
+        attachments: []
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+    })
+
+    await PATCH(
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation(ID=${conversationID})`,
+      {
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          }
+        ]
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+    })
+  })
+
+  it('custom error message can be specified targeting composition property', async () => {
+    await POST(
+      `odata/v4/validation-test-non-draft/Incidents`,
+      {
+        customer_ID: '1004155',
+        title: 'ABC',
+        conversation: [
+          {
+            ID: cds.utils.uuid(),
+            message: "ABC",
+            attachments: []
+          }
+        ]
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      const err = e.response.data.error.details.find(e => e.target.startsWith('conversation'));
+      expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+    })
+  })
+
+  it('custom error message can be specified for entity', async () => {
+    await POST(
+      `odata/v4/validation-test-non-draft/Incidents`,
+      {
+        customer_ID: '1004155',
+        title: 'ABC',
+        urgency_code: 'H',
+        attachments: []
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      const err = e.response.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
+      expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents|hiddenAttachments2')
+    })
+  })
+})
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 
