@@ -7,7 +7,7 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { axios, GET, POST, DELETE, PUT } = cds.test(app)
+const { test, axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null
@@ -1034,6 +1034,464 @@ describe("Tests for acceptable media types", () => {
   })
 })
 
+describe('Testing max and min amounts of attachments', () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it('Create of record in draft gives warning when maximum is met', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    const { status: postStatus } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    expect(postStatus).toEqual(201)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    expect(response.data.error.code).toEqual('MaximumAmountExceeded')
+    expect(response.data.error.target).toEqual('attachments')
+  })
+
+  it('Delete of record in draft gives warning when minimum is not met', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+
+    const { data: newAttachment } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    const { status: deleteStatus } = await DELETE(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${newAttachment.ID},IsActiveEntity=false)`
+    )
+
+    expect(deleteStatus).toEqual(204)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    expect(response.data.error.code).toEqual('MinimumAmountNotFulfilled')
+    expect(response.data.error.target).toEqual('attachments')
+  })
+
+  it('Deep create of new draft gives warning when minimum is not met or maximum exceeded', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+
+    const { status } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          }
+        ]
+      }
+    )
+    expect(status).toEqual(201)
+
+    const { status: minStatus } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: []
+      }
+    );
+    expect(minStatus).toEqual(201)
+
+    const { response: resMin } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(resMin.status).toEqual(400)
+    const errMin = resMin.data.error.details.find(e => e.target.startsWith('conversation'))
+    expect(errMin.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
+
+    const { status: postStatus } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+          }
+        ]
+      }
+    )
+    expect(postStatus).toEqual(201)
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('conversation') && e.code === 'MaximumAmountExceeded')
+    expect(err.code).toEqual('MaximumAmountExceeded')
+  })
+
+  it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+
+    const conversationID = cds.utils.uuid();
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        ID: conversationID,
+        message: "ABC",
+      }
+    )
+
+    const { status } = await PATCH(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation(ID=${conversationID},IsActiveEntity=false)`,
+      {
+        message: "DEF",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+            DraftAdministrativeData_DraftUUID: '12345'
+          }
+        ]
+      }
+    )
+    expect(status).toEqual(200)
+
+    await PATCH(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation(ID=${conversationID},IsActiveEntity=false)`,
+      {
+        message: "ABC",
+        attachments: []
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
+    })
+
+    await PATCH(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation(ID=${conversationID},IsActiveEntity=false)`,
+      {
+        message: "ABC",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+            DraftAdministrativeData_DraftUUID: '12345'
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+            DraftAdministrativeData_DraftUUID: '12345'
+          },
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+            DraftAdministrativeData_DraftUUID: '12345'
+          }
+        ]
+      }
+    ).catch(e => {
+      expect(e.status).toEqual(400)
+      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+    })
+  })
+
+  it('On SAVE error is thrown when minimum is not met', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    expect(response.data.error.code).toEqual('MinimumAmountNotFulfilled')
+  })
+
+  it('On SAVE error is thrown when maximum is exceeded', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+    const { data: { ID: conversationID } } = await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        message: "DEF",
+      }
+    )
+
+    await PATCH(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation(ID=${conversationID},IsActiveEntity=false)`,
+      {
+        message: "DEF",
+        attachments: [
+          {
+            filename: "sample.pdf",
+            mimeType: "application/jpeg; charset=UTF-8",
+            content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+            createdAt: new Date(
+              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+            ),
+            createdBy: "alice",
+            DraftAdministrativeData_DraftUUID: '12345'
+          }
+        ]
+      }
+    )
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+    await INSERT.into(cds.model.definitions['ValidationTestService.Incidents.attachments'].drafts).entries(
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+        DraftAdministrativeData_DraftUUID: '1234',
+        IsActiveEntity: false
+      }
+    )
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/hiddenAttachments2`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    expect(response.data.error.code).toEqual('MaximumAmountExceeded')
+  })
+
+  it('On SAVE errors are thrown for nested attachments', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: []
+      }
+    )
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const errors = response.data.error.details.filter(e => e.target.startsWith('conversation'))
+    expect(errors.length).toEqual(1)
+    for (const error of errors) {
+      expect(error.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
+    }
+  })
+
+  it('custom error message can be specified targeting composition property', async () => {
+    const incidentID = await newIncident(POST, 'validation-test')
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
+      {
+        up__ID: incidentID,
+        ID: cds.utils.uuid(),
+        message: "ABC",
+        attachments: []
+      }
+    )
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('conversation'));
+    expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
+  })
+
+  it('custom error message can be specified for entity', async () => {
+    const highIncID = await newIncident(POST, 'validation-test', {
+      title: `Incident ${Math.floor(Math.random() * 1000)}`,
+      customer_ID: '1004155',
+      urgency_code: 'H'
+    })
+    const { response } = await utils.draftModeSave("validation-test", "Incidents", highIncID, "ValidationTestService")
+    expect(response.status).toEqual(400)
+    const err = response.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
+    expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents|hiddenAttachments2')
+  })
+
+  it('On SAVE dynamic min/max is possible', async () => {
+    const highIncID = await newIncident(POST, 'validation-test', {
+      title: `Incident ${Math.floor(Math.random() * 1000)}`,
+      customer_ID: '1004155',
+      urgency_code: 'H'
+    })
+    // First with urgency_code = M - save, to few and to max
+    await INSERT.into(cds.model.definitions['ValidationTestService.Incidents.hiddenAttachments'].drafts).entries(
+      {
+        up__ID: highIncID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+        DraftAdministrativeData_DraftUUID: '1234',
+        IsActiveEntity: false
+      },
+      {
+        up__ID: highIncID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+        DraftAdministrativeData_DraftUUID: '1234',
+        IsActiveEntity: false
+      },
+      {
+        up__ID: highIncID,
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+        DraftAdministrativeData_DraftUUID: '1234',
+        IsActiveEntity: false
+      }
+    )
+
+    const { response: res1 } = await utils.draftModeSave("validation-test", "Incidents", highIncID, "ValidationTestService")
+    expect(res1.status).toEqual(400)
+    const errMax1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments'));
+    expect(errMax1.code).toEqual('MaximumAmountExceeded')
+
+    const errMin1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
+    expect(errMin1.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents|hiddenAttachments2')
+
+    await PATCH(`odata/v4/validation-test/Incidents(ID=${highIncID},IsActiveEntity=false)`, {
+      urgency_code: 'M'
+    })
+
+    await POST(
+      `odata/v4/validation-test/Incidents(ID=${highIncID},IsActiveEntity=false)/attachments`,
+      {
+        filename: "sample.pdf",
+        mimeType: "application/jpeg; charset=UTF-8",
+        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
+
+    const { status } = await utils.draftModeSave("validation-test", "Incidents", highIncID, "ValidationTestService")
+    expect(status).toEqual(201)
+  })
+})
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 
