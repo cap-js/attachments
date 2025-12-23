@@ -34,25 +34,47 @@ async function waitForScanStatus(status, attachmentID) {
 }
 
 /**
+ * Waits for deletion of attachment with given ID
+ * @param {string} attachmentID - The attachment ID to wait for deletion
+ * @returns {Promise<boolean>} - Resolves to true when deletion is detected
+ */
+async function waitForDeletion(attachmentID) {
+  const AttachmentsSrv = await cds.connect.to("attachments")
+  return new Promise(resolve => {
+    let resolved = false
+    const handler = (req) => {
+      if (resolved) return
+
+      if (req.data?.url == attachmentID) {
+        resolved = true
+        resolve(true)
+      }
+    }
+    AttachmentsSrv.on('DeleteAttachment', handler)
+  })
+}
+
+
+/**
  * 
  * @returns Incident ID
  */
 async function newIncident(POST, serviceName, payload = {
-  title : `Incident ${Math.floor(Math.random() * 1000)}`,
+  title: `Incident ${Math.floor(Math.random() * 1000)}`,
   customer_ID: '1004155'
-}) {
-    try {
-      // Create draft from active entity
-      const res = await POST(
-        `odata/v4/${serviceName}/Incidents`,
-        payload
-      );
-      return res.data.ID;
-    } catch (err) {
-      return err
-    }
+}, entity = 'Incidents') {
+  try {
+    // Create draft from active entity
+    const res = await POST(
+      `odata/v4/${serviceName}/${entity}`,
+      payload
+    );
+    return res.data.ID;
+  } catch (err) {
+    return err
   }
+}
 
 module.exports = {
-  delay, waitForScanStatus, newIncident
+  delay, waitForScanStatus, newIncident, waitForDeletion
 }

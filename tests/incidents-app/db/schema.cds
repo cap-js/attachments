@@ -79,8 +79,9 @@ entity SampleRootWithComposedEntity {
 
 entity Test : cuid, managed {
   key ID      : String;
-  name        : String;
-  details     : Composition of many TestDetails on details.test = $self;
+      name    : String;
+      details : Composition of many TestDetails
+                  on details.test = $self;
 }
 
 entity TestDetails : cuid, managed {
@@ -89,11 +90,11 @@ entity TestDetails : cuid, managed {
 }
 
 entity NonDraftTest : cuid, managed {
-  key ID      : String;
-  name        : String;
-  singledetails : Composition of one SingleTestDetails;
+  key ID            : UUID;
+      name          : String;
+      singledetails : Composition of one SingleTestDetails;
 }
 
 entity SingleTestDetails : cuid {
-  abc: String;
+  abc : String;
 }

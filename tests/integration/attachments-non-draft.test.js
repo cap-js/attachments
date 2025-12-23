@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus, newIncident } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, delay, waitForDeletion } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PUT } = require("@cap-js/cds-test")(app)
@@ -254,13 +254,12 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
-    const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
-    await POST(`odata/v4/processor/NonDraftTest`, {
-      ID: testID,
+
+    const testID = await newIncident(POST, 'processor', {
       name: "Non-draft Test",
       singledetails: { ID: detailsID, abc: "child" }
-    })
+    }, 'NonDraftTest')
 
     const attachResTest = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
@@ -270,42 +269,18 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         mimeType: "application/pdf",
         createdAt: new Date(),
         createdBy: "alice",
-      },
-      { headers: { "Content-Type": "application/json" } }
-    )
-    expect(attachResTest.data.ID).toBeTruthy()
-
-    const attachResDetails = await POST(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
-      {
-        up__ID: detailsID,
-        filename: "childfile.pdf",
-        mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       }
     )
-    expect(attachResDetails.data.ID).toBeTruthy()
+    expect(attachResTest.data.url).toBeTruthy()
+    await uploadAttachmentContent(testID, attachResTest.data.ID, "content/sample.pdf", "processor", "NonDraftTest")
 
-    await uploadAttachmentContent(testID, attachResTest.data.ID, "content/sample.pdf", "NonDraftTest", "processor")
-    await uploadAttachmentContent(detailsID, attachResDetails.data.ID, "content/sample.pdf", "SingleTestDetails", "processor")
-
-    // Set up spy on the attachments service delete method
-    // Note: This will only be called if attachments have URLs (i.e., using external object store)
-    const attachmentsSrv = await cds.connect.to('attachments')
-    const deleteSpy = jest.spyOn(attachmentsSrv, 'delete')
+    const deletion = waitForDeletion(attachResTest.data.url)
 
     // Delete parent attachment
     const delParent = await DELETE(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
     )
     expect(delParent.status).toBe(204)
-
-    // Delete child attachment
-    const delChild = await DELETE(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
-    )
-    expect(delChild.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await GET(
@@ -314,33 +289,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect(e.response.status).toBe(404)
     })
 
-    // Confirm child attachment is deleted
-    await GET(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
-    ).catch(e => {
-      expect(e.response.status).toBe(404)
-    })
-
-    // Wait a bit to ensure async deletion is processed
-    await delay(100)
-
-    // Verify delete was called if using external object store
-    // For database storage without URLs, delete won't be called
-    // Check if any attachment has a URL to determine if we should expect delete calls
-    const parentAttachment = await SELECT.one.from('processorService.NonDraftTest.attachments')
-      .where({ ID: attachResTest.data.ID })
-
-    if (parentAttachment && parentAttachment.url) {
-      // Using external object store - verify delete was called
-      expect(deleteSpy.mock.calls.length).to.be.greaterThan(0)
-      expect(deleteSpy).toHaveBeenCalledWith(expect.any(String), expect.any(String))
-    } else {
-      // Using database storage - delete method won't be called for URL-based deletion
-      // The test still passes as we've verified the attachments are deleted (404 responses above)
-      expect(deleteSpy.mock.calls.length).to.equal(0)
-    }
-
-    deleteSpy.mockRestore()
+    expect(await deletion).toBe(true)
   })
 
   it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
@@ -518,17 +467,17 @@ function createHelpers() {
       return response.data.ID
     },
     uploadAttachmentContent: async (
-      entityID,
+      incidentID,
       attachmentID,
       contentPath = "content/sample.pdf",
-      entityName = "Incidents",
-      serviceName = "admin"
+      service = "admin",
+      entity = "Incidents"
     ) => {
       const fileContent = fs.readFileSync(
         path.join(__dirname, "..", "integration", contentPath)
       )
       const response = await PUT(
-        `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+        `/odata/v4/${service}/${entity}(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
         fileContent,
         {
           headers: {

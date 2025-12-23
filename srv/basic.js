@@ -33,7 +33,7 @@ class AttachmentsService extends cds.Service {
     }
 
     // Check if an attachment with this ID already has content
-    const existing = await SELECT.one.from(attachments).where({ID: {in: data.map(d => d.ID)}, content: { '!=': null } })
+    const existing = await SELECT.one.from(attachments).where({ ID: { in: data.map(d => d.ID) }, content: { '!=': null } })
     if (existing) {
       const error = new Error('Attachment already exists')
       error.status = 409
@@ -214,14 +214,20 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async deleteAttachmentsWithKeys(records, req) {
-    req.attachmentsToDelete?.forEach(async (attachment) => {
+    LOG.info('[deleteAttachmentsWithKeys] Called with attachmentsToDelete:', req.attachmentsToDelete)
+    if (!req.attachmentsToDelete) return
+
+    for (const attachment of req.attachmentsToDelete) {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to('attachments')
-        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url, target: attachment.target })
+        LOG.info('[deleteAttachmentsWithKeys] Emitting DeleteAttachment for:', attachment.url)
+        await attachmentsSrv.emit('DeleteAttachment', attachment)
+        LOG.info('[deleteAttachmentsWithKeys] Emitted DeleteAttachment for:', attachment.url)
       } else {
         LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
-    })
+    }
+    LOG.info('[deleteAttachmentsWithKeys] Finished')
   }
 
   /**
