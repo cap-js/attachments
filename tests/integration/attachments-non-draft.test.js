@@ -2,7 +2,7 @@ const path = require("path")
 const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus, newIncident, delay, waitForDeletion } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
 
 const app = path.resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, PATCH, DELETE, PUT } = require("@cap-js/cds-test")(app)
@@ -255,7 +255,68 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
-  isNotLocal("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Non-draft Test",
+      singledetails: { ID: detailsID, abc: "child" }
+    })
+
+    const attachResTest = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+      { headers: { "Content-Type": "application/json" } }
+    )
+    expect(attachResTest.data.ID).toBeTruthy()
+
+    const attachResDetails = await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "childfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachResDetails.data.ID).toBeTruthy()
+
+    // Delete parent attachment
+    const delParent = await DELETE(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    )
+    expect(delParent.status).toBe(204)
+
+    // Delete child attachment
+    const delChild = await DELETE(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    )
+    expect(delChild.status).toBe(204)
+
+    // Confirm parent attachment is deleted
+    await GET(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).toBe(404)
+    })
+
+    // Confirm child attachment is deleted
+    await GET(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+    ).catch(e => {
+      expect(e.response.status).toBe(404)
+    })
+  })
+
+  isNotLocal("should delete file from object store if data is deleted", async () => {
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(POST, 'processor', {
