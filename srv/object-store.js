@@ -33,10 +33,17 @@ module.exports = class RemoteAttachmentsService extends require("./basic") {
         return this.attachDraftDeletionData.bind(this)(req)
       }
     )
+    srv.before(
+      "DELETE",
+      (req) => {
+        if (req.target.isDraft || !req.target._attachments.isAttachmentsEntity) return;
+        return this.attachNonDraftDeletionData.bind(this)(req)
+      }
+    )
     srv.after(
       "DELETE",
       (res, req) => {
-        if (!req.target.isDraft || !req.target._attachments.isAttachmentsEntity) return;
+        if (!req.target._attachments.isAttachmentsEntity) return;
         return this.deleteAttachmentsWithKeys.bind(this)(res, req)
       }
     )

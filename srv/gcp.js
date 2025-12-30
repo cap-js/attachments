@@ -215,7 +215,7 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
         'File download from Google Cloud Platform failed', error,
         suggestion,
         { fileId: keys?.ID, bucketName: bucket.name, attachmentName: attachments.name, duration })
-      
+
       throw error
     }
   }
@@ -231,6 +231,13 @@ module.exports = class GoogleAttachmentsService extends require("./object-store"
 
     const file = bucket.file(blobName)
     const response = await file.delete()
-    return response[0]?.statusCode === 204
+    if (response[0]?.statusCode !== 204) {
+      LOG.warn('File has not been deleted from Google Cloud Storage', {
+        blobName,
+        bucketName: bucket.name,
+        response
+      })
+    }
+    return true
   }
 }
