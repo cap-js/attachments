@@ -274,7 +274,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
     )
 
     if (!response.DeleteMarker) {
-      LOG.warn('File deletion from S3 may not have been successful', { Key, bucket, response })
+      LOG.warn('File was not deleted from S3', { Key, bucket, response })
     }
 
     return true

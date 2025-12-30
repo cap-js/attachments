@@ -258,7 +258,7 @@ module.exports = class AzureAttachmentsService extends require("./object-store")
     const response = await blobClient.delete()
 
     if (response._response.status !== 202) {
-      LOG.warn('File deletion from Azure Blob Storage may not have been successful', {
+      LOG.warn('File has not been deleted from Azure Blob Storage', {
         blobName,
         containerName: containerClient.containerName,
         response
