@@ -214,14 +214,35 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async deleteAttachmentsWithKeys(records, req) {
-    req.attachmentsToDelete?.forEach(async (attachment) => {
+    LOG.info('[deleteAttachmentsWithKeys] Called with attachmentsToDelete:', req.attachmentsToDelete)
+    if (!req.attachmentsToDelete) return
+
+    for (const attachment of req.attachmentsToDelete) {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to('attachments')
-        await attachmentsSrv.emit('DeleteAttachment', { url: attachment.url, target: attachment.target })
+        LOG.info('[deleteAttachmentsWithKeys] Emitting DeleteAttachment for:', attachment.url)
+        await attachmentsSrv.emit('DeleteAttachment', attachment)
+        LOG.info('[deleteAttachmentsWithKeys] Emitted DeleteAttachment for:', attachment.url)
       } else {
         LOG.warn(`Attachment cannot be deleted because URL is missing`, attachment)
       }
-    })
+    }
+    LOG.info('[deleteAttachmentsWithKeys] Finished')
+  }
+
+  /**
+   * Add non-draft deletion data to the request
+   * @param {import('@sap/cds').Request} req - The request object
+   */
+  async attachNonDraftDeletionData(req) {
+    if (!req.target?.['@_is_media_data']) return
+
+    if (!req.subject) return
+
+    const attachments = await SELECT.from(req.subject).columns("url");
+    if (attachments.length) {
+      req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
+    }
   }
 
   /**
