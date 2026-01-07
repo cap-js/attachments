@@ -4,9 +4,39 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.6.0
+
+### Added
+
+- Introduced support for `@Validation.MaxItems` and `@Validation.MinItems` annotations, enabling you to define the minimum and maximum number of attachments that can be uploaded.
+
+    #### Example: Limit to a Maximum of 2 Attachments
+
+    ```cds
+    entity Incidents {
+        @Validation.MaxItems: 2
+        attachments: Composition of many Attachments;
+    }
+    ```
+
+    #### Example: Require at Least 2 Attachments
+
+    ```cds
+    entity Incidents {
+        @Validation.MinItems: 2
+        attachments: Composition of many Attachments;
+    }
+    ```
+- Enhanced the `note` field to support multi-line input, improving readability for longer text entries.
+
+### Fixed
+
+- Prevented unauthorized users from accessing attachments.
+- Improved deletion logic for non-draft entities to ensure all associated attachments are reliably removed, preventing orphaned files and maintaining data consistency.
+
 ## Version 3.5.0
 
-## Fixed
+### Fixed
 
 - Enforced the use of the `Content-Length` header to prevent server errors.
 - Designated the `content` property in the Attachments table as a `NonSortableProperty` to prevent database errors when sorting LargeBinary fields.
