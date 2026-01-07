@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.6.0
+
+## Fixed
+
+- Handling the use of nested POST requests in non-draft mode.
+- Prevent overriding attachments using `/content` handler.
+
 ## Version 3.5.0
 
 ## Fixed
