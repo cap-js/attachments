@@ -7,7 +7,7 @@ const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
 
 const app = path.join(__dirname, "../incidents-app")
-const { test, axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
+const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 
 let utils = null

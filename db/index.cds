@@ -34,7 +34,7 @@ context sap.attachments {
   }
 
   aspect Attachments : cuid, managed, MediaData {
-    note : String @title: '{i18n>Note}';
+    note : String  @title: '{i18n>Note}'  @UI.MultiLineText;
   }
 
 
