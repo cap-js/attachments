@@ -8,24 +8,37 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 <!-- TOC -->
 
-* [Usage](#usage)
-  * [Quick Start](#quick-start)
-  * [Local Walk-Through](#local-walk-through)
-  * [Changes in the CDS Models](#changes-in-the-cds-models)
-  * [Storage Targets](#storage-targets)
-  * [Malware Scanner](#malware-scanner)
-  * [Visibility Control](#visibility-control-for-attachments-ui-facet-generation)
-  * [Non-Draft Uploading](#non-draft-upload)
-* [Releases](#releases)
-* [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
-* [Architecture Overview](#architecture-overview)
-  * [Multitenancy](#multitenancy)
-  * [Object Stores](#object-stores)
-  * [Model Texts](#model-texts)
-* [Monitoring & Logging](#monitoring--logging)
-* [Support, Feedback, Contributing ](#support-feedback-and-contributing)
-* [Code of Conduct](#code-of-conduct)
-* [Licensing](#licensing)
+- [Attachments Plugin](#attachments-plugin)
+    - [Table of Contents](#table-of-contents)
+  - [Usage](#usage)
+    - [Quick Start](#quick-start)
+    - [Local Walk-Through](#local-walk-through)
+    - [Changes in the CDS Models](#changes-in-the-cds-models)
+    - [Storage Targets](#storage-targets)
+    - [Malware Scanner](#malware-scanner)
+    - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
+      - [Example Usage](#example-usage)
+    - [Non-Draft Upload](#non-draft-upload)
+    - [Specify the maximum file size](#specify-the-maximum-file-size)
+    - [Restrict allowed MIME types](#restrict-allowed-mime-types)
+    - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
+      - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
+      - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
+  - [Releases](#releases)
+  - [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
+  - [Architecture Overview](#architecture-overview)
+    - [Multitenancy](#multitenancy)
+      - [Separate object store instances](#separate-object-store-instances)
+      - [Shared Object Store Instance](#shared-object-store-instance)
+    - [Object Stores](#object-stores)
+      - [Deployment to Cloud Foundry](#deployment-to-cloud-foundry)
+        - [Tests](#tests)
+        - [Supported Storage Provider](#supported-storage-provider)
+    - [Model Texts](#model-texts)
+  - [Monitoring \& Logging](#monitoring--logging)
+  - [Support, Feedback, and Contributing](#support-feedback-and-contributing)
+  - [Code of Conduct](#code-of-conduct)
+  - [Licensing](#licensing)
 
 ## Usage
 
@@ -295,6 +308,30 @@ annotate Incidents.attachments with {
 
 When a file with a disallowed MIME type is uploaded, the request will be rejected with a `400` error.
 
+### Minimum and Maximum Number of Attachments
+
+You can control the number of attachments allowed for an entity by using the `@Validation.MaxItems` and `@Validation.MinItems` annotations. These annotations define the maximum and minimum number of files that can be associated with an entity.
+
+#### Limit to a Maximum of 2 Attachments
+
+```cds
+entity Incidents {
+  ...
+  @Validation.MaxItems: 2
+  attachments: Composition of many Attachments;
+}
+```
+
+#### Require a Minimum of 2 Attachments
+
+```cds
+entity Incidents {
+  ...
+  @Validation.MinItems: 2
+  attachments: Composition of many Attachments;
+}
+```
+
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments).
@@ -303,7 +340,7 @@ When a file with a disallowed MIME type is uploaded, the request will be rejecte
 ## Minimum UI5 and CAP NodeJS Version
 
 | Component | Minimum Version |
-|-----------|-----------------|
+| --------- | --------------- |
 | CAP Node  | 8.0.0           |
 | UI5       | 1.136.0         |
 
@@ -406,7 +443,7 @@ In the model, several fields are annotated with the `@title` annotation. Default
 The following table gives an overview of the fields and the i18n codes:
 
 | Field Name | i18n Code    |
-|------------|--------------|
+| ---------- | ------------ |
 | `mimeType` | `MediaType`  |
 | `fileName` | `FileName`   |
 | `status`   | `ScanStatus` |
@@ -414,8 +451,8 @@ The following table gives an overview of the fields and the i18n codes:
 
 In addition to the field names, header information (`@UI.HeaderInfo`) are also annotated:
 
-| Header Info      | i18n Code     |  
-|------------------|---------------|
+| Header Info      | i18n Code     |
+| ---------------- | ------------- |
 | `TypeName`       | `Attachment`  |
 | `TypeNamePlural` | `Attachments` |
 
