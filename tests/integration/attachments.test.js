@@ -875,6 +875,48 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(childAttachment.data.filename).toBe("childfile.pdf")
 
   })
+
+  it("Should not allow end user to set or change url from api", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, { ID: testID, name: "Test Entity" })
+
+    // Try to create an attachment with a custom url
+    const maliciousUrl = "malicious-file-key"
+    const res = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        url: maliciousUrl,
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    const getRes = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)`
+    )
+    expect(getRes.status).toBe(200)
+    expect(getRes.data.url).not.toBe(maliciousUrl)
+    expect(getRes.data.url).toBeTruthy()
+
+    // Try to PATCH the url
+    const newMaliciousUrl = "malicious-patch-key"
+    await PATCH(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)`,
+      { url: newMaliciousUrl }
+    )
+
+    const getRes2 = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)`
+    )
+    expect(getRes2.status).toBe(200)
+    expect(getRes2.data.url).not.toBe(newMaliciousUrl)
+    expect(getRes2.data.url).not.toBe(maliciousUrl)
+    expect(getRes2.data.url).toBeTruthy()
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
@@ -1492,6 +1534,7 @@ describe('Testing max and min amounts of attachments', () => {
     expect(status).toEqual(201)
   })
 })
+
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 
