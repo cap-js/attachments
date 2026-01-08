@@ -33,6 +33,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Prevented unauthorized users from accessing attachments.
 - Improved deletion logic for non-draft entities to ensure all associated attachments are reliably removed, preventing orphaned files and maintaining data consistency.
+- Handling the use of nested POST requests in non-draft mode.
+- Prevent overriding attachments using `/content` handler.
 
 ## Version 3.5.0
 
