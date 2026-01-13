@@ -32,8 +32,8 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
       - [Shared Object Store Instance](#shared-object-store-instance)
     - [Object Stores](#object-stores)
       - [Deployment to Cloud Foundry](#deployment-to-cloud-foundry)
-        - [Tests](#tests)
-        - [Supported Storage Provider](#supported-storage-provider)
+    - [Tests](#tests)
+    - [Supported Storage Provider](#supported-storage-provider)
     - [Model Texts](#model-texts)
   - [Monitoring \& Logging](#monitoring--logging)
   - [Support, Feedback, and Contributing](#support-feedback-and-contributing)
@@ -154,7 +154,7 @@ annotate service.Incidents with @odata.draft.enabled;
 
 ### Storage Targets
 
-When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing].(https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
+When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
 
 Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
 
@@ -164,11 +164,13 @@ For using an Object Store in BTP, you must already have an SAP Object Store serv
 
   ```sh
   cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
+  ```
 
 2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
 
   ```sh
   cds bind <HybridObjectStoreName> --to <RemoteObjectStoreName>
+  ```
 
 Where `HybridObjectStoreName` can be any name given by the user here and `RemoteObjectStoreName` is the name of your object store instance in SAP BTP.
 
@@ -422,14 +424,14 @@ resources:
 ```
 
 
-##### Tests
+### Tests
 
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the command `rm -rf node_modules` should be used before installation.
 
 The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, please see the section [Storage Targets](#storage-targets).
 
-##### Supported Storage Provider
+### Supported Storage Provider
 
 - **Standard** (`kind: "standard"`) | Depending on the bound object store credentials, uses AWS S3, Azure Blob Storage or GCP Cloud Storage. You can manually specify the implementation by adjusting the type to:
     - **AWS S3** (`kind: "s3"`)
@@ -485,4 +487,4 @@ We as members, contributors, and leaders pledge to make participation in our com
 
 ## Licensing
 
-Copyright 2024 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/attachmentstea).
+Copyright 2024 SAP SE or an SAP affiliate company and contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/cap-js/attachments).
