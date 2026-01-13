@@ -458,10 +458,10 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
   })
 
-  it("Uploading attachment to Test when creating Test works and scan status is set", async () => {
+  it("Uploading attachment to nested Test works and scan status is set", async () => {
     // Create a Test entity
     const testID = cds.utils.uuid()
-    await POST(`odata/v4/processor/Test?$expand=attachments`, {
+    await POST(`odata/v4/processor/Test`, {
       ID: testID,
       name: "Test Entity",
       attachments: [{
@@ -500,6 +500,92 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes.status).toEqual(200)
     expect(getRes.data.value.length).toEqual(1)
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
+  })
+
+  it("Creating Test with nested entity and attachments", async () => {
+    // Create a Test entity
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity",
+      attachments: [{
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }],
+      details: [{
+        ID: detailsID,
+        description: "Test Details Entity",
+        attachments: [{
+          up__ID: detailsID,
+          filename: "detailsfile.pdf",
+          mimeType: "application/pdf",
+          createdAt: new Date(),
+          createdBy: "alice",
+        }]
+      }]
+    })
+
+    // Get parent attachment
+    const getParentAtt = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`
+    )
+    const parentAttID = getParentAtt.data.value[0].ID
+
+    // Get child attachment
+    const getChildAtt = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`
+    )
+    const childAttID = getChildAtt.data.value[0].ID
+
+    // Upload file content for parent attachment
+    const fileContent = fs.readFileSync(
+      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+    await PUT(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments(up__ID=${testID},ID=${parentAttID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        }
+      }
+    )
+
+    // Upload file content for child attachment
+    await PUT(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${childAttID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        }
+      }
+    )
+
+    // Save the draft
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    // Test that parent attachment exists and scan status
+    const getResParent = await GET(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=true)/attachments`
+    )
+    expect(getResParent.status).toEqual(200)
+    expect(getResParent.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getResParent.data.value[0].status)
+
+    // Test that child attachment exists and scan status
+    const getResChild = await GET(
+      `odata/v4/processor/TestDetails(ID=${detailsID},IsActiveEntity=true)/attachments`
+    )
+    expect(getResChild.status).toEqual(200)
+    expect(getResChild.data.value.length).toEqual(1)
+    expect(["Scanning", "Clean", "Unscanned"]).toContain(getResChild.data.value[0].status)
   })
 
   it("Uploading attachment to TestDetails works and scan status is set", async () => {
