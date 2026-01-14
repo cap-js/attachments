@@ -13,7 +13,12 @@ class AttachmentsService extends cds.Service {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
       if (attachment) { //Might happen that a draft object is the target
-        await this.delete(attachment.url, target)
+        try {
+          await this.delete(attachment.url, target)
+          await DELETE.from(target).where({ url: attachment.url })
+        } catch (error) {
+          LOG.error(`Failed to delete infected file from object store`, error)
+        }
       } else {
         LOG.warn(`Cannot delete malware file with the hash ${hash} for attachment ${target}, keys: ${keys}`)
       }
