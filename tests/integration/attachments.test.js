@@ -1046,8 +1046,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).then(() => {
       fail("Attachment was not deleted after being detected as infected")
     }).catch(e => {
-      expect(e.status).toEqual(404)
-      expect(e.response.data.error.message).toMatch(/Not Found/)
+      const status = e.status || e.response?.status
+      expect(status).toEqual(404)
+      expect(e.response?.data?.error?.message || e.message).toMatch(/Not Found/)
     })
   })
 })
