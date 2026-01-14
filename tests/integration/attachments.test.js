@@ -1049,6 +1049,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         )
         await new Promise(r => setTimeout(r, 500)) // Wait 0.5s before retry
       } catch (e) {
+        expect(e).toBeDefined()
+        expect(e.status).toBe(404)
         if (e.status === 404 && e.response.data.error.message.match(/Not Found/)) {
           deleted = true
           break
