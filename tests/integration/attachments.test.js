@@ -1044,9 +1044,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
     ).then(() => {
-      fail("Attachment was not deleted after being detected as infected")
+      expect("Attachment was not deleted after being detected as infected").toBeNull()
     }).catch(e => {
-      console.error("Error object in CI:", e)
       expect(e).toEqual(404)
       expect(e.status).toEqual(404)
       expect(e.response.data.error.message).toMatch(/Not Found/)
