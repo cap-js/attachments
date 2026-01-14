@@ -1041,23 +1041,22 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     await scanInfectedWaiter
 
     // Check that the attachment is automatically deleted (should not be found)
-    let deleted = false
-    for (let i = 0; i < 20; i++) { // Try for up to 10 seconds
-      try {
-        await GET(
-          `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
-        )
-        await new Promise(r => setTimeout(r, 500)) // Wait 0.5s before retry
-      } catch (e) {
-        expect(e).toBeDefined()
-        expect(e.status).toBe(404)
-        if (e.status === 404 && e.response.data.error.message.match(/Not Found/)) {
-          deleted = true
-          break
-        }
-      }
-    }
-    expect(deleted).toBe(true)
+    await new Promise(r => setTimeout(r, 10000))
+    await expect(
+      GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
+    )).rejects.toEqual(
+      expect.objectContaining({
+        status: 404,
+        response: expect.objectContaining({
+          data: expect.objectContaining({
+            error: expect.objectContaining({
+              message: expect.stringMatching(/Not Found/)
+            })
+          })
+        })
+      })
+    )
   })
 })
 
