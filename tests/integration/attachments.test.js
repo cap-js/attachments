@@ -465,11 +465,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       ID: testID,
       name: "Test Entity",
       attachments: [{
-          up__ID: testID,
-          filename: "testfile.pdf",
-          mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
       }]
     })
 
@@ -1003,11 +1003,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes2.data.url).not.toBe(maliciousUrl)
     expect(getRes2.data.url).toBeTruthy()
   })
-  
+
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const incidentID = await newIncident(POST, 'processor')
-    const infectedFilePath = path.join(__dirname, "..", "integration", "content/testmal.exe")
-    const fileContent = fs.readFileSync(infectedFilePath)
+    const testMal = "WDVPQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
+    const fileContent = Buffer.from(testMal, 'base64')
 
     const scanInfectedWaiter = waitForScanStatus("Infected")
 
@@ -1016,8 +1016,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
       {
         up__ID: incidentID,
-        filename: "testmal.exe",
-        mimeType: "application/x-msdownload",
+        filename: "testmal.png",
+        mimeType: "image/png",
         createdAt: new Date(),
         createdBy: "alice",
       }
@@ -1029,7 +1029,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       fileContent,
       {
         headers: {
-          "Content-Type": "application/x-msdownload",
+          "Content-Type": "image/png",
           "Content-Length": fileContent.length,
         },
       }
