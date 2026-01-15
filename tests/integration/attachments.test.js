@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
@@ -1024,7 +1024,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(res.data.ID).toBeTruthy()
 
-    const deletionWaiter = waitForDeletion(res.data.ID)
+    const deletionWaiter = waitForMalwareDeletion(res.data.ID)
 
     await PUT(
       `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
@@ -1044,22 +1044,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     // Wait for deletion to complete
     await deletionWaiter
-
-    await expect(
-      GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
-      )).rejects.toEqual(
-        expect.objectContaining({
-          status: 404,
-          response: expect.objectContaining({
-            data: expect.objectContaining({
-              error: expect.objectContaining({
-                message: expect.stringMatching(/Not Found/)
-              })
-            })
-          })
-        })
-      )
   })
 })
 

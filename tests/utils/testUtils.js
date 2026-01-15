@@ -70,6 +70,29 @@ async function waitForDeletion(attachmentID) {
   ])
 }
 
+/**
+ * Waits for malware deletion of attachment with given ID
+ * @param {string} attachmentID - The attachment ID to wait for deletion
+ * @returns {Promise<boolean>} - Resolves to true when deletion is detected
+ */
+async function waitForMalwareDeletion(attachmentID) {
+  const AttachmentsSrv = await cds.connect.to("attachments")
+  return new Promise(resolve => {
+    let resolved = false
+    const handler = async (req) => {
+      if (resolved) return
+
+      const { target, hash, keys } = req.data
+      const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
+
+      if (attachment?.url == attachmentID) {
+        resolved = true
+        resolve(true)
+      }
+    }
+    AttachmentsSrv.on('DeleteInfectedAttachment', handler)
+  })
+}
 
 /**
  * 
@@ -92,5 +115,5 @@ async function newIncident(POST, serviceName, payload = {
 }
 
 module.exports = {
-  delay, waitForScanStatus, newIncident, waitForDeletion
+  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion
 }
