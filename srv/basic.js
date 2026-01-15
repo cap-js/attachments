@@ -12,10 +12,18 @@ class AttachmentsService extends cds.Service {
     this.on('DeleteInfectedAttachment', async msg => {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
-      if (attachment) { //Might happen that a draft object is the target
+      if (attachment && attachment.url) { //Might happen that a draft object is the target
         try {
-          await this.delete(attachment.url, target)
-          await DELETE.from(target).where({ url: attachment.url })
+          const url = attachment.url
+          const activeEntity = cds.model.definitions[target]
+          const draftEntity = target ? cds.model.definitions?.[target+'.draft'] : undefined;
+
+          await UPDATE(activeEntity.name).where({ url: url }).set({ content: null, url: null, hash: null })
+          if (draftEntity) {
+            await UPDATE(draftEntity.name).where({ url: url }).set({ content: null, url: null, hash: null })
+          }
+
+          await this.delete(url, target)
         } catch (error) {
           LOG.error(`Failed to delete infected file from object store`, error)
         }
@@ -329,8 +337,8 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDraftDeletionData(req) {
-    const draftEntity = cds.model.definitions[req?.target?.name]
     const name = req?.target?.name
+    const draftEntity = cds.model.definitions[name]
     const activeEntity = name ? cds.model.definitions?.[name.split(".").slice(0, -1).join(".")] : undefined
 
     if (!draftEntity || !activeEntity) return
