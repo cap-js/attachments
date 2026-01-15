@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForMalwareDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
