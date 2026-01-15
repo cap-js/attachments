@@ -51,18 +51,23 @@ async function waitForScanStatus(status, attachmentID) {
  */
 async function waitForDeletion(attachmentID) {
   const AttachmentsSrv = await cds.connect.to("attachments")
-  return new Promise(resolve => {
-    let resolved = false
-    const handler = (req) => {
-      if (resolved) return
+  return Promise.race([
+    new Promise(resolve => {
+      let resolved = false
+      const handler = (req) => {
+        if (resolved) return
 
-      if (req.data?.url == attachmentID) {
-        resolved = true
-        resolve(true)
+        if (req.data?.url == attachmentID) {
+          resolved = true
+          resolve(true)
+        }
       }
-    }
-    AttachmentsSrv.on('DeleteAttachment', handler)
-  })
+      AttachmentsSrv.on('DeleteAttachment', handler)
+    }),
+    delay(30000).then(() => {
+      throw new Error(`Timeout waiting for deletion of attachment ID: ${attachmentID}`)
+    })
+  ])
 }
 
 
