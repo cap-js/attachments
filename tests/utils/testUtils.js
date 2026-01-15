@@ -28,7 +28,7 @@ async function waitForScanStatus(status, attachmentID) {
             (req.query.UPDATE.where && req.query.UPDATE.where.some(e => e.val && e.val === attachmentID)))
         ) {
           // Store the latest status for timeout reporting
-          latestStatus = req.query.UPDATE.where || req.query.UPDATE.entity.ref
+          latestStatus = req.query.UPDATE.data.status
 
           if (req.query.UPDATE.data.status === status) {
             resolved = true
