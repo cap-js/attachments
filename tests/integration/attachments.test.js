@@ -1006,7 +1006,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const incidentID = await newIncident(POST, 'processor')
-    const testMal = "WDVPQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
+    const testMal = "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
     const fileContent = Buffer.from(testMal, 'base64').toString("utf8")
 
     const scanInfectedWaiter = waitForScanStatus("Infected")
