@@ -11,26 +11,37 @@ async function delay(timeout = 1000) {
 
 async function waitForScanStatus(status, attachmentID) {
   const db = await cds.connect.to('db')
-  return new Promise((resolve) => {
-    let resolved = false
-    const handler = (_res, req) => {
-      // Skip if already resolved to prevent memory buildup
-      if (resolved) return
+  let latestStatus = null
+  return Promise.race([
+    new Promise((resolve) => {
+      let resolved = false
+      const handler = (_res, req) => {
+        // Skip if already resolved to prevent memory buildup
+        if (resolved) return
 
-      if (
-        req.event === 'UPDATE' && req.query.UPDATE.data.status &&
-        req.query.UPDATE.data.status === status && req.target.name.includes('.attachments') &&
-        (
-          !attachmentID ||
-          (req.query.UPDATE.entity.ref.at(-1).where && req.query.UPDATE.entity.ref.at(-1).where.some(e => e.val && e.val === attachmentID)) ||
-          (req.query.UPDATE.where && req.query.UPDATE.where.some(e => e.val && e.val === attachmentID)))
-      ) {
-        resolved = true
-        resolve(req.query.UPDATE.where || req.query.UPDATE.entity.ref)
+        if (
+          req.event === 'UPDATE' && req.query.UPDATE.data.status &&
+          req.target.name.includes('.attachments') &&
+          (
+            !attachmentID ||
+            (req.query.UPDATE.entity.ref.at(-1).where && req.query.UPDATE.entity.ref.at(-1).where.some(e => e.val && e.val === attachmentID)) ||
+            (req.query.UPDATE.where && req.query.UPDATE.where.some(e => e.val && e.val === attachmentID)))
+        ) {
+          // Store the latest status for timeout reporting
+          latestStatus = req.query.UPDATE.where || req.query.UPDATE.entity.ref
+
+          if (req.query.UPDATE.data.status === status) {
+            resolved = true
+            resolve(req.query.UPDATE.where || req.query.UPDATE.entity.ref)
+          }
+        }
       }
-    }
-    db.after('*', handler)
-  })
+      db.after('*', handler)
+    }),
+    delay(30000).then(() => {
+      throw new Error(`Timeout waiting for attachment ${attachmentID || ''} to reach status: ${status}, last known status: ${latestStatus}`)
+    })
+  ])
 }
 
 /**
