@@ -219,7 +219,6 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async deleteAttachmentsWithKeys(records, req) {
-    LOG.info('[deleteAttachmentsWithKeys] Called with attachmentsToDelete:', req.attachmentsToDelete)
     if (!req.attachmentsToDelete) return
 
     for (const attachment of req.attachmentsToDelete) {
