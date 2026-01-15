@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
@@ -1024,6 +1024,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(res.data.ID).toBeTruthy()
 
+    const deletionWaiter = waitForDeletion(res.data.ID)
+
     await PUT(
       `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
       fileContent,
@@ -1040,8 +1042,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Check that status is "infected" after scan
     await scanInfectedWaiter
 
-    // Check that the attachment is automatically deleted (should not be found)
-    await new Promise(r => setTimeout(r, 10000))
+    // Wait for deletion to complete
+    await deletionWaiter
+
     await expect(
       GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
