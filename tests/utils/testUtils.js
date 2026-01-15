@@ -85,15 +85,9 @@ async function waitForMalwareDeletion(attachmentID) {
       const handler = async (req) => {
         if (resolved) return
 
-        const { target, hash, keys } = req.data
-        const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
+        const { keys } = req.data
 
-        lastDeletion = JSON.stringify({
-          request: req.data,
-          attachment: attachment
-        })
-
-        if (attachment?.url == attachmentID) {
+        if (keys?.ID == attachmentID) {
           resolved = true
           resolve(true)
         }
