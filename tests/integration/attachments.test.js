@@ -1007,7 +1007,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const incidentID = await newIncident(POST, 'processor')
     const testMal = "WDVPQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
-    const fileContent = Buffer.from(testMal, 'base64')
+    const fileContent = Buffer.from(testMal, 'base64').toString("utf8")
 
     const scanInfectedWaiter = waitForScanStatus("Infected")
 
@@ -1045,18 +1045,18 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     await expect(
       GET(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=true)`
-    )).rejects.toEqual(
-      expect.objectContaining({
-        status: 404,
-        response: expect.objectContaining({
-          data: expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringMatching(/Not Found/)
+      )).rejects.toEqual(
+        expect.objectContaining({
+          status: 404,
+          response: expect.objectContaining({
+            data: expect.objectContaining({
+              error: expect.objectContaining({
+                message: expect.stringMatching(/Not Found/)
+              })
             })
           })
         })
-      })
-    )
+      )
   })
 })
 
