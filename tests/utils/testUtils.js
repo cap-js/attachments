@@ -77,21 +77,33 @@ async function waitForDeletion(attachmentID) {
  */
 async function waitForMalwareDeletion(attachmentID) {
   const AttachmentsSrv = await cds.connect.to("attachments")
-  return new Promise(resolve => {
-    let resolved = false
-    const handler = async (req) => {
-      if (resolved) return
+  let lastDeletion = null
 
-      const { target, hash, keys } = req.data
-      const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
+  return Promise.race([
+    new Promise(resolve => {
+      let resolved = false
+      const handler = async (req) => {
+        if (resolved) return
 
-      if (attachment?.url == attachmentID) {
-        resolved = true
-        resolve(true)
+        const { target, hash, keys } = req.data
+        const attachment = await SELECT.one.from(target).where(Object.assign({ hash }, keys)).columns('url')
+
+        lastDeletion = JSON.stringify({
+          request: req.data,
+          attachment: attachment
+        })
+
+        if (attachment?.url == attachmentID) {
+          resolved = true
+          resolve(true)
+        }
       }
-    }
-    AttachmentsSrv.on('DeleteInfectedAttachment', handler)
-  })
+      AttachmentsSrv.on('DeleteInfectedAttachment', handler)
+    }),
+    delay(30000).then(() => {
+      throw new Error(`Timeout waiting for malware deletion of attachment ID: ${attachmentID}, last deletion attempt: ${lastDeletion}`)
+    })
+  ])
 }
 
 /**
