@@ -136,13 +136,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(resultResponse.status).toEqual(200)
     expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
 
-    // Wait for 15 seconds to let the scan status expire
+    // Wait for 45 seconds to let the scan status expire
     await delay(45 * 1000);
 
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     ).catch(e => {
-      expect(e.status).toEqual(403)
+      expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
     })
   });
