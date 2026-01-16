@@ -139,14 +139,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Wait for 15 seconds to let the scan status expire
     await delay(45 * 1000);
 
-    try {
-      await GET(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
-      )
-    } catch (error) {
-      expect(error.status).toEqual(403)
-      expect(error.data).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
-    }
+    await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    ).catch(e => {
+      expect(e.status).toEqual(403)
+      expect(e.response.data.error.message).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
+    })
   });
 
   it("Scan status is translated", async () => {
