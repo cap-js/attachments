@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForMalwareDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
@@ -14,7 +14,7 @@ let utils = null
 
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
-
+  const isNotLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
@@ -465,11 +465,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       ID: testID,
       name: "Test Entity",
       attachments: [{
-          up__ID: testID,
-          filename: "testfile.pdf",
-          mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
+        up__ID: testID,
+        filename: "testfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
       }]
     })
 
@@ -1002,6 +1002,48 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes2.data.url).not.toBe(newMaliciousUrl)
     expect(getRes2.data.url).not.toBe(maliciousUrl)
     expect(getRes2.data.url).toBeTruthy()
+  })
+
+  isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+    const testMal = "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
+    const fileContent = Buffer.from(testMal, 'base64').toString("utf8")
+
+    const scanInfectedWaiter = waitForScanStatus("Infected")
+
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+    const res = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "testmal.png",
+        mimeType: "image/png",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    const deletionWaiter = waitForMalwareDeletion(res.data.ID)
+
+    await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "image/png",
+          "Content-Length": fileContent.length,
+        },
+      }
+    )
+
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
+
+    // Check that status is "infected" after scan
+    await scanInfectedWaiter
+
+    // Wait for deletion to complete
+    await deletionWaiter
   })
 })
 
