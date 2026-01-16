@@ -223,7 +223,7 @@ Scan status codes:
 
 #### Automatic file rescanning
 
-According to the recommendation of the [Malware Scanning Service](http://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/developing-applications-with-sap-malware-scanning-service), attachments should be rescanned automatically if the last scan is older than 3 days. This behavior can be configured in the attachments settings by specifying the `scanExpiryMs` property:
+According to the recommendation of the [Malware Scanning Service](http://help.sap.com/docs/malware-scanning-service/sap-malware-scanning-service/developing-applications-with-sap-malware-scanning-service), attachments should be rescanned automatically if the last scan is older than 3 days. This behavior can be configured in the attachments settings by specifying the `scanExpiryMs` property:
 
 ```json
 {
