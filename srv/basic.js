@@ -18,9 +18,9 @@ class AttachmentsService extends cds.Service {
           const activeEntity = cds.model.definitions[target]
           const draftEntity = target ? cds.model.definitions?.[target+'.draft'] : undefined;
 
-          await UPDATE(activeEntity.name).where({ url: url }).set({ content: null, url: null, hash: null })
+          await UPDATE(activeEntity).where({ url: url }).set({ content: null, url: null, hash: null })
           if (draftEntity) {
-            await UPDATE(draftEntity.name).where({ url: url }).set({ content: null, url: null, hash: null })
+            await UPDATE(draftEntity).where({ url: url }).set({ content: null, url: null, hash: null })
           }
 
           await this.delete(url, target)

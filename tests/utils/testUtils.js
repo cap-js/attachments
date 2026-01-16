@@ -77,7 +77,6 @@ async function waitForDeletion(attachmentID) {
  */
 async function waitForMalwareDeletion(attachmentID) {
   const AttachmentsSrv = await cds.connect.to("attachments")
-  let lastDeletion = null
 
   return Promise.race([
     new Promise(resolve => {
@@ -95,7 +94,7 @@ async function waitForMalwareDeletion(attachmentID) {
       AttachmentsSrv.on('DeleteInfectedAttachment', handler)
     }),
     delay(30000).then(() => {
-      throw new Error(`Timeout waiting for malware deletion of attachment ID: ${attachmentID}, last deletion attempt: ${lastDeletion}`)
+      throw new Error(`Timeout waiting for malware deletion of attachment ID: ${attachmentID}`)
     })
   ])
 }
