@@ -144,7 +144,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentRescanResponse.status).toEqual(202)
     expect(contentRescanResponse.data).toContain('UnableToDownloadAttachmentScanStatusExpired')
-  }, 60 * 1000); // increased timeout for this test
+  }); // increased timeout for this test
 
   it("Scan status is translated", async () => {
     const incidentID = await newIncident(POST, 'processor')
