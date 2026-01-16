@@ -137,7 +137,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
 
     // Wait for 15 seconds to let the scan status expire
-    await delay(15 * 1000);
+    await delay(45 * 1000);
 
     try {
       await GET(
