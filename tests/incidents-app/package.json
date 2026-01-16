@@ -12,6 +12,9 @@
       }
     },
     "requires": {
+      "attachments": {
+        "scanExpiryMs": 10000
+      },
       "auth": {
         "[development]": {
           "users": {

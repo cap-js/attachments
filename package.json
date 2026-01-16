@@ -83,6 +83,7 @@
       "attachments": {
         "outbox": true,
         "scan": true,
+        "scanExpiryMs": 259200000,
         "objectStore": {
           "kind": "separate"
         }
