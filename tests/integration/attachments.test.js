@@ -144,7 +144,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
       )
     } catch (error) {
-      expect(error.status).toEqual(202)
+      expect(error.status).toEqual(403)
       expect(error.data).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
     }
   });
