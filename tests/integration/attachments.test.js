@@ -143,7 +143,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
     expect(contentRescanResponse.status).toEqual(202)
-    expect(contentRescanResponse.data).toContain('UnableToDownloadAttachmentScanStatusExpired')
+    expect(contentRescanResponse.data).toContain('The last scan is older than 3 days. Please wait while the attachment is being rescanned.')
   }); // increased timeout for this test
 
   it("Scan status is translated", async () => {
