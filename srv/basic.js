@@ -214,11 +214,14 @@ class AttachmentsService extends cds.Service {
    * Retrieves the malware scan status of an attachment
    * @param {import('@sap/cds').Entity} Attachments - Attachments entity definition
    * @param {string} key - The key of the attachment to retrieve the status for
-   * @returns {string} - The malware scan status of the attachment
+   * @returns {{ status: string, lastScan: Date }} - The malware scan status of the attachment
    */
   async getStatus(Attachments, key) {
-    const result = await SELECT.from(Attachments, key).columns('status')
-    return result?.status
+    const result = await SELECT.from(Attachments, key).columns(['status', 'lastScan'])
+    return {
+      status: result?.status,
+      lastScan: result?.lastScan
+    }
   }
 
   /**

@@ -19,6 +19,7 @@ context sap.attachments {
     status    : String                                    @title: '{i18n>ScanStatus}'  default 'Unscanned'  @Common.Text: statusNav.name  @Common.TextArrangement: #TextOnly;
     statusNav : Association to one ScanStates
                   on statusNav.code = status;
+    lastScan  : Timestamp                                 @title: '{i18n>LastScan}'                         @Core.Computed;
   }
 
   entity ScanStates : CodeList {

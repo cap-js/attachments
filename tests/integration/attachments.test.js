@@ -1,7 +1,7 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident, waitForMalwareDeletion } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, delay, waitForMalwareDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
@@ -77,6 +77,67 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(resultResponse.status).toEqual(200)
     expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
   })
+
+  // Draft mode uploading attachment
+  it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+    let sampleDocID = null
+    const scanStartWaiter = waitForScanStatus('Scanning')
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const db = await cds.connect.to('db')
+    const ScanStates = []
+    db.after('*', (res, req) => {
+      if (
+        req.event === 'UPDATE' && req.query.UPDATE.data.status &&
+        req.target.name.includes('.attachments')
+      ) {
+        ScanStates.push(req.query.UPDATE.data.status)
+      }
+    })
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+
+    //read attachments list for Incident
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    //to make sure content is not read
+    expect(attachmentResponse.data.value[0].content).toBeFalsy()
+    sampleDocID = attachmentResponse.data.value[0].ID
+
+    await scanStartWaiter
+
+    // Check Scanning status
+    const scanResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(scanResponse.status).toEqual(200)
+    expect(scanResponse.data.value.length).toEqual(1)
+    expect(ScanStates.some(s => s === 'Scanning')).toBeTruthy()
+
+    await scanCleanWaiter
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+
+    // Wait for 45 seconds to let the scan status expire
+    await delay(45 * 1000);
+
+    await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    ).catch(e => {
+      expect(e.status).toEqual(202)
+      expect(e.response.data.error.message).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
+    })
+  });
 
   it("Scan status is translated", async () => {
     const incidentID = await newIncident(POST, 'processor')

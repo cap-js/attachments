@@ -16,6 +16,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Changes in the CDS Models](#changes-in-the-cds-models)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
+      - [Automatic file rescanning](#automatic-file-rescanning)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
     - [Non-Draft Upload](#non-draft-upload)
@@ -55,7 +56,7 @@ For a quick local development setup with in-memory storage:
     The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
 
     ```cds
-    "devDependencies": { 
+    "dependencies": { 
       "@cap-js/attachments": "<latest-version>", 
       // (...)
     }
@@ -220,6 +221,25 @@ Scan status codes:
 > [!Note]
 > If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
 
+#### Automatic file rescanning
+
+According to the recommendation of the [Malware Scanning Service](http://help.sap.com/docs/malware-scanning-service/sap-malware-scanning-service/developing-applications-with-sap-malware-scanning-service), attachments should be rescanned automatically if the last scan is older than 3 days. This behavior can be configured in the attachments settings by specifying the `scanExpiryMs` property:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "attachments": {
+        "scanExpiryMs": 259200000
+      }
+    }
+  }
+}
+```
+
+By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
+
+To bypass this restriction, clients may include the header `handling=lenient` in their request, indicating acceptance of the associated risk.
 
 ### Visibility Control for Attachments UI Facet Generation
 
