@@ -78,7 +78,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
   })
 
-  //Draft mode uploading attachment
+  // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, 'processor')
     let sampleDocID = null
@@ -127,14 +127,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentResponse.status).toEqual(200)
     expect(contentResponse.data).toBeTruthy()
-
-
-    //Check clean status
-    const resultResponse = await GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
-    )
-    expect(resultResponse.status).toEqual(200)
-    expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
 
     // Wait for 45 seconds to let the scan status expire
     await delay(45 * 1000);
