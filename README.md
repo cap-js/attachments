@@ -239,8 +239,6 @@ According to the recommendation of the [Malware Scanning Service](http://help.sa
 
 By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
 
-To bypass this restriction, clients may include the header `handling=lenient` in their request, indicating acceptance of the associated risk.
-
 ### Visibility Control for Attachments UI Facet Generation
 
 By setting the `@UI.Hidden` property to `true`, developers can hide the visibility of the plugin in the UI. This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
