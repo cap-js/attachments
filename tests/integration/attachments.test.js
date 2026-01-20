@@ -78,6 +78,26 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(ScanStates.some(s => s === 'Clean')).toBeTruthy()
   })
 
+  it("Uploading attachment that exceeds 5MB limit should fail", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+
+    const db = await cds.connect.to('db')
+    const ScanStates = []
+    db.after('*', (res, req) => {
+      if (
+        req.event === 'UPDATE' && req.query.UPDATE.data.status &&
+        req.target.name.includes('.attachments')
+      ) {
+        ScanStates.push(req.query.UPDATE.data.status)
+      }
+    })
+    // Upload attachment using helper function
+    await uploadDraftAttachment(utils, POST, GET, incidentID).catch(e => {
+      expect(e.status).toEqual(413)
+      expect(e.response.data.error.message).toMatch("The size of \"testfile.pdf\" exceeds the maximum allowed limit of 5MB.")
+    });
+  })
+
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, 'processor')
@@ -517,46 +537,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes.status).toEqual(200)
     expect(getRes.data.value.length).toEqual(1)
     expect(["Scanning", "Clean", "Unscanned"]).toContain(getRes.data.value[0].status)
-  })
-
-  it("Uploading attachment that is too big fails", async () => {
-    // Create a Test entity
-    const testID = cds.utils.uuid()
-    await POST(`odata/v4/processor/Test`, {
-      ID: testID,
-      name: "Test Entity"
-    })
-
-    // Upload attachment
-    const res = await POST(
-      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/hiddenAttachments`,
-      {
-        up__ID: testID,
-        filename: "testfile.pdf",
-        mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
-      }
-    )
-    expect(res.data.ID).not.toBeNull()
-
-    const fileContent = fs.readFileSync(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
-    )
-
-    PUT(
-      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/hiddenAttachments(up__ID=${testID},ID=${res.data.ID},IsActiveEntity=false)/content`,
-      fileContent,
-      {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Length": 10 * 1024 * 1024, // 10 MB
-        }
-      }
-    ).catch(e => {
-      expect(e.status).toEqual(413)
-      expect(e.response.data.error.message).toMatch("The size of \"testfile.pdf\" exceeds the maximum allowed limit of 5MB.")
-    })
   })
 
   it("Uploading attachment to nested Test works and scan status is set", async () => {
