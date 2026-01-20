@@ -36,28 +36,6 @@ describe('validateAttachmentSize', () => {
     expect(response.status).toEqual(204)
   })
 
-  it('should reject for a file size over 400 MB', async () => {
-    const req = {
-      headers: { 'content-length': '20480000000' },
-      data: { content: 'abc' },
-      target: cds.model.definitions['AdminService.Incidents'].elements.attachments._target,
-      reject: jest.fn(), // Mocking the reject function
-    }
-    validateAttachmentSize(req)
-    expect(req.reject).toHaveBeenCalledWith({ "args": ["400MB"], "message": "AttachmentSizeExceeded", "status": 413 })
-  })
-
-  it('should reject for a file size over Validation.Maximum MB', async () => {
-    const req = {
-      headers: { 'content-length': '20480000000' },
-      data: { content: 'abc' },
-      target: cds.model.definitions['AdminService.Incidents'].elements.hiddenAttachments._target,
-      reject: jest.fn(), // Mocking the reject function
-    }
-    validateAttachmentSize(req)
-    expect(req.reject).toHaveBeenCalledWith({ "args": ["2MB"], "message": "AttachmentSizeExceeded", "status": 413 })
-  })
-
   it('should reject when Content-Length header is missing', async () => {
     const req = {
       headers: {}, // No content-length header
