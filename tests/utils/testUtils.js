@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const fs = require('fs').promises
 
 /**
  * Waits for attachment scanning to complete
@@ -119,6 +120,16 @@ async function newIncident(POST, serviceName, payload = {
   }
 }
 
+/**
+ * Creates a file with given size at the specified path
+ * @param {string} filePath - The path where the file should be created
+ * @param {number} size - The size of the file in bytes
+ * @returns {Promise<void>}
+ */
+async function createFile(filePath, size) {
+  return await fs.writeFile(filePath, Buffer.alloc(size))
+}
+
 module.exports = {
-  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion
+  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion, createFile
 }
