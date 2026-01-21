@@ -1,5 +1,4 @@
 const cds = require('@sap/cds')
-const fs = require('fs').promises
 
 /**
  * Waits for attachment scanning to complete
