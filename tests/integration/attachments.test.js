@@ -1,11 +1,10 @@
 const cds = require("@sap/cds")
 const path = require("path")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident, delay, waitForMalwareDeletion, createFile } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, delay, waitForMalwareDeletion } = require("../utils/testUtils")
 const fs = require("fs")
 const { createReadStream } = cds.utils.fs
 const { join } = cds.utils.path
-const os = require("os")
 
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
@@ -82,19 +81,35 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   it("Uploading attachment that exceeds 5MB limit should fail", async () => {
     const incidentID = await newIncident(POST, 'processor')
 
-    const filepath = join(os.tmpdir(), "/testfile.pdf");
+    const attachmentResult = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/maximumSizeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        createdBy: "alice",
+      }
+    )
 
-    // Create a file of size 6MB
-    await createFile(filepath, 1024 * 1024 * 6);
+    let expectedError
+    await PUT(
+      `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
+      fs.createReadStream(join(__dirname, "content/test.pdf")),
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": 6 * 1024 * 1024, // 6 MB
+        }
+      }
+    ).catch(e => {
+      expectedError = e
+    })
 
-    // Upload attachment using helper function
-    const uploadResult = await uploadDraftAttachment(utils, POST, GET, incidentID).catch(e => {
-      expect(e.status).toEqual(413)
-      expect(e.response.data.error.message).toMatch("The size of \"testfile.pdf\" exceeds the maximum allowed limit of 5MB.")
-    });
-    expect(uploadResult).toBeUndefined()
-
-    await fs.unlinkSync(filepath);
+    expect(expectedError.status).toEqual(413)
+    expect(expectedError.response.data.error.message).toMatch("The size of \"sample.pdf\" exceeds the maximum allowed limit of 5MB")
   })
 
   // Draft mode uploading attachment
@@ -436,7 +451,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("should fail to update note for non-existent attachment", async () => {
     const incidentID = await newIncident(POST, 'admin')
-    await axios.patch(
+    await PATCH(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
       { note: "This should fail" },
       { headers: { "Content-Type": "application/json" } }
@@ -1221,6 +1236,7 @@ describe("Tests for acceptable media types", () => {
     const incidentID = await newIncident(POST, 'processor')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
+    let expectedError
     await POST(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
       {
@@ -1234,31 +1250,34 @@ describe("Tests for acceptable media types", () => {
         createdBy: "alice",
       }
     ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+      expectedError = e
     })
+    expect(expectedError.status).toEqual(400)
+    expect(expectedError.response.data.error.message).toMatch("The attachment file type 'application/pdf' is not allowed.")
   })
 
   it("Uploading attachment with disallowed mime type and boundary specified", async () => {
     const incidentID = await newIncident(POST, 'processor')
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
+    let expectedError
     await POST(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/mediaTypeAttachments`,
       {
         up__ID: incidentID,
         filename: "sample.pdf",
-        mimeType: "application/jpeg boundary=something",
-        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
+        mimeType: "application/pdf boundary=something",
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
         createdBy: "alice",
       }
     ).catch(e => {
-      expect(e.status).toEqual(400)
-      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+      expectedError = e
     })
+    expect(expectedError.status).toEqual(400)
+    expect(expectedError.response.data.error.message).toMatch("The attachment file type 'application/pdf' is not allowed")
   })
 
   it("Uploading attachment with disallowed mime type and charset specified", async () => {
@@ -1271,7 +1290,6 @@ describe("Tests for acceptable media types", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg charset=UTF-8",
-        content: createReadStream(join(__dirname, "content/sample-1.jpg")),
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
         ),
@@ -1279,7 +1297,7 @@ describe("Tests for acceptable media types", () => {
       }
     ).catch(e => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.message).toMatch(/AttachmentMimeTypeDisallowed/)
+      expect(e.response.data.error.message).toMatch("The attachment file type 'application/pdf' is not allowed.")
     })
   })
 })
@@ -1805,7 +1823,7 @@ describe("Row-level security on attachments composition", () => {
   it("should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
     await utils.draftModeEdit("restriction", "DraftIcidents", restrictionID, "RestrictionService")
-    await axios.patch(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)`, {
+    await PATCH(`/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=false)`, {
       note: "Should fail"
     }, { auth: { username: "bob" } }).catch(e => {
       expect(e.status).toEqual(403)
@@ -1871,9 +1889,11 @@ async function uploadDraftAttachment(
   POST,
   GET,
   incidentId,
-  filepath = join(__dirname, "..", "integration", `content/sample.pdf`),
+  overrideContentLength = -1,
   entityName = 'attachments',
 ) {
+  const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+
   await utils.draftModeEdit("processor", "Incidents", incidentId, "ProcessorService")
 
   const res = await POST(
@@ -1897,7 +1917,7 @@ async function uploadDraftAttachment(
     {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Length": fileContent.length,
+        "Content-Length": overrideContentLength != -1 ? overrideContentLength : fileContent.byteLength,
       },
     }
   )

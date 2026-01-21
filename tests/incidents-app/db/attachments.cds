@@ -3,20 +3,23 @@ using {Attachments} from '@cap-js/attachments';
 
 extend my.Incidents with {
   @Validation.MaxItems: 2
-  attachments          : Composition of many Attachments;
+  attachments            : Composition of many Attachments;
   @attachments.disable_facet
   @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3)
-  hiddenAttachments    : Composition of many Attachments;
+  hiddenAttachments      : Composition of many Attachments;
 
   @UI.Hidden
-  hiddenAttachments2   : Composition of many Attachments;
+  hiddenAttachments2     : Composition of many Attachments;
 
   @UI.Hidden
-  mediaTypeAttachments : Composition of many Attachments;
+  mediaTypeAttachments   : Composition of many Attachments;
+
+  @UI.Hidden
+  maximumSizeAttachments : Composition of many Attachments;
 }
 
-annotate my.Incidents.hiddenAttachments with {
-  content @Validation.Maximum: '2MB';
+annotate my.Incidents.maximumSizeAttachments with {
+  content @Validation.Maximum: '5MB';
 }
 
 annotate my.Incidents.mediaTypeAttachments with {
