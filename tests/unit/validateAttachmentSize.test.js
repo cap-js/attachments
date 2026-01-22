@@ -1,9 +1,9 @@
 require('../../lib/csn-runtime-extension')
 const cds = require('@sap/cds');
-const path = require("path")
-const app = path.join(__dirname, "../incidents-app")
+const { readFileSync } = cds.utils.fs
+const { join } = cds.utils.path
+const app = join(__dirname, "../incidents-app")
 const { axios, POST } = cds.test(app)
-const fs = require('fs/promises')
 const { validateAttachmentSize } = require('../../lib/generic-handlers');
 const { newIncident } = require('../utils/testUtils');
 
@@ -18,8 +18,8 @@ describe('validateAttachmentSize', () => {
       { headers: { "Content-Type": "application/json" } }
     )
 
-    const fileContent = await fs.readFile(
-      path.join(__dirname, "..", "integration", 'content/sample.pdf')
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", 'content/sample.pdf')
     )
 
     const response = await axios.put(
