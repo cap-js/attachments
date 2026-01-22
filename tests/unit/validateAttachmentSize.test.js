@@ -6,6 +6,7 @@ const { axios, POST } = cds.test(app)
 const fs = require('fs/promises')
 const { validateAttachmentSize } = require('../../lib/generic-handlers');
 const { newIncident } = require('../utils/testUtils');
+const { join } = cds.utils.path
 
 describe('validateAttachmentSize', () => {
   axios.defaults.auth = { username: "alice" }

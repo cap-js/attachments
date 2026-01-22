@@ -1,10 +1,8 @@
 const cds = require("@sap/cds")
-const path = require("path")
 const { RequestSend } = require("../utils/api")
 const { waitForScanStatus, newIncident, delay, waitForMalwareDeletion } = require("../utils/testUtils")
-const fs = require("fs")
-const { createReadStream } = cds.utils.fs
-const { join } = cds.utils.path
+const { createReadStream, readFileSync } = cds.utils.fs
+const { join, basename } = cds.utils.path
 
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
@@ -97,7 +95,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     let expectedError
     await PUT(
       `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
-      fs.createReadStream(join(__dirname, "content/test.pdf")),
+      createReadStream(join(__dirname, "content/test.pdf")),
       {
         headers: {
           "Content-Type": "application/pdf",
@@ -110,6 +108,32 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     expect(expectedError.status).toEqual(413)
     expect(expectedError.response.data.error.message).toMatch("The size of \"sample.pdf\" exceeds the maximum allowed limit of 5MB")
+  })
+
+  it("Uploading attachment that exceeds 5MB limit should fail with nested attachment creation and content upload", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+
+    const fakeFileBuffer = Buffer.alloc(6 * 1024 * 1024, 'adalovelace') // 6 MB
+
+    let expectedError
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/maximumSizeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "sample.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ),
+        content: fakeFileBuffer,
+        createdBy: "alice",
+      }
+    ).catch(e => {
+      expectedError = e
+    })
+
+    expect(expectedError.status).toEqual(413)
+    expect(expectedError.response.data.error.message).toMatch("request entity too large")
   })
 
   // Draft mode uploading attachment
@@ -358,7 +382,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(doc.data.ID).toBeTruthy()
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -390,7 +414,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     const scanCleanWaiter = waitForScanStatus('Clean')
 
-    const fileContent = fs.createReadStream(
+    const fileContent = createReadStream(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     const attachmentsID = cds.utils.uuid()
@@ -431,7 +455,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("should fail to upload attachment to non-existent entity", async () => {
     const incidentID = await newIncident(POST, 'admin')
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -528,7 +552,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(res.data.ID).not.toBeNull()
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -572,7 +596,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/attachments`
     )
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -637,7 +661,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const childAttID = getChildAtt.data.value[0].ID
 
     // Upload file content for parent attachment
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -714,7 +738,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(res.data.ID).not.toBeNull()
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -855,7 +879,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(attachResTest.data.ID).not.toBeNull()
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -1782,7 +1806,7 @@ describe("Row-level security on attachments composition", () => {
     }, { auth: { username: "alice" } })
     attachmentID = attachRes.data.ID
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -1855,7 +1879,7 @@ describe("Row-level security on attachments composition", () => {
       mimeType: "application/pdf"
     }, { auth: { username: "alice" } })
 
-    const fileContent = fs.readFileSync(
+    const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
@@ -1900,7 +1924,7 @@ async function uploadDraftAttachment(
     `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
     {
       up__ID: incidentId,
-      filename: path.basename(filepath),
+      filename: basename(filepath),
       mimeType: "application/pdf",
       createdAt: new Date(
         Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
@@ -1908,7 +1932,7 @@ async function uploadDraftAttachment(
       createdBy: "alice",
     }
   )
-  const fileContent = fs.readFileSync(
+  const fileContent = readFileSync(
     filepath
   )
   await PUT(
