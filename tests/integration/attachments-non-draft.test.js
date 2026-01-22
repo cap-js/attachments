@@ -1,10 +1,10 @@
-const path = require("path")
-const fs = require("fs")
 const cds = require("@sap/cds")
 const { test } = cds.test()
 const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
+const { join, resolve } = cds.utils.path
+const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
-const app = path.resolve(__dirname, "../incidents-app")
+const app = resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, PATCH, DELETE, PUT } = require("@cap-js/cds-test")(app)
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
@@ -87,8 +87,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.data).toBeDefined()
     expect(response.data.length).toBeGreaterThan(0)
 
-    const originalContent = fs.readFileSync(
-      path.join(__dirname, "content/sample.pdf")
+    const originalContent = readFileSync(
+      join(__dirname, "content/sample.pdf")
     )
     expect(Buffer.compare(response.data, originalContent)).toBe(0)
   })
@@ -131,11 +131,11 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     const scanCleanWaiter = waitForScanStatus('Clean')
 
-    const fileContent = fs.createReadStream(
-      path.join(__dirname, "content/sample.pdf")
+    const fileContent = createReadStream(
+      join(__dirname, "content/sample.pdf")
     )
-    const contentLength = fs.statSync(
-      path.join(__dirname, "content/sample.pdf")
+    const contentLength = statSync(
+      join(__dirname, "content/sample.pdf")
     ).size
 
     const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
@@ -180,8 +180,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).toBe(204)
 
-    const fileContent = fs.readFileSync(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
     )
     let error
     try {
@@ -717,8 +717,8 @@ describe("Row-level security on attachments composition", () => {
     }, { auth: { username: "alice" } })
     attachmentID = attachRes.data.ID
 
-    const fileContent = fs.readFileSync(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
@@ -786,8 +786,8 @@ describe("Row-level security on attachments composition", () => {
       mimeType: "application/pdf"
     }, { auth: { username: "alice" } })
 
-    const fileContent = fs.readFileSync(
-      path.join(__dirname, "..", "integration", "content/sample.pdf")
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
     )
     await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachRes.data.ID})/content`,
@@ -822,8 +822,8 @@ function createHelpers() {
       service = "admin",
       entity = "Incidents"
     ) => {
-      const fileContent = fs.readFileSync(
-        path.join(__dirname, "..", "integration", contentPath)
+      const fileContent = readFileSync(
+        join(__dirname, "..", "integration", contentPath)
       )
       const response = await PUT(
         `/odata/v4/${service}/${entity}(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,

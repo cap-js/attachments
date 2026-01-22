@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.7.0
+
+### Added
+
+- Implemented automatic re-scanning of files whose last malware scan occurred more than 3 days ago, in alignment with the [BTP Malware Scanning FAQ](https://help.sap.com/docs/malware-scanning-servce/sap-malware-scanning-service/developing-applications-with-sap-malware-scanning-service#frequently-asked-questions).
+- Enhanced error messages for file size violations to include the filename, e.g., `The size of "myfile.jpeg" exceeds the maximum allowed limit of 5MB.`
+
+### Fixed
+
+- Addressed an issue where files were deleted twice from the underlying object store, which previously resulted in error messages and looping through the outbox.
+
 ## Version 3.6.1
 
 ### Fixed
