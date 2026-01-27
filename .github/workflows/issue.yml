@@ -9,7 +9,7 @@ on:
       - opened
 
 jobs:
-  label_issues:
+  label-issues:
     runs-on: ubuntu-latest
     steps:
       - run: gh issue edit "$NUMBER" --add-label "$LABELS"
