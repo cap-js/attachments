@@ -15,11 +15,11 @@ context sap.attachments {
     content   : LargeBinary                               @title: '{i18n>Attachment}'; // only for db-based services
     mimeType  : String default 'application/octet-stream' @title: '{i18n>MediaType}';
     filename  : String                                    @title: '{i18n>FileName}';
-    hash      : String                                    @UI.Hidden                                        @Core.Computed;
-    status    : String                                    @title: '{i18n>ScanStatus}'  default 'Unscanned'  @Common.Text: statusNav.name  @Common.TextArrangement: #TextOnly;
+    hash      : String                                    @UI.Hidden                   @Core.Computed;
+    status    : String default 'Unscanned'                @title: '{i18n>ScanStatus}'  @Common.Text: statusNav.name  @Common.TextArrangement: #TextOnly;
     statusNav : Association to one ScanStates
                   on statusNav.code = status;
-    lastScan  : Timestamp                                 @title: '{i18n>LastScan}'                         @Core.Computed;
+    lastScan  : Timestamp                                 @title: '{i18n>LastScan}'    @Core.Computed;
   }
 
   entity ScanStates : CodeList {
