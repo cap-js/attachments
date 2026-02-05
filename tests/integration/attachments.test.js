@@ -339,6 +339,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
     )
     expect(contentResponse1.status).toEqual(200)
+    expect(contentResponse1.data).toBeTruthy()
 
     await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
 
