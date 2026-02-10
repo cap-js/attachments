@@ -124,13 +124,13 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
    * @inheritdoc
    */
-  async put(attachments, data) {
+  async put(attachments, data, options = {}) {
     if (Array.isArray(data)) {
       LOG.debug("Processing bulk file upload", {
         fileCount: data.length,
         filenames: data.map((d) => d.filename),
       })
-      return Promise.all(data.map((d) => this.put(attachments, d)))
+      return Promise.all(data.map((d) => this.put(attachments, d, options)))
     }
 
     const startTime = Date.now()
@@ -190,7 +190,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       await multipartUpload.done()
-      await super.put(attachments, metadata)
+      await super.put(attachments, metadata, options)
 
       const duration = Date.now() - startTime
       LOG.debug("File upload to S3 completed successfully", {

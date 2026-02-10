@@ -38,9 +38,11 @@ class AttachmentsService extends cds.Service {
    * Uploads attachments to the database and initiates malware scans for database-stored files
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @param {Array|Object} data - The attachment data to be uploaded
+   * @param {Object} [options] - Options for the upload
+   * @param {boolean} [options.skipDbInsert] - Skip DB insert (used when CAP's native INSERT will handle it)
    * @returns {Promise<Array>} - Result of the upsert operation
    */
-  async put(attachments, data) {
+  async put(attachments, data, options = {}) {
     if (!Array.isArray(data)) {
       data = [data]
     }
@@ -57,7 +59,18 @@ class AttachmentsService extends cds.Service {
       attachmentEntity: attachments.name,
       fileCount: data.length,
       filenames: data.map((d) => d.filename || 'unknown'),
+      skipDbInsert: options.skipDbInsert
     })
+
+    // Skip DB insert and malware scan if the caller indicates CAP's native INSERT will handle it
+    // (e.g., when called from db.before("CREATE") handler - malware scan will be triggered in db.after)
+    if (options.skipDbInsert) {
+      LOG.debug('Skipping DB insert and malware scan (will be handled by CAP native INSERT and db.after handler)', {
+        attachmentEntity: attachments.name,
+        recordCount: data.length
+      })
+      return
+    }
 
     let res
 
