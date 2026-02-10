@@ -16,7 +16,7 @@ class AttachmentsService extends cds.Service {
         try {
           const url = attachment.url
           const activeEntity = cds.model.definitions[target]
-          const draftEntity = target ? cds.model.definitions?.[target+'.draft'] : undefined;
+          const draftEntity = target ? cds.model.definitions?.[target+'.draft'] : undefined
 
           await UPDATE(activeEntity).where({ url: url }).set({ content: null, url: null, hash: null })
           if (draftEntity) {
@@ -254,7 +254,7 @@ class AttachmentsService extends cds.Service {
 
     if (!req.subject) return
 
-    const attachments = await SELECT.from(req.subject).columns("url");
+    const attachments = await SELECT.from(req.subject).columns("url")
     if (attachments.length) {
       req.attachmentsToDelete = attachments.map(a => ({ ...a, target: req.target.name }))
     }
