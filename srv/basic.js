@@ -284,35 +284,46 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
+    if (!req.target?.drafts) return
     const attachmentCompositions = req?.target?._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
-      const diffData = await req.diff()
-      if (!diffData || Object.keys(diffData).length === 0) {
-        return
-      }
-      const queries = []
-      const queryTargets = []
+      const whereCond = req.subject?.ref?.[0]?.where
+      if (!whereCond) return
+
+      const columns = ['*', ...attachmentCompositions.map(comp => ({ ref: comp, expand: ['*'] }))]
+
+      const [draft, active] = await Promise.all([
+        SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
+        SELECT.one.from(req.target).where(whereCond).columns(columns)
+      ])
+
+      if (!active || !draft) return
+
+      const attachmentsToDelete = []
+
       for (const attachmentsComp of attachmentCompositions) {
-        const leaf = this.traverseDataByPath(diffData, attachmentsComp)
-        const deletedAttachments = Array.isArray(leaf) ? leaf.filter(obj => obj._op === "delete").map(obj => obj.ID) : []
+        const activeAttachments = this.traverseDataByPath(active, attachmentsComp) || []
+        const draftAttachments = this.traverseDataByPath(draft, attachmentsComp) || []
+        const draftAttachmentIDs = new Set(draftAttachments.map(a => a.ID))
+
+        // Find attachments present in the active entity but not in the draft
+        const deletedAttachments = activeAttachments.filter(
+          (att) => att.url && !draftAttachmentIDs.has(att.ID)
+        )
 
         const entityTarget = traverseEntity(req.target, attachmentsComp)
-        if (deletedAttachments.length) {
-          queries.push(
-            SELECT.from(entityTarget).columns("url").where({ ID: { in: [...deletedAttachments] } })
+
+        if (deletedAttachments.length > 0) {
+          attachmentsToDelete.push(
+            ...deletedAttachments.map(attachment => ({
+              url: attachment.url,
+              target: entityTarget.name
+            }))
           )
-          queryTargets.push(entityTarget.name)
         }
       }
-      if (queries.length > 0) {
-        const attachmentsToDelete = (await Promise.all(queries)).reduce((acc, attachments, idx) => {
-          attachments.forEach(attachment => attachment.target = queryTargets[idx])
-          acc = acc.concat(attachments)
-          return acc;
-        }, [])
-        if (attachmentsToDelete.length > 0) {
-          req.attachmentsToDelete = attachmentsToDelete
-        }
+      if (attachmentsToDelete.length > 0) {
+        req.attachmentsToDelete = attachmentsToDelete
       }
     }
   }
@@ -345,13 +356,13 @@ class AttachmentsService extends cds.Service {
 
     if (!draftEntity || !activeEntity) return
 
-    const diff = await req.diff()
-    if (diff._op !== "delete" || !diff.ID) return
+    const attachmentId = req.data?.ID
+    if (!attachmentId) return
 
     const attachmentsToDelete = await this.getAttachmentsToDelete({
       draftEntity,
       activeEntity,
-      whereXpr: { ID: diff.ID }
+      whereXpr: { ID: attachmentId }
     })
 
     if (attachmentsToDelete.length) {
