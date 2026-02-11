@@ -312,7 +312,7 @@ class AttachmentsService extends cds.Service {
         SELECT.one.from(req.target).where(whereCond).columns(columns)
       ])
 
-      if (!active || !draft) return
+      if (!active) return
 
       const attachmentsToDelete = []
 
@@ -328,7 +328,7 @@ class AttachmentsService extends cds.Service {
 
         const entityTarget = traverseEntity(req.target, attachmentsComp)
 
-        if (deletedAttachments.length > 0) {
+        if (deletedAttachments.length) {
           attachmentsToDelete.push(
             ...deletedAttachments.map(attachment => ({
               url: attachment.url,
