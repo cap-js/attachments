@@ -285,7 +285,13 @@ class AttachmentsService extends cds.Service {
    */
   async attachDeletionData(req) {
     if (!req.target?.drafts) return
-    const attachmentCompositions = req?.target?._attachments.attachmentCompositions
+
+    const allCompositions = req.target.compositions
+    if (!allCompositions) return
+    const attachmentCompositions = Object.entries(allCompositions)
+      .filter(([, comp]) => comp.target.includes('sap.attachments.Attachments'))
+      .map(([name]) => name)
+
     if (attachmentCompositions.length > 0) {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
