@@ -285,18 +285,27 @@ class AttachmentsService extends cds.Service {
    */
   async attachDeletionData(req) {
     if (!req.target?.drafts) return
-
-    const allCompositions = req.target.compositions
-    if (!allCompositions) return
-    const attachmentCompositions = Object.entries(allCompositions)
-      .filter(([, comp]) => comp.target.includes('sap.attachments.Attachments'))
-      .map(([name]) => name)
-
+    const attachmentCompositions = req?.target?._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
 
-      const columns = ['*', ...attachmentCompositions.map(comp => ({ ref: comp, expand: ['*'] }))]
+      const columns = ['*'];
+      for (const path of attachmentCompositions) {
+        let current = columns
+        for (let i = 0; i < path.length; i++) {
+          const segment = path[i]
+          let next = current.find(c => c.ref?.length === 1 && c.ref[0] === segment)
+          if (!next) {
+            next = { ref: [segment], expand: [] }
+            current.push(next)
+          }
+          current = next.expand
+          if (i === path.length - 1) {
+            current.push('*')
+          }
+        }
+      }
 
       const [draft, active] = await Promise.all([
         SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
