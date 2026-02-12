@@ -45,8 +45,59 @@ async function waitForScanStatus(status, attachmentID) {
 }
 
 /**
+ * Sets up a deletion listener and returns a waiter function.
+ * Must be called BEFORE the deletion operation to ensure the listener is registered.
+ * @returns {Promise<{waitFor: function}>} - Object with waitFor method to wait for specific attachment deletion
+ */
+async function setupDeletionListener() {
+  const AttachmentsSrv = await cds.connect.to("attachments")
+  const deletedUrls = new Set()
+  const pendingResolvers = new Map()
+  
+  // Register global handler immediately
+  AttachmentsSrv.on('DeleteAttachment', (req) => {
+    const url = req.data?.url
+    if (url) {
+      deletedUrls.add(url)
+      // Resolve any pending waiters for this URL
+      if (pendingResolvers.has(url)) {
+        pendingResolvers.get(url)(true)
+        pendingResolvers.delete(url)
+      }
+    }
+  })
+  
+  return {
+    /**
+     * Wait for a specific attachment to be deleted
+     * @param {string} attachmentUrl - The attachment URL to wait for
+     * @param {number} timeout - Timeout in ms (default 30000)
+     * @returns {Promise<boolean>}
+     */
+    waitFor(attachmentUrl, timeout = 30000) {
+      // If already deleted, resolve immediately
+      if (deletedUrls.has(attachmentUrl)) {
+        return Promise.resolve(true)
+      }
+      
+      return new Promise((resolve, reject) => {
+        pendingResolvers.set(attachmentUrl, resolve)
+        
+        setTimeout(() => {
+          if (pendingResolvers.has(attachmentUrl)) {
+            pendingResolvers.delete(attachmentUrl)
+            reject(new Error(`Timeout waiting for deletion of attachment ID: ${attachmentUrl}`))
+          }
+        }, timeout)
+      })
+    }
+  }
+}
+
+/**
  * Waits for deletion of attachment with given ID
- * @param {string} attachmentID - The attachment ID to wait for deletion
+ * @deprecated Use setupDeletionListener() instead for more robust event handling
+ * @param {string} attachmentID - The attachment ID (url) to wait for deletion
  * @returns {Promise<boolean>} - Resolves to true when deletion is detected
  */
 async function waitForDeletion(attachmentID) {
@@ -120,5 +171,5 @@ async function newIncident(POST, serviceName, payload = {
 }
 
 module.exports = {
-  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion
+  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion, setupDeletionListener
 }

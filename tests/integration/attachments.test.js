@@ -1123,6 +1123,60 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes2.data.url).toBeTruthy()
   })
 
+  isNotLocal("Uploading larger file (>400MB) should succeed when malware scanning is disabled", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+    cds.env.requires.attachments.scan = false
+
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    const res = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "largefile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf")
+    )
+
+    // Simulate a file larger than 400MB using Content-Length header
+    // When scan is disabled, MAX_FILE_SIZE() returns -1 (no limit)
+    const largeFileSize = 450 * 1024 * 1024 // 450 MB
+    const putResponse = await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": largeFileSize,
+        },
+      }
+    )
+
+    expect(putResponse.status).toEqual(204)
+
+    await utils.draftModeSave("processor", "Incidents", incidentID, "ProcessorService")
+
+    // Verify attachment exists and content is accessible
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`
+    )
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    expect(attachmentResponse.data.value[0].filename).toEqual("largefile.pdf")
+
+    // Verify log contains the warning about malware scanner being disabled
+    expect(log.output).toContain('Malware scanner is disabled! Please consider enabling it')
+
+    cds.env.requires.attachments.scan = true
+  })
+
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const incidentID = await newIncident(POST, 'processor')
     const testMal = "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
