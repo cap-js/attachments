@@ -290,7 +290,7 @@ class AttachmentsService extends cds.Service {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
 
-      const columns = ['*'];
+      const columns = []
       for (const path of attachmentCompositions) {
         let current = columns
         for (let i = 0; i < path.length; i++) {
