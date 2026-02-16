@@ -159,7 +159,6 @@ module.exports = class AzureAttachmentsService extends (
       LOG.debug("Uploading file to Azure Blob Storage", {
         containerName: containerClient.containerName,
         blobName,
-        filename: metadata.filename,
         contentSize: _content.length || _content.size || "unknown",
       })
 
@@ -188,7 +187,6 @@ module.exports = class AzureAttachmentsService extends (
 
       const duration = Date.now() - startTime
       LOG.debug("File upload to Azure Blob Storage completed successfully", {
-        filename: metadata.filename,
         fileId: metadata.ID,
         containerName: containerClient.containerName,
         blobName,
@@ -204,7 +202,6 @@ module.exports = class AzureAttachmentsService extends (
         err,
         "Check Azure Blob Storage connectivity, credentials, and container permissions",
         {
-          filename: data?.filename,
           fileId: data?.ID,
           containerName: containerClient.containerName,
           blobName: data?.url,

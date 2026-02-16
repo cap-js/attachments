@@ -180,7 +180,6 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
       LOG.info("Uploading file to S3", {
         bucket: bucket,
         key: Key,
-        filename: metadata.filename,
         contentSize: content.length || content.size || "unknown",
       })
 
@@ -195,7 +194,6 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       const duration = Date.now() - startTime
       LOG.debug("File upload to S3 completed successfully", {
-        filename: metadata.filename,
         fileId: metadata.ID,
         bucket: bucket,
         key: Key,
@@ -211,7 +209,6 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         err,
         "Check S3 connectivity, credentials, and bucket permissions",
         {
-          filename: data?.filename,
           fileId: data?.ID,
           bucket: bucket,
           key: data?.url,

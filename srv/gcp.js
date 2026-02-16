@@ -156,7 +156,6 @@ module.exports = class GoogleAttachmentsService extends (
       LOG.debug("Uploading file to Google Cloud Platform", {
         bucketName: bucket.name,
         blobName,
-        filename: metadata.filename,
         contentSize: content.length || content.size || "unknown",
       })
 
@@ -166,7 +165,6 @@ module.exports = class GoogleAttachmentsService extends (
 
       const duration = Date.now() - startTime
       LOG.debug("File upload to Google Cloud Platform completed successfully", {
-        filename: metadata.filename,
         fileId: metadata.ID,
         bucketName: bucket.name,
         blobName,
@@ -182,7 +180,6 @@ module.exports = class GoogleAttachmentsService extends (
         err,
         "Check Google Cloud Platform connectivity, credentials, and container permissions",
         {
-          filename: data?.filename,
           fileId: data?.ID,
           bucketName: bucket.name,
           blobName: data?.url,
