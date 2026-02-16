@@ -401,7 +401,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       {
         ID: secondID,
         name: "Test Entry 2",
-      }
+      },
     )
 
     // Verify entities were created by adding attachments
@@ -413,7 +413,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         mimeType: "application/pdf",
         createdAt: new Date(),
         createdBy: "alice",
-      }
+      },
     )
     expect(attachRes1.data.ID).toBeTruthy()
 
@@ -425,19 +425,19 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         mimeType: "application/pdf",
         createdAt: new Date(),
         createdBy: "alice",
-      }
+      },
     )
     expect(attachRes2.data.ID).toBeTruthy()
 
     // Verify attachments can be fetched
     const attachment1 = await GET(
-      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments(up__ID=${firstID},ID=${attachRes1.data.ID})`
+      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments(up__ID=${firstID},ID=${attachRes1.data.ID})`,
     )
     expect(attachment1.status).toBe(200)
     expect(attachment1.data.filename).toBe("file1.pdf")
 
     const attachment2 = await GET(
-      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments(up__ID=${secondID},ID=${attachRes2.data.ID})`
+      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments(up__ID=${secondID},ID=${attachRes2.data.ID})`,
     )
     expect(attachment2.status).toBe(200)
     expect(attachment2.data.filename).toBe("file2.pdf")
