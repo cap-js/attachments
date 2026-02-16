@@ -1,6 +1,6 @@
 const cds = require("@sap/cds")
 const { test } = cds.test()
-const { waitForScanStatus, newIncident, setupDeletionListener } = require("../utils/testUtils")
+const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
 const { join, resolve } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
@@ -317,9 +317,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   isNotLocal("should delete file from object store if data is deleted", async () => {
-    // Set up deletion listener BEFORE any operations to avoid race condition
-    const deletionListener = await setupDeletionListener()
-    
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(POST, 'processor', {
@@ -340,6 +337,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(attachResTest.data.url).toBeTruthy()
     await uploadAttachmentContent(testID, attachResTest.data.ID, "content/sample.pdf", "processor", "NonDraftTest")
 
+    const deletion = waitForDeletion(attachResTest.data.url)
+
     // Delete parent attachment
     const delParent = await DELETE(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
@@ -353,8 +352,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect(e.response.status).toBe(404)
     })
 
-    // Wait for the deletion event to be captured
-    expect(await deletionListener.waitFor(attachResTest.data.url)).toBe(true)
+    expect(await deletion).toBe(true)
   })
 
   it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
