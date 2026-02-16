@@ -28,7 +28,7 @@ jest.doMock('../../srv/malwareScanner', () => {
   }
 })
 
-const { getObjectStoreCredentials, fetchToken, sizeInBytes } = require('../../lib/helper')
+const { getObjectStoreCredentials, fetchToken, sizeInBytes, MAX_FILE_SIZE } = require('../../lib/helper')
 const axios = require('axios')
 const cds = require('@sap/cds')
 
@@ -103,6 +103,16 @@ describe('fetchToken', () => {
   it('should handle error and throw', async () => {
     axios.post.mockRejectedValue(new Error('fail'))
     await expect(fetchToken('url', 'clientId', 'clientSecret')).rejects.toThrow('fail')
+  })
+})
+
+describe('max attachment size', () => {
+  test('should return 400MB in normal scenario', () => {
+    expect(MAX_FILE_SIZE()).toEqual(400 * 1024 * 1024)
+  })
+  test('should return -1 when scan is disabled', () => {
+    cds.env.requires.attachments.scan = false
+    expect(MAX_FILE_SIZE()).toEqual(-1)
   })
 })
 
