@@ -187,7 +187,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(contentResponse.data).toBeTruthy()
 
     // Wait for 45 seconds to let the scan status expire
-    await delay(45 * 1000);
+    await delay(45 * 1000)
 
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
@@ -195,7 +195,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain('The last scan is older than 3 days. Please wait while the attachment is being re-scanned.')
     })
-  });
+  })
 
   it("Scan status is translated", async () => {
     const incidentID = await newIncident(POST, 'processor')
@@ -327,9 +327,37 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
   })
 
+  it("Discarding a saved draft should not delete attachment content", async () => {
+    const incidentID = await newIncident(POST, 'processor')
+    const scanCleanWaiter = waitForScanStatus('Clean')
+
+    const sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+    await scanCleanWaiter
+
+    const contentResponse1 = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse1.status).toEqual(200)
+    expect(contentResponse1.data).toBeTruthy()
+
+    await utils.draftModeEdit("processor", "Incidents", incidentID, "ProcessorService")
+
+    const discardResponse = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`
+    )
+    expect(discardResponse.status).toEqual(204)
+
+    // Verify the attachment content STILL exists
+    const contentResponse2 = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`
+    )
+    expect(contentResponse2.status).toEqual(200)
+  })
+
   it("Cancel draft where parent has composed key", async () => {
-    const gjahr = Math.round(Math.random() * 1000);
-    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`;
+    const gjahr = Math.round(Math.random() * 1000)
+    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
       sampleID: sampleID,
@@ -360,8 +388,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("On handler for attachments can be overwritten", async () => {
-    const gjahr = Math.round(Math.random() * 1000);
-    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`;
+    const gjahr = Math.round(Math.random() * 1000)
+    const sampleID = `ABC ${Math.round(Math.random() * 1000)}`
     await POST(
       `odata/v4/processor/SampleRootWithComposedEntity`, {
       sampleID,
@@ -1125,7 +1153,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
     const incidentID = await newIncident(POST, 'processor')
-    const testMal = "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=";
+    const testMal = "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
     const fileContent = Buffer.from(testMal, 'base64').toString("utf8")
 
     const scanInfectedWaiter = waitForScanStatus("Infected")
@@ -1439,7 +1467,7 @@ describe('Testing max and min amounts of attachments', () => {
         message: "ABC",
         attachments: []
       }
-    );
+    )
     expect(minStatus).toEqual(201)
 
     const { response: resMin } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
@@ -1492,7 +1520,7 @@ describe('Testing max and min amounts of attachments', () => {
   it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {
     const incidentID = await newIncident(POST, 'validation-test')
 
-    const conversationID = cds.utils.uuid();
+    const conversationID = cds.utils.uuid()
     await POST(
       `odata/v4/validation-test/Incidents(ID=${incidentID},IsActiveEntity=false)/conversation`,
       {
@@ -1696,7 +1724,7 @@ describe('Testing max and min amounts of attachments', () => {
     )
     const { response } = await utils.draftModeSave("validation-test", "Incidents", incidentID, "ValidationTestService")
     expect(response.status).toEqual(400)
-    const err = response.data.error.details.find(e => e.target.startsWith('conversation'));
+    const err = response.data.error.details.find(e => e.target.startsWith('conversation'))
     expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents.conversation')
   })
 
@@ -1708,7 +1736,7 @@ describe('Testing max and min amounts of attachments', () => {
     })
     const { response } = await utils.draftModeSave("validation-test", "Incidents", highIncID, "ValidationTestService")
     expect(response.status).toEqual(400)
-    const err = response.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
+    const err = response.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'))
     expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents|hiddenAttachments2')
   })
 
@@ -1757,10 +1785,10 @@ describe('Testing max and min amounts of attachments', () => {
 
     const { response: res1 } = await utils.draftModeSave("validation-test", "Incidents", highIncID, "ValidationTestService")
     expect(res1.status).toEqual(400)
-    const errMax1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments'));
+    const errMax1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments'))
     expect(errMax1.code).toEqual('MaximumAmountExceeded')
 
-    const errMin1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
+    const errMin1 = res1.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'))
     expect(errMin1.code).toEqual('MinimumAmountNotFulfilled|ValidationTestService.Incidents|hiddenAttachments2')
 
     await PATCH(`odata/v4/validation-test/Incidents(ID=${highIncID},IsActiveEntity=false)`, {
