@@ -28,23 +28,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Introduced support for `@Validation.MaxItems` and `@Validation.MinItems` annotations, enabling you to define the minimum and maximum number of attachments that can be uploaded.
 
-    #### Example: Limit to a Maximum of 2 Attachments
+  #### Example: Limit to a Maximum of 2 Attachments
 
-    ```cds
-    entity Incidents {
-        @Validation.MaxItems: 2
-        attachments: Composition of many Attachments;
-    }
-    ```
+  ```cds
+  entity Incidents {
+      @Validation.MaxItems: 2
+      attachments: Composition of many Attachments;
+  }
+  ```
 
-    #### Example: Require at Least 2 Attachments
+  #### Example: Require at Least 2 Attachments
 
-    ```cds
-    entity Incidents {
-        @Validation.MinItems: 2
-        attachments: Composition of many Attachments;
-    }
-    ```
+  ```cds
+  entity Incidents {
+      @Validation.MinItems: 2
+      attachments: Composition of many Attachments;
+  }
+  ```
+
 - Enhanced the `note` field to support multi-line input, improving readability for longer text entries.
 
 ### Fixed
@@ -66,17 +67,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Added
 
 - Introduced support for the `@Core.AcceptableMediaTypes` annotation, allowing specification of permitted MIME types for attachment uploads:
-    ```cds
-    annotate my.Books.attachments with {
-        content @Core.AcceptableMediaTypes: ['image/jpeg'];
-    }
-    ```
+  ```cds
+  annotate my.Books.attachments with {
+      content @Core.AcceptableMediaTypes: ['image/jpeg'];
+  }
+  ```
 - Added support for the `@Validation.Maximum` annotation to define the maximum allowed file size for attachments:
-    ```cds
-    annotate my.Books.attachments with {
-        content @Validation.Maximum: '2MB';
-    }
-    ```
+  ```cds
+  annotate my.Books.attachments with {
+      content @Validation.Maximum: '2MB';
+  }
+  ```
 
 ### Fixed
 
@@ -100,15 +101,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Fixed a server crash when the filename would not be given when creating new attachment metadata.
 - Fixed an issue where attachment handlers would be missing when all Attachments entity were behind feature toggles.
 - Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
-- Fixed an issue where the content could be uploaded for a not existing attachments entity. 
+- Fixed an issue where the content could be uploaded for a not existing attachments entity.
 
 ## Version 3.2.0
 
 ### Added
 
 - Implemented integration with additional cloud providers for attachment storage:
-    - Azure Blob Storage (`kind: azure`).
-    - Google Cloud Platform Object Store (`kind: gcp`).
+  - Azure Blob Storage (`kind: azure`).
+  - Google Cloud Platform Object Store (`kind: gcp`).
 - Added support for mTLS authentication for the malware scanning service.
 - Added criticality status to the attachment scan status.
 - Provided translations for all SAP-supported languages.
