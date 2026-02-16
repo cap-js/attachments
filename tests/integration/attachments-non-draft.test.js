@@ -355,6 +355,61 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(await deletion).toBe(true)
   })
 
+  it("should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
+    const firstID = cds.utils.uuid()
+    const secondID = cds.utils.uuid()
+
+    // Use programmatic INSERT to create entities
+    await INSERT.into("sap.capire.incidents.NonDraftTest").entries(
+      {
+        ID: firstID,
+        name: "Test Entry 1",
+      },
+      {
+        ID: secondID,
+        name: "Test Entry 2",
+      }
+    )
+
+    // Verify entities were created by adding attachments
+    const attachRes1 = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments`,
+      {
+        up__ID: firstID,
+        filename: "file1.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachRes1.data.ID).toBeTruthy()
+
+    const attachRes2 = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments`,
+      {
+        up__ID: secondID,
+        filename: "file2.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      }
+    )
+    expect(attachRes2.data.ID).toBeTruthy()
+
+    // Verify attachments can be fetched
+    const attachment1 = await GET(
+      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments(up__ID=${firstID},ID=${attachRes1.data.ID})`
+    )
+    expect(attachment1.status).toBe(200)
+    expect(attachment1.data.filename).toBe("file1.pdf")
+
+    const attachment2 = await GET(
+      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments(up__ID=${secondID},ID=${attachRes2.data.ID})`
+    )
+    expect(attachment2.status).toBe(200)
+    expect(attachment2.data.filename).toBe("file2.pdf")
+  })
+
   it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
