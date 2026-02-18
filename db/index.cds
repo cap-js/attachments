@@ -17,7 +17,7 @@ context sap.attachments {
     mimeType  : String default 'application/octet-stream' @title: '{i18n>MediaType}';
     filename  : String                                    @title: '{i18n>FileName}';
     hash      : String                                    @UI.Hidden                   @Core.Computed;
-    status : Association to one ScanStates default 'Unscanned'                @title: '{i18n>ScanStatus}'  @Common.Text: statusNav.name  @Common.TextArrangement: #TextOnly;
+    status    : Association to one ScanStates default 'Unscanned'                @title: '{i18n>ScanStatus}'  @Common.Text: status.name  @Common.TextArrangement: #TextOnly;
     lastScan  : Timestamp                                 @title: '{i18n>LastScan}'    @Core.Computed;
   }
 
