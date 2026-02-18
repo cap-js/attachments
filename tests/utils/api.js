@@ -9,7 +9,7 @@ class RequestSend {
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=true)/${path}.draftEdit`,
         {
           PreserveChanges: true,
-        }
+        },
       )
     } catch (err) {
       return err
@@ -23,13 +23,13 @@ class RequestSend {
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftPrepare`,
         {
           SideEffectsQualifier: "",
-        }
+        },
       )
 
       // Activate the draft
       return await this.post(
         `odata/v4/${serviceName}/${entityName}(ID=${id},IsActiveEntity=false)/${path}.draftActivate`,
-        {}
+        {},
       )
     } catch (err) {
       return err

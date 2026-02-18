@@ -1,4 +1,4 @@
-const cds = require('@sap/cds')
+const cds = require("@sap/cds")
 
 /**
  * Waits for attachment scanning to complete
@@ -6,11 +6,11 @@ const cds = require('@sap/cds')
  * @returns {Promise<void>}
  */
 async function delay(timeout = 1000) {
-  return new Promise(resolve => setTimeout(resolve, timeout))
+  return new Promise((resolve) => setTimeout(resolve, timeout))
 }
 
 async function waitForScanStatus(status, attachmentID) {
-  const db = await cds.connect.to('db')
+  const db = await cds.connect.to("db")
   let latestStatus = null
   return Promise.race([
     new Promise((resolve) => {
@@ -20,12 +20,18 @@ async function waitForScanStatus(status, attachmentID) {
         if (resolved) return
 
         if (
-          req.event === 'UPDATE' && req.query.UPDATE.data.status &&
-          req.target.name.includes('.attachments') &&
-          (
-            !attachmentID ||
-            (req.query.UPDATE.entity.ref.at(-1).where && req.query.UPDATE.entity.ref.at(-1).where.some(e => e.val && e.val === attachmentID)) ||
-            (req.query.UPDATE.where && req.query.UPDATE.where.some(e => e.val && e.val === attachmentID)))
+          req.event === "UPDATE" &&
+          req.query.UPDATE.data.status &&
+          req.target.name.includes(".attachments") &&
+          (!attachmentID ||
+            (req.query.UPDATE.entity.ref.at(-1).where &&
+              req.query.UPDATE.entity.ref
+                .at(-1)
+                .where.some((e) => e.val && e.val === attachmentID)) ||
+            (req.query.UPDATE.where &&
+              req.query.UPDATE.where.some(
+                (e) => e.val && e.val === attachmentID,
+              )))
         ) {
           // Store the latest status for timeout reporting
           latestStatus = req.query.UPDATE.data.status
@@ -36,11 +42,13 @@ async function waitForScanStatus(status, attachmentID) {
           }
         }
       }
-      db.after('*', handler)
+      db.after("*", handler)
     }),
     delay(30000).then(() => {
-      throw new Error(`Timeout waiting for attachment ${attachmentID || ''} to reach status: ${status}, last known status: ${latestStatus}`)
-    })
+      throw new Error(
+        `Timeout waiting for attachment ${attachmentID || ""} to reach status: ${status}, last known status: ${latestStatus}`,
+      )
+    }),
   ])
 }
 
@@ -52,7 +60,7 @@ async function waitForScanStatus(status, attachmentID) {
 async function waitForDeletion(attachmentID) {
   const AttachmentsSrv = await cds.connect.to("attachments")
   return Promise.race([
-    new Promise(resolve => {
+    new Promise((resolve) => {
       let resolved = false
       const handler = (req) => {
         if (resolved) return
@@ -62,11 +70,13 @@ async function waitForDeletion(attachmentID) {
           resolve(true)
         }
       }
-      AttachmentsSrv.on('DeleteAttachment', handler)
+      AttachmentsSrv.on("DeleteAttachment", handler)
     }),
     delay(30000).then(() => {
-      throw new Error(`Timeout waiting for deletion of attachment ID: ${attachmentID}`)
-    })
+      throw new Error(
+        `Timeout waiting for deletion of attachment ID: ${attachmentID}`,
+      )
+    }),
   ])
 }
 
@@ -79,7 +89,7 @@ async function waitForMalwareDeletion(attachmentID) {
   const AttachmentsSrv = await cds.connect.to("attachments")
 
   return Promise.race([
-    new Promise(resolve => {
+    new Promise((resolve) => {
       let resolved = false
       const handler = async (req) => {
         if (resolved) return
@@ -91,34 +101,42 @@ async function waitForMalwareDeletion(attachmentID) {
           resolve(true)
         }
       }
-      AttachmentsSrv.on('DeleteInfectedAttachment', handler)
+      AttachmentsSrv.on("DeleteInfectedAttachment", handler)
     }),
     delay(30000).then(() => {
-      throw new Error(`Timeout waiting for malware deletion of attachment ID: ${attachmentID}`)
-    })
+      throw new Error(
+        `Timeout waiting for malware deletion of attachment ID: ${attachmentID}`,
+      )
+    }),
   ])
 }
 
 /**
- * 
+ *
  * @returns Incident ID
  */
-async function newIncident(POST, serviceName, payload = {
-  title: `Incident ${Math.floor(Math.random() * 1000)}`,
-  customer_ID: '1004155'
-}, entity = 'Incidents') {
+async function newIncident(
+  POST,
+  serviceName,
+  payload = {
+    title: `Incident ${Math.floor(Math.random() * 1000)}`,
+    customer_ID: "1004155",
+  },
+  entity = "Incidents",
+) {
   try {
     // Create draft from active entity
-    const res = await POST(
-      `odata/v4/${serviceName}/${entity}`,
-      payload
-    );
-    return res.data.ID;
+    const res = await POST(`odata/v4/${serviceName}/${entity}`, payload)
+    return res.data.ID
   } catch (err) {
     return err
   }
 }
 
 module.exports = {
-  delay, waitForScanStatus, newIncident, waitForDeletion, waitForMalwareDeletion
+  delay,
+  waitForScanStatus,
+  newIncident,
+  waitForDeletion,
+  waitForMalwareDeletion,
 }

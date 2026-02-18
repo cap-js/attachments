@@ -24,6 +24,8 @@ service ProcessorService {
 
   @odata.draft.enabled
   entity SingleAttachment             as projection on my.SingleAttachment;
+
+  action insertTestData() returns String;
 }
 
 /**
@@ -74,27 +76,23 @@ service ValidationTestNonDraftService {
 }
 
 service RestrictionService {
-  @(restrict: [
-    {
-      grant: '*',
-      to: 'admin',
-      where: 'title = ''ABC'''
-    }
-  ])
-  entity Incidents as projection on my.Incidents;
+  @(restrict: [{
+    grant: '*',
+    to   : 'admin',
+    where: 'title = ''ABC'''
+  }])
+  entity Incidents     as projection on my.Incidents;
 
-  @(restrict: [
-    {
-      grant: '*',
-      to: 'admin',
-      where: 'title = ''ABC'''
-    }
-  ]) 
+  @(restrict: [{
+    grant: '*',
+    to   : 'admin',
+    where: 'title = ''ABC'''
+  }])
   @odata.draft.enabled
   @cds.redirection.target
   entity DraftIcidents as projection on my.Incidents;
 }
 
-annotate ProcessorService.Incidents with @odata.draft.enabled; 
+annotate ProcessorService.Incidents with @odata.draft.enabled;
 annotate ProcessorService with @(requires: 'support');
 annotate AdminService with @(requires: 'admin');
