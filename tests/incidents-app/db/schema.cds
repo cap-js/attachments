@@ -102,8 +102,5 @@ entity SingleTestDetails : cuid {
 }
 
 entity SingleAttachment : cuid {
-entity SingleAttachment : cuid {
-  name : String;
-}
   name : String;
 }
