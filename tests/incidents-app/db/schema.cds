@@ -102,6 +102,8 @@ entity SingleTestDetails : cuid {
 }
 
 entity SingleAttachment : cuid {
-  key ID : UUID;
+entity SingleAttachment : cuid {
+  name : String;
+}
   name : String;
 }
