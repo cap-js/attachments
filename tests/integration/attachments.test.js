@@ -1194,6 +1194,77 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 })
 
+describe("Tests for single attachment entity", () => {
+  it("should create a SingleAttachment with an attachment", async () => {
+    const { data: singleAttachment } = await POST('/odata/v4/processor/SingleAttachment', {
+      name: 'My Single Attachment Test'
+    })
+    expect(singleAttachment.ID).toBeDefined()
+    expect(singleAttachment.name).toBe('My Single Attachment Test')
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    const postRes = await POST(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
+        {
+            filename: basename(filepath),
+            mimeType: "application/pdf",
+        }
+    )
+
+    const putRes = await PUT(
+        `/odata/v4/processor/SingleAttachment_myAttachment(up__ID=${singleAttachment.ID},ID=${postRes.data.ID},IsActiveEntity=false)/content`,
+        fileContent,
+        {
+            headers: {
+                "Content-Type": "application/pdf",
+            },
+        }
+    )
+    expect(putRes.status).toEqual(204)
+
+    // Activate the draft
+    await POST(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`)
+
+    // Verify active document
+    const getRes = await GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`)
+    expect(getRes.data.ID).toBeDefined()
+  })
+
+  it("should delete a SingleAttachment and its attachment", async () => {
+    // Create a new entity to delete
+    const { data: singleAttachment } = await POST('/odata/v4/processor/SingleAttachment', {
+        name: 'Entity to be deleted'
+    })
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    const postRes = await POST(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
+        { filename: basename(filepath) }
+    )
+    await PUT(
+        `/odata/v4/processor/SingleAttachment_myAttachment(up__ID=${singleAttachment.ID},ID=${postRes.data.ID},IsActiveEntity=false)/content`,
+        fileContent,
+        { headers: { "Content-Type": "application/pdf" } }
+    )
+    await POST(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`)
+
+    const activeAttachment = await GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`)
+    const attachmentUrl = activeAttachment.data.url
+    expect(attachmentUrl).toBeDefined()
+
+    // Now, delete the parent entity
+    const deleteRes = await DELETE(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`)
+    expect(deleteRes.status).toEqual(204)
+
+    // Verify the attachment content is gone from the object store (which is the DB in this test setup)
+    const db = await cds.connect.to('db')
+    const content = await db.run(SELECT.one.from('sap.attachments.Attachments').where({ url: attachmentUrl }).columns('content'))
+    expect(content.content).toBeNull()
+  })
+})
+
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables

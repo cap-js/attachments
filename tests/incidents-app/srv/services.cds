@@ -21,6 +21,9 @@ service ProcessorService {
   entity NonDraftTest                 as projection on my.NonDraftTest;
 
   entity SingleTestDetails            as projection on my.SingleTestDetails;
+
+  @odata.draft.enabled
+  entity SingleAttachment             as projection on my.SingleAttachment;
 }
 
 /**
