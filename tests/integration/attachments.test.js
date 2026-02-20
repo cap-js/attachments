@@ -1304,16 +1304,17 @@ describe("Tests for single attachment entity", () => {
     const filepath = join(__dirname, "content/sample.pdf")
     const fileContent = readFileSync(filepath)
 
-    const postRes = await POST(
+    const putRes = await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
       {
-        filename: basename(filepath),
-        mimeType: "application/pdf",
+          filename: basename(filepath),
+          mimeType: "application/pdf",
       },
     )
+    expect(putRes.status).toEqual(200)
 
-    const putRes = await PUT(
-      `/odata/v4/processor/SingleAttachment_myAttachment(up__ID=${singleAttachment.ID},ID=${postRes.data.ID},IsActiveEntity=false)/content`,
+    const putContentRes = await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
       fileContent,
       {
         headers: {
@@ -1321,7 +1322,7 @@ describe("Tests for single attachment entity", () => {
         },
       },
     )
-    expect(putRes.status).toEqual(204)
+    expect(putContentRes.status).toEqual(204)
 
     // Activate the draft
     await POST(
@@ -1332,7 +1333,7 @@ describe("Tests for single attachment entity", () => {
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`,
     )
-    expect(getRes.data.ID).toBeDefined()
+    expect(getRes.data.filename).toBe(basename(filepath))
   })
 
   it("should delete a SingleAttachment and its attachment", async () => {
@@ -1345,15 +1346,21 @@ describe("Tests for single attachment entity", () => {
     )
     const filepath = join(__dirname, "content/sample.pdf")
     const fileContent = readFileSync(filepath)
-    const postRes = await POST(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
-      { filename: basename(filepath) },
-    )
+    
     await PUT(
-      `/odata/v4/processor/SingleAttachment_myAttachment(up__ID=${singleAttachment.ID},ID=${postRes.data.ID},IsActiveEntity=false)/content`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
+      { 
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
       fileContent,
       { headers: { "Content-Type": "application/pdf" } },
     )
+
     await POST(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`,
     )
@@ -1376,7 +1383,6 @@ describe("Tests for single attachment entity", () => {
       SELECT.one
         .from("sap.attachments.Attachments")
         .where({ url: attachmentUrl })
-        .columns("content"),
     )
     expect(content.content).toBeNull()
   })
