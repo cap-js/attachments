@@ -368,11 +368,13 @@ class AttachmentsService extends cds.Service {
           this.traverseDataByPath(active, attachmentsComp) || []
         const draftAttachments =
           this.traverseDataByPath(draft, attachmentsComp) || []
-        const draftAttachmentIDs = new Set(draftAttachments.map((a) => a.ID))
+        const draftAttachmentIDs = new Set(
+          draftAttachments.filter((a) => a.ID).map((a) => a.ID),
+        )
 
         // Find attachments present in the active entity but not in the draft
         const deletedAttachments = activeAttachments.filter(
-          (att) => att.url && !draftAttachmentIDs.has(att.ID),
+          (att) => att.url && att.ID && !draftAttachmentIDs.has(att.ID),
         )
 
         const entityTarget = traverseEntity(req.target, attachmentsComp)

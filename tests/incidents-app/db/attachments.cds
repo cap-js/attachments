@@ -1,5 +1,5 @@
 using {sap.capire.incidents as my} from './schema';
-using {Attachments} from '@cap-js/attachments';
+using {Attachments, Attachment} from '@cap-js/attachments';
 
 extend my.Incidents with {
   @Validation.MaxItems: 2
@@ -53,4 +53,8 @@ extend my.NonDraftTest with {
 
 extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
+}
+
+extend my.SingleAttachment with {
+  myAttachment : Attachment;
 }

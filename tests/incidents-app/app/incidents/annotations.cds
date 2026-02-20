@@ -245,3 +245,29 @@ annotate service.TestDetails with @(
     }
   ]
 );
+
+annotate service.SingleAttachment with @(
+    UI.LineItem : [
+        {
+            Value : name,
+            Label : 'Name',
+        },
+    ],
+    UI.Facets : [
+        {
+            $Type : 'UI.ReferenceFacet',
+            Label : 'General Information',
+            Target : '@UI.FieldGroup#General',
+        },
+        {
+            $Type : 'UI.ReferenceFacet',
+            Label : 'Attachment',
+            Target : 'myAttachment/@UI.LineItem'
+        }
+    ],
+    UI.FieldGroup #General : {
+        Data : [
+            { Value : name },
+        ]
+    }
+);

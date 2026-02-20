@@ -100,3 +100,7 @@ entity NonDraftTest : cuid, managed {
 entity SingleTestDetails : cuid {
   abc : String;
 }
+
+entity SingleAttachment : cuid {
+  name : String;
+}

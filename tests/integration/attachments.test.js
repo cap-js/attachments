@@ -1235,61 +1235,157 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes2.data.url).toBeTruthy()
   })
 
-  isNotLocal(
-    "Should detect infected files and automatically delete them after scan",
-    async () => {
-      const incidentID = await newIncident(POST, "processor")
-      const testMal =
-        "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
-      const fileContent = Buffer.from(testMal, "base64").toString("utf8")
+  // prettier-ignore
+  isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const testMal =
+      "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
+    const fileContent = Buffer.from(testMal, "base64").toString("utf8")
 
-      const scanInfectedWaiter = waitForScanStatus("Infected")
+    const scanInfectedWaiter = waitForScanStatus("Infected")
 
-      await utils.draftModeEdit(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-      )
-      const res = await POST(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-        {
-          up__ID: incidentID,
-          filename: "testmal.png",
-          mimeType: "image/png",
-          createdAt: new Date(),
-          createdBy: "alice",
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+    const res = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "testmal.png",
+        mimeType: "image/png",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    const deletionWaiter = waitForMalwareDeletion(res.data.ID)
+
+    await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "image/png",
+          "Content-Length": fileContent.length,
         },
-      )
-      expect(res.data.ID).toBeTruthy()
+      },
+    )
 
-      const deletionWaiter = waitForMalwareDeletion(res.data.ID)
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
 
-      await PUT(
-        `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
-        fileContent,
-        {
-          headers: {
-            "Content-Type": "image/png",
-            "Content-Length": fileContent.length,
-          },
+    // Check that status is "infected" after scan
+    await scanInfectedWaiter
+
+    // Wait for deletion to complete
+    await deletionWaiter
+  })
+})
+
+describe("Tests for single attachment entity", () => {
+  it("should create a SingleAttachment with an attachment", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "My Single Attachment Test",
+      },
+    )
+    expect(singleAttachment.ID).toBeDefined()
+    expect(singleAttachment.name).toBe("My Single Attachment Test")
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    const putRes = await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+    expect(putRes.status).toEqual(200)
+
+    const putContentRes = await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
         },
-      )
+      },
+    )
+    expect(putContentRes.status).toEqual(204)
 
-      await utils.draftModeSave(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-      )
+    // Activate the draft
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
 
-      // Check that status is "infected" after scan
-      await scanInfectedWaiter
+    // Verify active document
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`,
+    )
+    expect(getRes.data.filename).toBe(basename(filepath))
+  })
 
-      // Wait for deletion to complete
-      await deletionWaiter
-    },
-  )
+  it("should delete a SingleAttachment and its attachment", async () => {
+    // Create a new entity to delete
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Entity to be deleted",
+      },
+    )
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    const activeAttachment = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`,
+    )
+    const attachmentUrl = activeAttachment.data.url
+    expect(attachmentUrl).toBeDefined()
+
+    // Now, delete the parent entity
+    const deleteRes = await DELETE(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    expect(deleteRes.status).toEqual(204)
+
+    // Verify the attachment content is gone from the object store (which is the DB in this test setup)
+    const db = await cds.connect.to("db")
+    const content = await db.run(
+      SELECT.one
+        .from("sap.attachments.Attachments")
+        .where({ url: attachmentUrl }),
+    )
+    expect(content.content).toBeNull()
+  })
 })
 
 describe("Tests for attachments facet disable", () => {

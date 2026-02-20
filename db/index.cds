@@ -1,6 +1,7 @@
 // The common root-level aspect used in applications like that:
 // using { Attachments } from '@cap-js/attachments'
 aspect Attachments : sap.attachments.Attachments {}
+type Attachment : sap.attachments.SingleMediaData;
 
 using {
   managed,
@@ -9,6 +10,16 @@ using {
 } from '@sap/cds/common';
 
 context sap.attachments {
+
+  type SingleMediaData @(_is_media_data) {
+    url       : String                                            @UI.Hidden;
+    content   : LargeBinary                                       @title: '{i18n>Attachment}'; // only for db-based services
+    mimeType  : String default 'application/octet-stream'         @title: '{i18n>MediaType}';
+    filename  : String                                            @title: '{i18n>FileName}';
+    hash      : String                                            @UI.Hidden                   @Core.Computed;
+    status    : Association to one ScanStates default 'Unscanned' @title: '{i18n>ScanStatus}'  @Common.Text: status.name  @Common.TextArrangement: #TextOnly;
+    lastScan  : Timestamp                                         @title: '{i18n>LastScan}'    @Core.Computed;
+  }
 
   aspect MediaData @(_is_media_data) {
     url       : String                                    @UI.Hidden;
