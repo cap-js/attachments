@@ -1307,8 +1307,8 @@ describe("Tests for single attachment entity", () => {
     const putRes = await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
       {
-          filename: basename(filepath),
-          mimeType: "application/pdf",
+        filename: basename(filepath),
+        mimeType: "application/pdf",
       },
     )
     expect(putRes.status).toEqual(200)
@@ -1346,10 +1346,10 @@ describe("Tests for single attachment entity", () => {
     )
     const filepath = join(__dirname, "content/sample.pdf")
     const fileContent = readFileSync(filepath)
-    
+
     await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
-      { 
+      {
         filename: basename(filepath),
         mimeType: "application/pdf",
       },
@@ -1382,7 +1382,7 @@ describe("Tests for single attachment entity", () => {
     const content = await db.run(
       SELECT.one
         .from("sap.attachments.Attachments")
-        .where({ url: attachmentUrl })
+        .where({ url: attachmentUrl }),
     )
     expect(content.content).toBeNull()
   })
