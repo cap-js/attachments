@@ -2201,8 +2201,8 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Testing to prevent crash due to recursive overflow", () => {
-  it("should not crash when creating a draft with recursive compositions", async () => {
-    const { data } = await POST(
+  it("should not crash and allow attachment upload with recursive compositions", async () => {
+    const postData = await POST(
       "/odata/v4/processor/Posts",
       {
         content: "New Post",
@@ -2213,7 +2213,31 @@ describe("Testing to prevent crash due to recursive overflow", () => {
         },
       },
     )
-    expect(data.ID).toBeDefined()
+    expect(postData.data.ID).toBeDefined()
+
+    const postID = postData.data.ID
+    const attachmentData = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: postID,
+        filename: "test.txt",
+        mimeType: "text/plain",
+      },
+    )
+    expect(attachmentData.data.ID).toBeDefined()
+
+    const attachmentID = attachmentData.data.ID
+    await PUT(
+        `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${attachmentID},IsActiveEntity=false)/content`,
+        "This is a test attachment.",
+        { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const attachments = await GET(
+        `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`
+    )
+    expect(attachments.data.value).toHaveLength(1)
+    expect(attachments.data.value[0].filename).toBe("test.txt")
   })
 })
 
