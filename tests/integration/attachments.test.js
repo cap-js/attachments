@@ -2228,13 +2228,13 @@ describe("Testing to prevent crash due to recursive overflow", () => {
 
     const attachmentID = attachmentData.data.ID
     await PUT(
-        `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${attachmentID},IsActiveEntity=false)/content`,
-        "This is a test attachment.",
-        { headers: { "Content-Type": "text/plain" } },
+      `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      "This is a test attachment.",
+      { headers: { "Content-Type": "text/plain" } },
     )
 
     const attachments = await GET(
-        `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
     )
     expect(attachments.data.value).toHaveLength(1)
     expect(attachments.data.value[0].filename).toBe("test.txt")
