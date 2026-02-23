@@ -2200,6 +2200,23 @@ describe("Row-level security on attachments composition", () => {
   })
 })
 
+describe("Testing to prevent crash due to recursive overflow", () => {
+  it("should not crash when creating a draft with recursive compositions", async () => {
+    const { data } = await POST(
+      "/odata/v4/processor/Posts",
+      {
+        content: "New Post",
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    )
+    expect(data.ID).toBeDefined()
+  })
+})
+
 /**
  * Uploads attachment in draft mode using CDS test utilities
  * @param {Object} utils - RequestSend utility instance
