@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -19,11 +19,11 @@
     "test": "npx jest --silent=true"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.918.0",
-    "@aws-sdk/lib-storage": "^3.918.0",
-    "@azure/storage-blob": "^12.29.1",
-    "@google-cloud/storage": "^7.17.3",
-    "axios": "^1.4.0"
+    "@aws-sdk/client-s3": "^3.993.0",
+    "@aws-sdk/lib-storage": "^3.993.0",
+    "@azure/storage-blob": "^12.31.0",
+    "@google-cloud/storage": "^7.19.0",
+    "axios": "^1.13.5"
   },
   "devDependencies": {
     "@cap-js/cds-test": ">=0",

@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.8.0
+
+### Added
+
+- Support for all generic MIME types (see [mime.js](https://github.com/cap-js/attachments/blob/e982cef4f41371ddc5d621fcdb9f69b18ec8c4b2/lib/mime.js)).
+- DB handler for programmatic attachment insertion via `INSERT.into()`:
+  ```js
+  const firstID = cds.utils.uuid()
+  const secondID = cds.utils.uuid()
+  await INSERT.into("sap.capire.incidents.NonDraftTest").entries(
+    {
+      ID: firstID,
+      title: "Test Incident 1",
+      description: "This is a test incident 1",
+      urgency_code: "L",
+      urgency_descr: "Low",
+    },
+    {
+      ID: secondID,
+      title: "Urgent Test Incident 2",
+      description: "This is a test incident 2",
+      urgency_code: "L",
+      urgency_descr: "Low",
+    },
+  )
+  ```
+
+### Fixed
+
+- Resolved an issue in draft mode where discarding an active draft incorrectly deleted attachments from the object store. Removed dependency on `req.diff()`.
+
 ## Version 3.7.0
 
 ### Added
