@@ -22,6 +22,11 @@ service ProcessorService {
 
   entity SingleTestDetails            as projection on my.SingleTestDetails;
 
+  @odata.draft.enabled
+  entity Posts as projection on my.Posts;
+
+  entity Comments as projection on my.Comments;
+
   action insertTestData() returns String;
 }
 

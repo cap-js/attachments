@@ -100,3 +100,16 @@ entity NonDraftTest : cuid, managed {
 entity SingleTestDetails : cuid {
   abc : String;
 }
+
+entity Posts : cuid, managed {
+    content : String;
+    comments  : Composition of many Comments on comments.post = $self;
+    attachments : Composition of many Attachments;
+}
+
+entity Comments : cuid, managed {
+    content : String;
+    post : Association to Posts;
+    replyTo : Association to Comments;
+    replies : Composition of many Comments on replies.replyTo = $self;
+}
