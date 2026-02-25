@@ -5,6 +5,7 @@ const {
   newIncident,
   delay,
   waitForMalwareDeletion,
+  waitForDeletion,
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
@@ -1290,6 +1291,111 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       await deletionWaiter
     },
   )
+
+  it("Must delete discarded files from the object store when active entity exists", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    const attachmentData = {
+      up__ID: incidentID,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+    }
+
+    const createResponse = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      attachmentData,
+    )
+    const attachmentID = createResponse.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    const putResponse = await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.byteLength,
+        },
+      },
+    )
+    expect(putResponse.status).toBe(204)
+
+    // Need the URL of the attachment to confirm its deletion later
+    const getResponse = await GET(
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
+    )
+    const attachmentUrl = getResponse.data.url
+    expect(attachmentUrl).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentUrl)
+
+    const discardResponse = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`,
+    )
+    expect(discardResponse.status).toBe(204)
+
+    await deletionWaiter
+  })
+
+  it("Must delete discarded files from the object store when no active entity exists", async () => {
+    // Create a new draft incident directly without saving it first
+    const incidentID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Incidents`, {
+      ID: incidentID,
+      title: "New Draft Incident",
+    })
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    const attachmentData = {
+      up__ID: incidentID,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+    }
+
+    const createResponse = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      attachmentData,
+    )
+    const attachmentID = createResponse.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    const putResponse = await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.byteLength,
+        },
+      },
+    )
+    expect(putResponse.status).toBe(204)
+
+    // Need the URL of the attachment to confirm its deletion later
+    const getResponse = await GET(
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
+    )
+    const attachmentUrl = getResponse.data.url
+    expect(attachmentUrl).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentUrl)
+
+    const discardResponse = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`,
+    )
+    expect(discardResponse.status).toBe(204)
+
+    await deletionWaiter
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
