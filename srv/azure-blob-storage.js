@@ -2,10 +2,7 @@ const { BlobServiceClient } = require("@azure/storage-blob")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
-const {
-  MAX_FILE_SIZE,
-  sizeInBytes
-} = require("../lib/helper")
+const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
 
 module.exports = class AzureAttachmentsService extends (
   require("./object-store")
@@ -129,7 +126,7 @@ module.exports = class AzureAttachmentsService extends (
     })
     const { containerClient } = await this.retrieveClient()
     try {
-      let { content: _content, ...metadata } = data
+      let { content, ...metadata } = data
       const blobName = metadata.url
 
       if (!blobName) {
@@ -137,17 +134,17 @@ module.exports = class AzureAttachmentsService extends (
           "File key/URL is required for Azure Blob Storage upload",
           null,
           "Ensure attachment data includes a valid URL/key",
-          { metadata: { ...metadata, content: !!_content } },
+          { metadata: { ...metadata, content: !!content } },
         )
         throw new Error("File key is required for upload")
       }
 
-      if (!_content) {
+      if (!content) {
         LOG.error(
           "File content is required for Azure Blob Storage upload",
           null,
           "Ensure attachment data includes file content",
-          { key: blobName, hasContent: !!_content },
+          { key: blobName, hasContent: !!content },
         )
         throw new Error("File content is required for upload")
       }
@@ -191,30 +188,21 @@ module.exports = class AzureAttachmentsService extends (
       LOG.debug("Uploading file to Azure Blob Storage", {
         containerName: containerClient.containerName,
         blobName,
-        contentSize: _content.length || _content.size || "unknown",
+        contentSize: content.length || content.size || "unknown",
       })
 
       // Handle different content types for update
       let contentLength
-      const content = _content
       if (Buffer.isBuffer(content)) {
         contentLength = content.length
       } else if (content && typeof content.length === "number") {
         contentLength = content.length
       } else if (content && typeof content.size === "number") {
         contentLength = content.size
-      } else {
-        // Convert to buffer if needed
-        const chunks = []
-        for await (const chunk of content) {
-          chunks.push(chunk)
-        }
-        _content = Buffer.concat(chunks)
-        contentLength = _content.length
       }
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await blobClient.upload(_content, contentLength)
+      await blobClient.upload(content, contentLength)
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime

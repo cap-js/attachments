@@ -54,7 +54,3 @@ extend my.NonDraftTest with {
 extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
 }
-
-annotate my.NonDraftTest.attachments with {
-  content @Validation.Maximum: '2MB';
-}
