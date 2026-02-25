@@ -1,39 +1,50 @@
-const cds = require('@sap/cds')
+const cds = require("@sap/cds");
 
 class ProcessorService extends cds.ApplicationService {
   /** Registering custom event handlers */
   init() {
-    const res = super.init()
-    this.prepend(() => 
-      this.on('PUT', this.entities['SampleRootWithComposedEntity.attachments'].drafts, async (req, next) => {
-        cds.log('overwrite-put-handler').info('Overwritten PUT handler called')
-        return next()
-      })
-    )
-    
-    this.before('UPDATE', 'Incidents', req => this.onUpdate(req))
-    this.before(['CREATE', 'UPDATE'], 'Incidents', req => this.changeUrgencyDueToSubject(req.data))
+    const res = super.init();
+    this.prepend(() =>
+      this.on(
+        "PUT",
+        this.entities["SampleRootWithComposedEntity.attachments"].drafts,
+        async (req, next) => {
+          cds
+            .log("overwrite-put-handler")
+            .info("Overwritten PUT handler called");
+          return next();
+        },
+      ),
+    );
+
+    this.before("UPDATE", "Incidents", (req) => this.onUpdate(req));
+    this.before(["CREATE", "UPDATE"], "Incidents", (req) =>
+      this.changeUrgencyDueToSubject(req.data),
+    );
     return res;
   }
 
   changeUrgencyDueToSubject(data) {
     if (data) {
-      const incidents = Array.isArray(data) ? data : [data]
-      incidents.forEach(incident => {
-        if (incident.title?.toLowerCase().includes('urgent')) {
-          incident.urgency = { code: 'H', descr: 'High' }
+      const incidents = Array.isArray(data) ? data : [data];
+      incidents.forEach((incident) => {
+        if (incident.title?.toLowerCase().includes("urgent")) {
+          incident.urgency = { code: "H", descr: "High" };
         }
-      })
+      });
     }
   }
 
   /** Custom Validation */
   async onUpdate(req) {
-    const { status_code } = await SELECT.one(req.subject, i => i.status_code).where({ ID: req.data.ID })
-    if (status_code === 'C') {
-      return req.reject(`Can't modify a closed incident`)
+    const { status_code } = await SELECT.one(
+      req.subject,
+      (i) => i.status_code,
+    ).where({ ID: req.data.ID });
+    if (status_code === "C") {
+      return req.reject(`Can't modify a closed incident`);
     }
   }
 }
 
-module.exports = { ProcessorService }
+module.exports = { ProcessorService };

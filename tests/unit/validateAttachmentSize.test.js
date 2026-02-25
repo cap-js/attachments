@@ -1,26 +1,26 @@
-require('../../lib/csn-runtime-extension')
-const cds = require('@sap/cds');
-const { readFileSync } = cds.utils.fs
-const { join } = cds.utils.path
-const app = join(__dirname, "../incidents-app")
-const { axios, POST } = cds.test(app)
-const { validateAttachmentSize } = require('../../lib/generic-handlers');
-const { newIncident } = require('../utils/testUtils');
+require("../../lib/csn-runtime-extension");
+const cds = require("@sap/cds");
+const { readFileSync } = cds.utils.fs;
+const { join } = cds.utils.path;
+const app = join(__dirname, "../incidents-app");
+const { axios, POST } = cds.test(app);
+const { validateAttachmentSize } = require("../../lib/generic-handlers");
+const { newIncident } = require("../utils/testUtils");
 
-describe('validateAttachmentSize', () => {
-  axios.defaults.auth = { username: "alice" }
+describe("validateAttachmentSize", () => {
+  axios.defaults.auth = { username: "alice" };
 
-  it('should pass validation for a file size under 400 MB', async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("should pass validation for a file size under 400 MB", async () => {
+    const incidentID = await newIncident(POST, "admin");
     const responseCreate = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
-      { filename: 'sample.pdf' },
-      { headers: { "Content-Type": "application/json" } }
-    )
+      { filename: "sample.pdf" },
+      { headers: { "Content-Type": "application/json" } },
+    );
 
     const fileContent = readFileSync(
-      join(__dirname, "..", "integration", 'content/sample.pdf')
-    )
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    );
 
     const response = await axios.put(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${responseCreate.data.ID})/content`,
@@ -30,20 +30,22 @@ describe('validateAttachmentSize', () => {
           "Content-Type": "application/pdf",
           "Content-Length": fileContent.length,
         },
-      }
-    )
+      },
+    );
 
-    expect(response.status).toEqual(204)
-  })
+    expect(response.status).toEqual(204);
+  });
 
-  it('should reject when Content-Length header is missing', async () => {
+  it("should reject when Content-Length header is missing", async () => {
     const req = {
       headers: {}, // No content-length header
-      data: { content: 'abc' },
-      target: cds.model.definitions['AdminService.Incidents'].elements.attachments._target,
+      data: { content: "abc" },
+      target:
+        cds.model.definitions["AdminService.Incidents"].elements.attachments
+          ._target,
       reject: jest.fn(), // Mocking the reject function
-    }
-    validateAttachmentSize(req)
-    expect(req.reject).toHaveBeenCalledWith(411, 'ContentLengthHeaderMissing')
-  })
-})
+    };
+    validateAttachmentSize(req);
+    expect(req.reject).toHaveBeenCalledWith(411, "ContentLengthHeaderMissing");
+  });
+});
