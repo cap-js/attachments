@@ -2,10 +2,7 @@ const { Storage } = require("@google-cloud/storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
-const {
-  MAX_FILE_SIZE,
-  sizeInBytes,
-} = require("../lib/helper")
+const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
 
 module.exports = class GoogleAttachmentsService extends (
   require("./object-store")

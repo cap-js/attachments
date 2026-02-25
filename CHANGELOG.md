@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- `Content-Length` header is no longer mandatory and will be checked additionally with the stream length
+- Relaxed requirement for `Content-Length` header; stream length validation is now used as an additional check to leverage support for chunked uploads.
 
 ## Version 3.8.0
 
