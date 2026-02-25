@@ -399,10 +399,7 @@ class AttachmentsService extends cds.Service {
         }
       }
       if (attachmentsToDelete.length > 0) {
-        const uniqueUrls = new Set(attachmentsToDelete.map((a) => a.url))
-        req.attachmentsToDelete = Array.from(uniqueUrls).map((url) => {
-          return attachmentsToDelete.find((a) => a.url === url)
-        })
+        req.attachmentsToDelete = attachmentsToDelete
       }
     }
   }
