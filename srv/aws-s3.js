@@ -8,6 +8,7 @@ const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
+const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
@@ -170,6 +171,34 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         error.status = 409
         throw error
       }
+
+      const attachmentRef = await SELECT.one("filename")
+        .from(attachments)
+        .where({ up__ID: data.up__ID })
+
+      const maxFileSize =
+        attachments.elements.content["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              attachments.elements.content["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
+
+      let uploadedSize = 0
+      content.on("data", (chunk) => {
+        if (maxFileSize === -1) return
+        uploadedSize += chunk.length
+        if (uploadedSize <= maxFileSize) return
+
+        content?.destroy({
+          message: "AttachmentSizeExceeded",
+          code: 413,
+          args: [
+            attachmentRef.filename || "n/a",
+            attachments.elements.content["@Validation.Maximum"] || "400MB",
+          ],
+        })
+      })
 
       const input = {
         Bucket: bucket,
