@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.9.0 - tbd
+
+### Fixed
+
+- `Content-Length` header is no longer mandatory and will be checked additionally with the stream length
+
 ## Version 3.8.0
 
 ### Added
