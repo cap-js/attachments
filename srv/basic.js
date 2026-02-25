@@ -373,7 +373,9 @@ class AttachmentsService extends cds.Service {
 
         // Find attachments present in the draft entity but not in the active using HasActiveEntity flag
         const newAndDiscarded = draftAttachments.filter(
-          (att) => att.url && att.HasActiveEntity === false,
+        const newAndDiscarded = draftAttachments.filter(
+          (att) => att.url && !att.HasActiveEntity,
+        )
         )
         if (newAndDiscarded.length > 0) {
           attachmentsToDelete.push(
