@@ -1,5 +1,5 @@
 const { BlobServiceClient } = require("@azure/storage-blob")
-const { AbortController } = require("@azure/abort-controller")
+const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
@@ -160,7 +160,7 @@ module.exports = class AzureAttachmentsService extends (
 
       const attachmentRef = await SELECT.one("filename")
         .from(attachments)
-        .where({ ID: { '=': data.ID } })
+        .where({ ID: { "=": data.ID } })
 
       const maxFileSize =
         attachments.elements.content["@Validation.Maximum"] != null
@@ -184,6 +184,14 @@ module.exports = class AzureAttachmentsService extends (
         contentLength = content.length
       } else if (content && typeof content.size === "number") {
         contentLength = content.size
+      } else {
+        // Convert to buffer if needed
+        const chunks = []
+        for await (const chunk of content) {
+          chunks.push(chunk)
+        }
+        content = Buffer.concat(chunks)
+        contentLength = content.length
       }
 
       const abortController = new AbortController()
