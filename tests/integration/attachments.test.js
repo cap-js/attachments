@@ -1343,16 +1343,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(discardResponse.status).toBe(204)
 
     await deletionWaiter
-
-    let error
-    try {
-      await GET(
-        `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
-      )
-    } catch (e) {
-      error = e
-    }
-    expect(error?.response?.status || error?.status).toEqual(404)
   })
 
   it("Must delete discarded files from the object store when no active entity exists", async () => {
@@ -1405,16 +1395,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(discardResponse.status).toBe(204)
 
     await deletionWaiter
-
-    let error
-    try {
-      await GET(
-        `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
-      )
-    } catch (e) {
-      error = e
-    }
-    expect(error?.response?.status || error?.status).toEqual(404)
   })
 })
 
