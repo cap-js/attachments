@@ -174,7 +174,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       const attachmentRef = await SELECT.one("filename")
         .from(attachments)
-        .where({ ID: { '=': data.ID } })
+        .where({ ID: { "=": data.ID } })
 
       const maxFileSize =
         attachments.elements.content["@Validation.Maximum"] != null
@@ -201,7 +201,8 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       let uploadedSize = 0
       let sizeExceeded = false
-      const sizeLimit = attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
 
       content.on("data", (chunk) => {
         if (maxFileSize === -1 || sizeExceeded) return
