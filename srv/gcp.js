@@ -1,4 +1,5 @@
 const { Storage } = require("@google-cloud/storage")
+const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
@@ -156,7 +157,7 @@ module.exports = class GoogleAttachmentsService extends (
 
       const attachmentRef = await SELECT.one("filename")
         .from(attachments)
-        .where({ up__ID: data.up__ID })
+        .where({ ID: { "=": data.ID } })
 
       const maxFileSize =
         attachments.elements.content["@Validation.Maximum"] != null
@@ -175,7 +176,8 @@ module.exports = class GoogleAttachmentsService extends (
       const abortController = new AbortController()
       let uploadedSize = 0
       let sizeExceeded = false
-      const sizeLimit = attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
 
       content.on("data", (chunk) => {
         if (maxFileSize === -1 || sizeExceeded) return
