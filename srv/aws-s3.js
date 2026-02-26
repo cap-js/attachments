@@ -184,41 +184,49 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
             ) ?? MAX_FILE_SIZE)
           : MAX_FILE_SIZE
 
-      let uploadedSize = 0
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1) return
-        uploadedSize += chunk.length
-        if (uploadedSize <= maxFileSize) return
-
-        content?.destroy({
-          message: "AttachmentSizeExceeded",
-          code: 413,
-          args: [
-            attachmentRef.filename || "n/a",
-            attachments.elements.content["@Validation.Maximum"] || "400MB",
-          ],
-        })
-      })
-
-      const input = {
-        Bucket: bucket,
-        Key,
-        Body: content,
-      }
-
       LOG.info("Uploading file to S3", {
         bucket: bucket,
         key: Key,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
       })
 
       const multipartUpload = new Upload({
         client: client,
-        params: input,
+        params: {
+          Bucket: bucket,
+          Key,
+          Body: content,
+        },
+      })
+
+      let uploadedSize = 0
+      let sizeExceeded = false
+      const sizeLimit = attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      content.on("data", (chunk) => {
+        if (maxFileSize === -1 || sizeExceeded) return
+        uploadedSize += chunk.length
+        if (uploadedSize > maxFileSize) {
+          sizeExceeded = true
+          multipartUpload.abort()
+        }
       })
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await multipartUpload.done()
+      try {
+        await multipartUpload.done()
+      } catch (err) {
+        if (sizeExceeded) {
+          const error = new Error("AttachmentSizeExceeded")
+          error.code = 413
+          error.status = 413
+          error.message = "AttachmentSizeExceeded"
+          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
+          throw error
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
