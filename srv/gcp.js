@@ -1,5 +1,4 @@
 const { Storage } = require("@google-cloud/storage")
-const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
@@ -173,32 +172,36 @@ module.exports = class GoogleAttachmentsService extends (
         maxFileSize,
       })
 
-      const abortController = new AbortController()
-      let uploadedSize = 0
-      let sizeExceeded = false
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      // Track size while streaming
+      let uploadedSize = 0
+      let sizeExceeded = false
 
       content.on("data", (chunk) => {
         if (maxFileSize === -1 || sizeExceeded) return
         uploadedSize += chunk.length
         if (uploadedSize > maxFileSize) {
           sizeExceeded = true
-          abortController.abort()
+          content.destroy()
         }
       })
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
+      const writeStream = file.createWriteStream()
       try {
-        await file.save(content, {
-          signal: abortController.signal,
+        await new Promise((resolve, reject) => {
+          content.pipe(writeStream)
+          writeStream.on("finish", resolve)
+          writeStream.on("error", reject)
+          content.on("error", reject)
         })
       } catch (err) {
         if (sizeExceeded) {
           const error = new Error("AttachmentSizeExceeded")
           error.code = 413
           error.status = 413
-          error.message = "AttachmentSizeExceeded"
           error.args = [attachmentRef?.filename || "n/a", sizeLimit]
           throw error
         }

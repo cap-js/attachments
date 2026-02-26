@@ -1,5 +1,4 @@
 const { BlobServiceClient } = require("@azure/storage-blob")
-const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
@@ -176,50 +175,35 @@ module.exports = class AzureAttachmentsService extends (
         maxFileSize,
       })
 
-      // Handle different content types for upload
-      let contentLength
-      if (Buffer.isBuffer(content)) {
-        contentLength = content.length
-      } else if (content && typeof content.length === "number") {
-        contentLength = content.length
-      } else if (content && typeof content.size === "number") {
-        contentLength = content.size
-      } else {
-        // Convert to buffer if needed
-        const chunks = []
-        for await (const chunk of content) {
-          chunks.push(chunk)
-        }
-        content = Buffer.concat(chunks)
-        contentLength = content.length
-      }
-
-      const abortController = new AbortController()
-      let uploadedSize = 0
-      let sizeExceeded = false
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      // Track size while streaming
+      let uploadedSize = 0
+      let sizeExceeded = false
+      const { PassThrough } = require("stream")
+      const sizeCheckStream = new PassThrough()
 
       content.on("data", (chunk) => {
         if (maxFileSize === -1 || sizeExceeded) return
         uploadedSize += chunk.length
         if (uploadedSize > maxFileSize) {
           sizeExceeded = true
-          abortController.abort()
+          content.destroy()
+          sizeCheckStream.destroy()
         }
       })
 
+      content.pipe(sizeCheckStream)
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
-        await blobClient.upload(content, contentLength, {
-          abortSignal: abortController.signal,
-        })
+        await blobClient.uploadStream(sizeCheckStream)
       } catch (err) {
         if (sizeExceeded) {
           const error = new Error("AttachmentSizeExceeded")
           error.code = 413
           error.status = 413
-          error.message = "AttachmentSizeExceeded"
           error.args = [attachmentRef?.filename || "n/a", sizeLimit]
           throw error
         }
