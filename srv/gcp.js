@@ -166,30 +166,43 @@ module.exports = class GoogleAttachmentsService extends (
             ) ?? MAX_FILE_SIZE)
           : MAX_FILE_SIZE
 
-      let uploadedSize = 0
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1) return
-        uploadedSize += chunk.length
-        if (uploadedSize <= maxFileSize) return
-
-        content?.destroy({
-          message: "AttachmentSizeExceeded",
-          code: 413,
-          args: [
-            attachmentRef.filename || "n/a",
-            attachments.elements.content["@Validation.Maximum"] || "400MB",
-          ],
-        })
-      })
-
       LOG.debug("Uploading file to Google Cloud Platform", {
         bucketName: bucket.name,
         blobName,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
+      })
+
+      const abortController = new AbortController()
+      let uploadedSize = 0
+      let sizeExceeded = false
+      const sizeLimit = attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      content.on("data", (chunk) => {
+        if (maxFileSize === -1 || sizeExceeded) return
+        uploadedSize += chunk.length
+        if (uploadedSize > maxFileSize) {
+          sizeExceeded = true
+          abortController.abort()
+        }
       })
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await file.save(content)
+      try {
+        await file.save(content, {
+          signal: abortController.signal,
+        })
+      } catch (err) {
+        if (sizeExceeded) {
+          const error = new Error("AttachmentSizeExceeded")
+          error.code = 413
+          error.status = 413
+          error.message = "AttachmentSizeExceeded"
+          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
+          throw error
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime

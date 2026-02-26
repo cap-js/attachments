@@ -169,29 +169,13 @@ module.exports = class AzureAttachmentsService extends (
             ) ?? MAX_FILE_SIZE)
           : MAX_FILE_SIZE
 
-      let uploadedSize = 0
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1) return
-        uploadedSize += chunk.length
-        if (uploadedSize <= maxFileSize) return
-
-        content?.destroy({
-          message: "AttachmentSizeExceeded",
-          code: 413,
-          args: [
-            attachmentRef.filename || "n/a",
-            attachments.elements.content["@Validation.Maximum"] || "400MB",
-          ],
-        })
-      })
-
       LOG.debug("Uploading file to Azure Blob Storage", {
         containerName: containerClient.containerName,
         blobName,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
       })
 
-      // Handle different content types for update
+      // Handle different content types for upload
       let contentLength
       if (Buffer.isBuffer(content)) {
         contentLength = content.length
@@ -201,8 +185,37 @@ module.exports = class AzureAttachmentsService extends (
         contentLength = content.size
       }
 
+      const abortController = new AbortController()
+      let uploadedSize = 0
+      let sizeExceeded = false
+      const sizeLimit = attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      content.on("data", (chunk) => {
+        if (maxFileSize === -1 || sizeExceeded) return
+        uploadedSize += chunk.length
+        if (uploadedSize > maxFileSize) {
+          sizeExceeded = true
+          abortController.abort()
+        }
+      })
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await blobClient.upload(content, contentLength)
+      try {
+        await blobClient.upload(content, contentLength, {
+          abortSignal: abortController.signal,
+        })
+      } catch (err) {
+        if (sizeExceeded) {
+          const error = new Error("AttachmentSizeExceeded")
+          error.code = 413
+          error.status = 413
+          error.message = "AttachmentSizeExceeded"
+          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
+          throw error
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
