@@ -2,7 +2,11 @@ const { Storage } = require("@google-cloud/storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
-const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../lib/helper")
 
 module.exports = class GoogleAttachmentsService extends (
   require("./object-store")
@@ -174,22 +178,18 @@ module.exports = class GoogleAttachmentsService extends (
 
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const writeStream = file.createWriteStream()
 
-      // Track size while streaming
-      let uploadedSize = 0
-      let sizeExceeded = false
-
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1 || sizeExceeded) return
-        uploadedSize += chunk.length
-        if (uploadedSize > maxFileSize) {
-          sizeExceeded = true
-          content.destroy()
-        }
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => content.destroy(),
       })
 
+      content.on("data", handler)
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      const writeStream = file.createWriteStream()
       try {
         await new Promise((resolve, reject) => {
           content.pipe(writeStream)
@@ -198,12 +198,8 @@ module.exports = class GoogleAttachmentsService extends (
           content.on("error", reject)
         })
       } catch (err) {
-        if (sizeExceeded) {
-          const error = new Error("AttachmentSizeExceeded")
-          error.code = 413
-          error.status = 413
-          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
-          throw error
+        if (getSizeExceeded()) {
+          throw createError()
         }
         throw err
       }
