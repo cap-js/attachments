@@ -2,7 +2,11 @@ const { BlobServiceClient } = require("@azure/storage-blob")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
-const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../lib/helper")
 
 module.exports = class AzureAttachmentsService extends (
   require("./object-store")
@@ -177,35 +181,28 @@ module.exports = class AzureAttachmentsService extends (
 
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
-
-      // Track size while streaming
-      let uploadedSize = 0
-      let sizeExceeded = false
       const { PassThrough } = require("stream")
       const sizeCheckStream = new PassThrough()
 
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1 || sizeExceeded) return
-        uploadedSize += chunk.length
-        if (uploadedSize > maxFileSize) {
-          sizeExceeded = true
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => {
           content.destroy()
           sizeCheckStream.destroy()
-        }
+        },
       })
 
+      content.on("data", handler)
       content.pipe(sizeCheckStream)
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
         await blobClient.uploadStream(sizeCheckStream)
       } catch (err) {
-        if (sizeExceeded) {
-          const error = new Error("AttachmentSizeExceeded")
-          error.code = 413
-          error.status = 413
-          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
-          throw error
+        if (getSizeExceeded()) {
+          throw createError()
         }
         throw err
       }

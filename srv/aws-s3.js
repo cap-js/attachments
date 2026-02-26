@@ -8,7 +8,11 @@ const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
-const { MAX_FILE_SIZE, sizeInBytes } = require("../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../lib/helper")
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
@@ -199,31 +203,23 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         },
       })
 
-      let uploadedSize = 0
-      let sizeExceeded = false
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
-
-      content.on("data", (chunk) => {
-        if (maxFileSize === -1 || sizeExceeded) return
-        uploadedSize += chunk.length
-        if (uploadedSize > maxFileSize) {
-          sizeExceeded = true
-          multipartUpload.abort()
-        }
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => multipartUpload.abort(),
       })
+
+      content.on("data", handler)
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
         await multipartUpload.done()
       } catch (err) {
-        if (sizeExceeded) {
-          const error = new Error("AttachmentSizeExceeded")
-          error.code = 413
-          error.status = 413
-          error.message = "AttachmentSizeExceeded"
-          error.args = [attachmentRef?.filename || "n/a", sizeLimit]
-          throw error
+        if (getSizeExceeded()) {
+          throw createError()
         }
         throw err
       }
