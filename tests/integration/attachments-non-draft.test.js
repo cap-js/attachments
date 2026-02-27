@@ -497,6 +497,36 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       expect(e.response.status).toBe(404)
     })
   })
+
+  it("should handle duplicate filenames on deep insert", async () => {
+    const incidentID = cds.utils.uuid()
+    const { data: incident } = await POST("/odata/v4/admin/Incidents", {
+      ID: incidentID,
+      title: "Deep Insert Test",
+      attachments: [
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+      ],
+    })
+
+    expect(incident.attachments.length).toBe(2)
+    const filenames = incident.attachments.map((a) => a.filename).sort()
+    expect(filenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
+
+    const response = await GET(
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+    )
+    expect(response.status).toBe(200)
+    expect(response.data.value.length).toBe(2)
+    const fetchedFilenames = response.data.value.map((a) => a.filename).sort()
+    expect(fetchedFilenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
+  })
 })
 
 describe("Testing max and min amounts of attachments", () => {
@@ -792,6 +822,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 })
+
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 
