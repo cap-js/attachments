@@ -2200,6 +2200,234 @@ describe("Row-level security on attachments composition", () => {
   })
 })
 
+describe("Testing renaming duplicate attachments", () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it("should rename duplicate attachments when both are added to same draft", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1.pdf",
+      "sample-2.pdf",
+      "sample.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample-2.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when first one has been saved", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    // Upload first attachment
+    await uploadDraftAttachment(utils, POST, GET, incidentID)
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(2)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual(["sample-1.pdf", "sample.pdf"])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(2)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when they already end with -1", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const initialFilename = "sample-1.pdf"
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
+  })
+})
+
 /**
  * Uploads attachment in draft mode using CDS test utilities
  * @param {Object} utils - RequestSend utility instance
