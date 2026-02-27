@@ -184,7 +184,12 @@ module.exports = class GoogleAttachmentsService extends (
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
-        onSizeExceeded: () => content.destroy(),
+        onSizeExceeded: () => {
+          // Unpipe and destroy the write stream to abort the upload
+          // Do NOT destroy content stream as it causes "socket hang up"
+          content.unpipe(writeStream)
+          writeStream.destroy()
+        },
       })
 
       content.on("data", handler)
@@ -194,7 +199,14 @@ module.exports = class GoogleAttachmentsService extends (
         await new Promise((resolve, reject) => {
           content.pipe(writeStream)
           writeStream.on("finish", resolve)
-          writeStream.on("error", reject)
+          writeStream.on("error", (err) => {
+            // Ignore errors if size exceeded - we intentionally destroyed the stream
+            if (getSizeExceeded()) {
+              resolve()
+            } else {
+              reject(err)
+            }
+          })
           content.on("error", reject)
         })
       } catch (err) {
@@ -202,6 +214,17 @@ module.exports = class GoogleAttachmentsService extends (
           throw createError()
         }
         throw err
+      }
+
+      // Check after promise resolves if size was exceeded
+      if (getSizeExceeded()) {
+        // Try to delete the partial upload
+        try {
+          await file.delete({ ignoreNotFound: true })
+        } catch {
+          // Ignore delete errors
+        }
+        throw createError()
       }
 
       await super.put(attachments, metadata)

@@ -1,4 +1,5 @@
 const { BlobServiceClient } = require("@azure/storage-blob")
+const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
@@ -181,25 +182,22 @@ module.exports = class AzureAttachmentsService extends (
 
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
-      const { PassThrough } = require("stream")
-      const sizeCheckStream = new PassThrough()
 
+      const abortController = new AbortController()
       const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
-        onSizeExceeded: () => {
-          content.destroy()
-          sizeCheckStream.destroy()
-        },
+        onSizeExceeded: () => abortController.abort(),
       })
 
       content.on("data", handler)
-      content.pipe(sizeCheckStream)
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
-        await blobClient.uploadStream(sizeCheckStream)
+        await blobClient.uploadStream(content, undefined, undefined, {
+          abortSignal: abortController.signal,
+        })
       } catch (err) {
         if (getSizeExceeded()) {
           throw createError()
