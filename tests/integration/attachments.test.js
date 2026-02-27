@@ -2531,7 +2531,9 @@ describe("Testing renaming duplicate attachments", () => {
       "sample-1-2.pdf",
       "sample-1.pdf",
     ])
-    
+  })
+})
+
 describe("Testing to prevent crash due to recursive overflow", () => {
   it("should not crash and allow attachment upload with recursive compositions", async () => {
     const postData = await POST(
