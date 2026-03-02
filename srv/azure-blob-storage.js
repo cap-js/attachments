@@ -188,7 +188,11 @@ module.exports = class AzureAttachmentsService extends (
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
-        onSizeExceeded: () => abortController.abort(),
+        onSizeExceeded: () => {
+          abortController.abort()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+        },
       })
 
       content.on("data", handler)

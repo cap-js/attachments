@@ -180,15 +180,22 @@ module.exports = class GoogleAttachmentsService extends (
         attachments.elements.content["@Validation.Maximum"] || "400MB"
       const writeStream = file.createWriteStream()
 
+      let resolveUpload
+      const uploadPromise = new Promise((resolve) => {
+        resolveUpload = resolve
+      })
+
       const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
         onSizeExceeded: () => {
           // Unpipe and destroy the write stream to abort the upload
-          // Do NOT destroy content stream as it causes "socket hang up"
           content.unpipe(writeStream)
           writeStream.destroy()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+          resolveUpload()
         },
       })
 
@@ -196,19 +203,22 @@ module.exports = class GoogleAttachmentsService extends (
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
-        await new Promise((resolve, reject) => {
-          content.pipe(writeStream)
-          writeStream.on("finish", resolve)
-          writeStream.on("error", (err) => {
-            // Ignore errors if size exceeded - we intentionally destroyed the stream
-            if (getSizeExceeded()) {
-              resolve()
-            } else {
-              reject(err)
-            }
-          })
-          content.on("error", reject)
-        })
+        await Promise.race([
+          uploadPromise,
+          new Promise((resolve, reject) => {
+            content.pipe(writeStream)
+            writeStream.on("finish", resolve)
+            writeStream.on("error", (err) => {
+              // Ignore errors if size exceeded - we intentionally destroyed the stream
+              if (getSizeExceeded()) {
+                resolve()
+              } else {
+                reject(err)
+              }
+            })
+            content.on("error", reject)
+          }),
+        ])
       } catch (err) {
         if (getSizeExceeded()) {
           throw createError()

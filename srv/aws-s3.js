@@ -209,7 +209,11 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
-        onSizeExceeded: () => multipartUpload.abort(),
+        onSizeExceeded: () => {
+          multipartUpload.abort()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+        },
       })
 
       content.on("data", handler)
