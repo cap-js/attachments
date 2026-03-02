@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.9.0 - tbd
+
+### Fixed
+
+- Relaxed requirement for `Content-Length` header; stream length validation is now used as an additional check to leverage support for chunked uploads.
+
 ## Version 3.8.0
 
 ### Added

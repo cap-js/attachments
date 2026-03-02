@@ -8,6 +8,11 @@ const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../lib/helper")
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
@@ -171,25 +176,58 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         throw error
       }
 
-      const input = {
-        Bucket: bucket,
-        Key,
-        Body: content,
-      }
+      const attachmentRef = await SELECT.one("filename")
+        .from(attachments)
+        .where({ ID: { "=": data.ID } })
+
+      const maxFileSize =
+        attachments.elements.content["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              attachments.elements.content["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
 
       LOG.info("Uploading file to S3", {
         bucket: bucket,
         key: Key,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
       })
 
       const multipartUpload = new Upload({
         client: client,
-        params: input,
+        params: {
+          Bucket: bucket,
+          Key,
+          Body: content,
+        },
       })
 
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => {
+          multipartUpload.abort()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+        },
+      })
+
+      content.on("data", handler)
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await multipartUpload.done()
+      try {
+        await multipartUpload.done()
+      } catch (err) {
+        if (getSizeExceeded()) {
+          throw createError()
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
