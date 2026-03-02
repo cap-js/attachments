@@ -335,58 +335,56 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
   })
 
-  isNotLocal(
-    "should delete file from object store if data is deleted",
-    async () => {
-      const detailsID = cds.utils.uuid()
+  // prettier-ignore
+  isNotLocal("should delete file from object store if data is deleted", async () => {
+    const detailsID = cds.utils.uuid()
 
-      const testID = await newIncident(
-        POST,
-        "processor",
-        {
-          name: "Non-draft Test",
-          singledetails: { ID: detailsID, abc: "child" },
-        },
-        "NonDraftTest",
-      )
+    const testID = await newIncident(
+      POST,
+      "processor",
+      {
+        name: "Non-draft Test",
+        singledetails: { ID: detailsID, abc: "child" },
+      },
+      "NonDraftTest",
+    )
 
-      const attachResTest = await POST(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
-        {
-          up__ID: testID,
-          filename: "parentfile.pdf",
-          mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
-        },
-      )
-      expect(attachResTest.data.url).toBeTruthy()
-      await uploadAttachmentContent(
-        testID,
-        attachResTest.data.ID,
-        "content/sample.pdf",
-        "processor",
-        "NonDraftTest",
-      )
+    const attachResTest = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachResTest.data.url).toBeTruthy()
+    await uploadAttachmentContent(
+      testID,
+      attachResTest.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
 
-      const deletion = waitForDeletion(attachResTest.data.url)
+    const deletion = waitForDeletion(attachResTest.data.url)
 
-      // Delete parent attachment
-      const delParent = await DELETE(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
-      )
-      expect(delParent.status).toBe(204)
+    // Delete parent attachment
+    const delParent = await DELETE(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    )
+    expect(delParent.status).toBe(204)
 
-      // Confirm parent attachment is deleted
-      await GET(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
-      ).catch((e) => {
-        expect(e.response.status).toBe(404)
-      })
+    // Confirm parent attachment is deleted
+    await GET(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    ).catch((e) => {
+      expect(e.response.status).toBe(404)
+    })
 
-      expect(await deletion).toBe(true)
-    },
-  )
+    expect(await deletion).toBe(true)
+  })
 
   it("should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
     const firstID = cds.utils.uuid()
