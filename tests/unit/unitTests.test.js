@@ -144,11 +144,14 @@ describe("size to byte converter", () => {
     expect(sizeInBytes(1234)).toEqual(1234)
   })
 
-  test("conversion of size string returns undefined if no size could be determined", () => {
-    expect(sizeInBytes("ABCDEFG")).toEqual(undefined)
+  test("conversion of size string returns default MAX_FILE_SIZE if no size could be determined", () => {
+    // sizeInBytes returns MAX_FILE_SIZE (400MB = 419430400 bytes) as a safe default
+    // when the size cannot be determined
+    const MAX_FILE_SIZE = 419430400 // 400MB in bytes
+    expect(sizeInBytes("ABCDEFG")).toEqual(MAX_FILE_SIZE)
 
-    expect(sizeInBytes(undefined)).toEqual(undefined)
+    expect(sizeInBytes(undefined)).toEqual(MAX_FILE_SIZE)
 
-    expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(undefined)
+    expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(MAX_FILE_SIZE)
   })
 })

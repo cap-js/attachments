@@ -2,6 +2,11 @@ const { Storage } = require("@google-cloud/storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../lib/helper")
 
 module.exports = class GoogleAttachmentsService extends (
   require("./object-store")
@@ -153,14 +158,85 @@ module.exports = class GoogleAttachmentsService extends (
         throw error
       }
 
+      const attachmentRef = await SELECT.one("filename")
+        .from(attachments)
+        .where({ ID: { "=": data.ID } })
+
+      const maxFileSize =
+        attachments.elements.content["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              attachments.elements.content["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
+
       LOG.debug("Uploading file to Google Cloud Platform", {
         bucketName: bucket.name,
         blobName,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
       })
 
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const writeStream = file.createWriteStream()
+
+      let resolveUpload
+      const uploadPromise = new Promise((resolve) => {
+        resolveUpload = resolve
+      })
+
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => {
+          // Unpipe and destroy the write stream to abort the upload
+          content.unpipe(writeStream)
+          writeStream.destroy()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+          resolveUpload()
+        },
+      })
+
+      content.on("data", handler)
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await file.save(content)
+      try {
+        await Promise.race([
+          uploadPromise,
+          new Promise((resolve, reject) => {
+            content.pipe(writeStream)
+            writeStream.on("finish", resolve)
+            writeStream.on("error", (err) => {
+              // Ignore errors if size exceeded - we intentionally destroyed the stream
+              if (getSizeExceeded()) {
+                resolve()
+              } else {
+                reject(err)
+              }
+            })
+            content.on("error", reject)
+          }),
+        ])
+      } catch (err) {
+        if (getSizeExceeded()) {
+          throw createError()
+        }
+        throw err
+      }
+
+      // Check after promise resolves if size was exceeded
+      if (getSizeExceeded()) {
+        // Try to delete the partial upload
+        try {
+          await file.delete({ ignoreNotFound: true })
+        } catch {
+          // Ignore delete errors
+        }
+        throw createError()
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime

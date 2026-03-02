@@ -9,6 +9,7 @@ const {
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
+const { Readable } = require("stream")
 
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
@@ -145,6 +146,71 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "request entity too large",
     )
   })
+
+  isNotLocal(
+    "Uploading attachment that exceeds 5MB limit should fail when Content-Length header is not provided",
+    async () => {
+      const incidentID = await newIncident(POST, "processor")
+
+      const attachmentResult = await POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/maximumSizeAttachments`,
+        {
+          up__ID: incidentID,
+          filename: "large-stream.pdf",
+          mimeType: "application/pdf",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          ),
+          createdBy: "alice",
+        },
+      )
+
+      // Create a readable stream that generates 6MB of data
+      const chunkSize = 64 * 1024 // 64KB chunks
+      const totalSize = 6 * 1024 * 1024 // 6MB total
+      let bytesGenerated = 0
+      const largeStream = new Readable({
+        read() {
+          if (bytesGenerated >= totalSize) {
+            this.push(null)
+            return
+          }
+          const remainingBytes = totalSize - bytesGenerated
+          const size = Math.min(chunkSize, remainingBytes)
+          const chunk = Buffer.alloc(size, "x")
+          bytesGenerated += size
+          this.push(chunk)
+        },
+      })
+
+      let expectedError
+      await axios
+        .put(
+          `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
+          largeStream,
+          {
+            headers: {
+              "Content-Type": "application/pdf",
+              // No Content-Length header - server must track size during streaming
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+          },
+        )
+        .catch((e) => {
+          expectedError = e
+        })
+
+      expect(expectedError).toBeDefined()
+      expect(expectedError.response?.status || expectedError.status).toEqual(
+        413,
+      )
+      expect(expectedError.response.data.error.message).toMatch(
+        'The size of "large-stream.pdf" exceeds the maximum allowed limit of 5MB',
+      )
+    },
+    5 * 60 * 1000, // 5 minute timeout for cloud storage abort operations
+  )
 
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {

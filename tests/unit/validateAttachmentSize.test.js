@@ -36,7 +36,7 @@ describe("validateAttachmentSize", () => {
     expect(response.status).toEqual(204)
   })
 
-  it("should reject when Content-Length header is missing", async () => {
+  it("should return when Content-Length header is missing", async () => {
     const req = {
       headers: {}, // No content-length header
       data: { content: "abc" },
@@ -46,6 +46,6 @@ describe("validateAttachmentSize", () => {
       reject: jest.fn(), // Mocking the reject function
     }
     validateAttachmentSize(req)
-    expect(req.reject).toHaveBeenCalledWith(411, "ContentLengthHeaderMissing")
+    expect(req.reject).not.toHaveBeenCalled()
   })
 })
