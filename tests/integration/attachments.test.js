@@ -209,6 +209,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         'The size of "large-stream.pdf" exceeds the maximum allowed limit of 5MB',
       )
     },
+    5 * 60 * 1000, // 5 minute timeout for cloud storage abort operations
   )
 
   // Draft mode uploading attachment
