@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
+- Fixed security vulnerability where `@Core.AcceptableMediaTypes` validation could be bypassed during content upload by manipulating the `Content-Type` header. The mimeType is now validated against the value stored in the database (derived from filename extension) rather than the request header.
 - Relaxed requirement for `Content-Length` header; stream length validation is now used as an additional check to leverage support for chunked uploads.
 
 ## Version 3.8.0
