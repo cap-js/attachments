@@ -76,9 +76,7 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
     // 2. text/plain is not in the allowed list (image/jpeg) for mediaTypeAttachments
     expect(expectedError).toBeDefined()
     expect(expectedError.status).toEqual(400)
-    expect(expectedError.response.data.error.message).toContain(
-      "text/plain",
-    )
+    expect(expectedError.response.data.error.message).toContain("text/plain")
   })
 
   /**
@@ -100,10 +98,10 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
     // Create an attachment with .txt extension -> mimeType will be text/plain
     const responseCreate = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments`,
-      { 
+      {
         filename: "document.txt",
         // Attacker tries to set mimeType directly (should be ignored)
-        mimeType: "image/jpeg"
+        mimeType: "image/jpeg",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -116,7 +114,7 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
     const getResponse = await GET(
       `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments(up__ID=${incidentID},ID=${attachmentID})`,
     )
-    // The mimeType should be text/plain (from .txt extension), 
+    // The mimeType should be text/plain (from .txt extension),
     // NOT image/jpeg (what attacker tried to set)
     expect(getResponse.data.mimeType).toEqual("text/plain")
 
@@ -249,9 +247,9 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       data: { content: "test" },
       reject: jest.fn(),
     }
-    
+
     const result = validateAttachmentMimeType(req)
-    
+
     expect(result).toBe(false)
     expect(req.reject).not.toHaveBeenCalled()
   })
@@ -262,9 +260,9 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       data: {},
       reject: jest.fn(),
     }
-    
+
     const result = validateAttachmentMimeType(req)
-    
+
     expect(result).toBe(false)
     expect(req.reject).not.toHaveBeenCalled()
   })
@@ -285,13 +283,17 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       },
       reject: jest.fn(),
     }
-    
+
     const result = validateAttachmentMimeType(req)
-    
+
     expect(result).toBe(false)
-    expect(req.reject).toHaveBeenCalledWith(400, "AttachmentMimeTypeDisallowed", {
-      mimeType: "text/plain",
-    })
+    expect(req.reject).toHaveBeenCalledWith(
+      400,
+      "AttachmentMimeTypeDisallowed",
+      {
+        mimeType: "text/plain",
+      },
+    )
   })
 
   it("should return true when mimeType matches acceptable media types", () => {
@@ -310,9 +312,9 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       },
       reject: jest.fn(),
     }
-    
+
     const result = validateAttachmentMimeType(req)
-    
+
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
   })
@@ -331,9 +333,9 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       },
       reject: jest.fn(),
     }
-    
+
     const result = validateAttachmentMimeType(req)
-    
+
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
   })
