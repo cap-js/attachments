@@ -107,6 +107,11 @@ entity Posts : cuid, managed {
     attachments : Composition of many Attachments;
 }
 
+entity PostsNew : cuid, managed {
+    content : String;
+    attachments : Composition of many Attachments;
+}
+
 entity Comments : cuid, managed {
     content : String;
     post : Association to Posts;
