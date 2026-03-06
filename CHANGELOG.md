@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fixed security vulnerability where `@Core.AcceptableMediaTypes` validation could be bypassed during content upload by manipulating the `Content-Type` header. The mimeType is now validated against the value stored in the database (derived from filename extension) rather than the request header.
 - Relaxed requirement for `Content-Length` header; stream length validation is now used as an additional check to leverage support for chunked uploads.
+- Fixed bug where self-referencing entities caused overflow error due to infinite looping.
+- Fixed bug in which discarded drafts would save files to database.
+- Now allows for downloading files while in draft mode.
 
 ## Version 3.8.0
 
