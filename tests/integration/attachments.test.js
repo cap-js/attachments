@@ -1463,8 +1463,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     await deletionWaiter
   })
 
-  it("should not delete a new attachment when saving a draft of an existing entity", async () => {
+  it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
     const incidentID = await newIncident(POST, "processor")
+    const scanCleanWaiter = waitForScanStatus("Clean")
     const firstAttachmentID = await uploadDraftAttachment(
       utils,
       POST,
@@ -1530,6 +1531,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=true)/content`,
     )
     expect(secondContentResponse.status).toEqual(200)
+
+    await scanCleanWaiter
 
     // Ensure the original attachment also still exists
     const originalContentResponse = await GET(
