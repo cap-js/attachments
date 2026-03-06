@@ -138,7 +138,7 @@ class AttachmentsService extends cds.Service {
       attachmentKeys: keys,
     })
     let result = await SELECT.from(attachments, keys).columns("content")
-    if (!result && attachments.isDraft) {
+    if ((!result || !result.content) && attachments.isDraft) {
       attachments = attachments.actives
       result = await SELECT.from(attachments, keys).columns("content")
     }
