@@ -35,7 +35,7 @@
     "husky": "^9.1.7"
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
+    "@sap/cds": ">=9.8.0"
   },
   "engines": {
     "node": ">=18.0.0"
