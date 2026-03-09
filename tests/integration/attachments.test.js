@@ -27,7 +27,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -215,7 +215,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -340,7 +340,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting the attachment", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
 
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -642,9 +642,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID = null
     // Upload attachment using helper function
-    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
