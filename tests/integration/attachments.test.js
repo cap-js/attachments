@@ -1538,8 +1538,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(secondContentResponse.status).toEqual(200)
 
-    await scanCleanWaiter
-
     // Ensure the original attachment also still exists
     const originalContentResponse = await GET(
       `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
