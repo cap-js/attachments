@@ -1461,6 +1461,56 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     await deletionWaiter
   })
+
+  it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+ 
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+ 
+    // Upload an attachment
+    const attachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
+    )
+    expect(attachmentID).toBeTruthy()
+    await scanCleanWaiter
+
+    // Verify the attachment is downloadable after saving
+    const contentResponse1 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse1.status).toEqual(200)
+
+    // Edit the draft again
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // Ensure the attachment is downloadable when re-entering draft mode
+    const contentResponse2 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
