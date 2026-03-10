@@ -54,3 +54,13 @@ extend my.NonDraftTest with {
 extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
 }
+
+// Depth 3: Level0 -> children(Level1) -> children(Level2) -> attachments
+extend my.Level2 with {
+  attachments : Composition of many Attachments;
+}
+
+// Depth 4: Level0 -> children(Level1) -> children(Level2) -> items(Level3) -> attachments
+extend my.Level3 with {
+  attachments : Composition of many Attachments;
+}

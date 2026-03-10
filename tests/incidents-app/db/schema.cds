@@ -113,3 +113,43 @@ entity Comments : cuid, managed {
     replyTo : Association to Comments;
     replies : Composition of many Comments on replies.replyTo = $self;
 }
+
+/**
+ * Deep nesting test entities for depth 3 and 4.
+ * Each intermediate entity uses a named back-association (not up_)
+ * and has extra compositions to verify back-association discovery
+ * doesn't get confused by sibling compositions.
+ */
+entity Level0 : cuid, managed {
+    name     : String;
+    notes    : Composition of many Level0Notes on notes.root = $self;
+    children : Composition of many Level1 on children.parent = $self;
+}
+
+entity Level0Notes : cuid {
+    root : Association to Level0;
+    text : String;
+}
+
+entity Level1 : cuid, managed {
+    parent   : Association to Level0;
+    name     : String;
+    tags     : Composition of many Level1Tags on tags.owner = $self;
+    children : Composition of many Level2 on children.holder = $self;
+}
+
+entity Level1Tags : cuid {
+    owner : Association to Level1;
+    label : String;
+}
+
+entity Level2 : cuid, managed {
+    holder   : Association to Level1;
+    name     : String;
+    items    : Composition of many Level3 on items.container = $self;
+}
+
+entity Level3 : cuid, managed {
+    container : Association to Level2;
+    name      : String;
+}

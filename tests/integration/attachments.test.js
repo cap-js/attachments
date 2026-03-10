@@ -935,6 +935,203 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
   })
 
+  it("[#392] Attachment content on TestDetails is downloadable after draft activation (depth-2 named back-assoc)", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity for nested draft save",
+    })
+
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      {
+        ID: detailsID,
+        description: "Details for nested draft save test",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "nested-draft.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+    expect(draftContent.data).toBeTruthy()
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    const activeContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  it("[#392] Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-3 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level2ID,
+        filename: "depth3.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave("processor", "Level0", level0ID, "ProcessorService")
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  it("Attachment content at depth 4 (Level0 -> Level1 -> Level2 -> Level3 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-4 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const level3ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items`,
+      {
+        ID: level3ID,
+        name: "Level3 great-grandchild",
+      },
+    )
+
+    // Upload attachment to Level3 (depth 4)
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items(ID=${level3ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level3ID,
+        filename: "depth4.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave("processor", "Level0", level0ID, "ProcessorService")
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
   it("Should reflect all attachment compositions on parent entity", async () => {
     const Catalog = await cds.connect.to("ProcessorService")
     const Test = Catalog.entities.Test
@@ -1553,12 +1750,12 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     expect(
       res.data.ProcessorService.$Annotations[
-        "ProcessorService.Incidents_attachments/up__ID"
+      "ProcessorService.Incidents_attachments/up__ID"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
     expect(
       res.data.ProcessorService.$Annotations[
-        "ProcessorService.Incidents_attachments/up_"
+      "ProcessorService.Incidents_attachments/up_"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
   })
@@ -1568,7 +1765,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const attachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1585,7 +1782,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1604,7 +1801,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1623,7 +1820,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
 
     const attachmentFacets = facets.filter(
