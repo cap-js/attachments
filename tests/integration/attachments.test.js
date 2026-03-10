@@ -1529,13 +1529,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "ProcessorService",
     )
 
+    await scanCleanWaiter
+
     // Verify that the new attachment is still downloadable
     const secondContentResponse = await GET(
       `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=true)/content`,
     )
     expect(secondContentResponse.status).toEqual(200)
-
-    await scanCleanWaiter
 
     // Ensure the original attachment also still exists
     const originalContentResponse = await GET(
