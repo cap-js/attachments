@@ -1464,7 +1464,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
     const incidentID = await newIncident(POST, "processor")
-    const scanCleanWaiter = waitForScanStatus("Clean")
+    let scanCleanWaiter = waitForScanStatus("Clean")
     const firstAttachmentID = await uploadDraftAttachment(
       utils,
       POST,
@@ -1473,11 +1473,15 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(firstAttachmentID).toBeTruthy()
 
+    await scanCleanWaiter
+
     // Verify the first attachment is downloadable
     const firstContentResponse = await GET(
       `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
     )
     expect(firstContentResponse.status).toEqual(200)
+
+    scanCleanWaiter = waitForScanStatus("Clean")
 
     await utils.draftModeEdit(
       "processor",
