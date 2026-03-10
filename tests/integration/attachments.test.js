@@ -1472,14 +1472,14 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       incidentID,
       "ProcessorService",
     )
- 
+
     await utils.draftModeEdit(
       "processor",
       "Incidents",
       incidentID,
       "ProcessorService",
     )
- 
+
     // Upload an attachment
     const attachmentID = await uploadDraftAttachment(
       utils,
