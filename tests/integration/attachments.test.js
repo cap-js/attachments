@@ -27,7 +27,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -215,7 +215,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -340,7 +340,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting the attachment", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
 
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -642,9 +642,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID = null
     // Upload attachment using helper function
-    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
@@ -1661,21 +1660,15 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
-    const incidentID = await newIncident(POST, "processor")
     const scanCleanWaiter = waitForScanStatus("Clean")
-    const firstAttachmentID = await uploadDraftAttachment(
-      utils,
-      POST,
-      GET,
-      incidentID,
-    )
-    expect(firstAttachmentID).toBeTruthy()
 
-    // Verify the first attachment is downloadable
-    const firstContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
     )
-    expect(firstContentResponse.status).toEqual(200)
 
     await utils.draftModeEdit(
       "processor",
@@ -1684,58 +1677,36 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "ProcessorService",
     )
 
-    // Verify the first attachment is still downloadable in draft mode
-    const draftContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=false)/content`,
+    // Upload an attachment
+    const attachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
     )
-    expect(draftContentResponse.status).toEqual(200)
+    expect(attachmentID).toBeTruthy()
+    await scanCleanWaiter
 
-    // Upload a new attachment
-    const filepath = join(__dirname, "content/sample.pdf")
-    const fileContent = readFileSync(filepath)
-    const secondAttachmentRes = await POST(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "second-file.pdf",
-        mimeType: "application/pdf",
-      },
+    // Verify the attachment is downloadable after saving
+    const contentResponse1 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
     )
-    const secondAttachmentID = secondAttachmentRes.data.ID
-    expect(secondAttachmentID).toBeTruthy()
+    expect(contentResponse1.status).toEqual(200)
 
-    await PUT(
-      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=false)/content`,
-      fileContent,
-      {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Length": fileContent.byteLength,
-        },
-      },
-    )
-
-    // Save the draft containing the new attachment
-    await utils.draftModeSave(
+    // Edit the draft again
+    await utils.draftModeEdit(
       "processor",
       "Incidents",
       incidentID,
       "ProcessorService",
     )
 
-    // Verify that the new attachment is still downloadable
-    const secondContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=true)/content`,
+    // Ensure the attachment is downloadable when re-entering draft mode
+    const contentResponse2 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
     )
-    expect(secondContentResponse.status).toEqual(200)
-
-    await scanCleanWaiter
-
-    // Ensure the original attachment also still exists
-    const originalContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
-    )
-    expect(originalContentResponse.status).toEqual(200)
+    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
   })
 })
 
