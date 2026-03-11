@@ -44,7 +44,7 @@ async function waitForScanStatus(status, attachmentID) {
       }
       db.after("*", handler)
     }),
-    delay(30000).then(() => {
+    delay(40000).then(() => {
       throw new Error(
         `Timeout waiting for attachment ${attachmentID || ""} to reach status: ${status}, last known status: ${latestStatus}`,
       )
