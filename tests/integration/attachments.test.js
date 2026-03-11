@@ -27,7 +27,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -215,7 +215,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -340,7 +340,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting the attachment", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
 
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -642,9 +642,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID = null
     // Upload attachment using helper function
-    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
@@ -1459,6 +1458,56 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(discardResponse.status).toBe(204)
 
     await deletionWaiter
+  })
+
+  it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // Upload an attachment
+    const attachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
+    )
+    expect(attachmentID).toBeTruthy()
+    await scanCleanWaiter
+
+    // Verify the attachment is downloadable after saving
+    const contentResponse1 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse1.status).toEqual(200)
+
+    // Edit the draft again
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // Ensure the attachment is downloadable when re-entering draft mode
+    const contentResponse2 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
   })
 })
 
