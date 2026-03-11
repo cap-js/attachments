@@ -9,12 +9,14 @@ const { buildBackAssocChain } = require(path.join(ROOT, "lib/helper"))
 
 describe("Verify deep nesting entities and buildBackAssocChain", () => {
   let model
-  beforeAll(async () => { model = cds.model })
+  beforeAll(async () => {
+    model = cds.model
+  })
 
   it("Level0 has expected compositions", () => {
     const L0 = model.definitions["ProcessorService.Level0"]
     expect(Object.keys(L0.compositions)).toEqual(
-      expect.arrayContaining(["notes", "children"])
+      expect.arrayContaining(["notes", "children"]),
     )
   })
 
@@ -22,7 +24,7 @@ describe("Verify deep nesting entities and buildBackAssocChain", () => {
     const L1 = model.definitions["ProcessorService.Level1"]
     expect(L1.elements.parent._target.name).toBe("ProcessorService.Level0")
     expect(Object.keys(L1.compositions)).toEqual(
-      expect.arrayContaining(["tags", "children"])
+      expect.arrayContaining(["tags", "children"]),
     )
   })
 
@@ -30,7 +32,7 @@ describe("Verify deep nesting entities and buildBackAssocChain", () => {
     const L2 = model.definitions["ProcessorService.Level2"]
     expect(L2.elements.holder._target.name).toBe("ProcessorService.Level1")
     expect(Object.keys(L2.compositions)).toEqual(
-      expect.arrayContaining(["items", "attachments"])
+      expect.arrayContaining(["items", "attachments"]),
     )
   })
 
@@ -46,20 +48,29 @@ describe("Verify deep nesting entities and buildBackAssocChain", () => {
       expect.arrayContaining([
         ["children", "children", "attachments"],
         ["children", "children", "items", "attachments"],
-      ])
+      ]),
     )
   })
 
   it("buildBackAssocChain for depth-3 (Level0 -> children -> children -> attachments)", () => {
     const L0 = model.definitions["ProcessorService.Level0"]
-    const chain = buildBackAssocChain(L0, ["children", "children", "attachments"])
+    const chain = buildBackAssocChain(L0, [
+      "children",
+      "children",
+      "attachments",
+    ])
     // Attachment -> Level2 via up_, Level2 -> Level1 via holder, Level1 -> Level0 via parent
     expect(chain).toEqual(["up_", "holder", "parent"])
   })
 
   it("buildBackAssocChain for depth-4 (Level0 -> children -> children -> items -> attachments)", () => {
     const L0 = model.definitions["ProcessorService.Level0"]
-    const chain = buildBackAssocChain(L0, ["children", "children", "items", "attachments"])
+    const chain = buildBackAssocChain(L0, [
+      "children",
+      "children",
+      "items",
+      "attachments",
+    ])
     // Attachment -> Level3 via up_, Level3 -> Level2 via container, Level2 -> Level1 via holder, Level1 -> Level0 via parent
     expect(chain).toEqual(["up_", "container", "holder", "parent"])
   })

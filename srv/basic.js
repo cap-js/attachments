@@ -1,6 +1,10 @@
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const { computeHash, traverseEntity, buildBackAssocChain } = require("../lib/helper")
+const {
+  computeHash,
+  traverseEntity,
+  buildBackAssocChain,
+} = require("../lib/helper")
 
 class AttachmentsService extends cds.Service {
   init() {
@@ -215,7 +219,11 @@ class AttachmentsService extends cds.Service {
                   )
                   return
                 }
-                return this.draftSaveHandler(target, attachmentsEle, req.target)(res, req)
+                return this.draftSaveHandler(
+                  target,
+                  attachmentsEle,
+                  req.target,
+                )(res, req)
               },
             ),
           )

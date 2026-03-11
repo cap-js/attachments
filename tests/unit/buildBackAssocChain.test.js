@@ -23,7 +23,10 @@ describe("buildBackAssocChain", () => {
 
   it("returns reversed back-association chain for depth-2 inline composition (Incidents -> conversation -> attachments)", () => {
     const Incidents = model.definitions["ProcessorService.Incidents"]
-    const chain = buildBackAssocChain(Incidents, ["conversation", "attachments"])
+    const chain = buildBackAssocChain(Incidents, [
+      "conversation",
+      "attachments",
+    ])
     // From attachments: up_ -> conversation, up_ -> Incidents
     // Reversed: ["up_", "up_"]
     expect(chain).toEqual(["up_", "up_"])

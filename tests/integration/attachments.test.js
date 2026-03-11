@@ -1048,7 +1048,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(draftContent.status).toEqual(200)
 
-    await utils.draftModeSave("processor", "Level0", level0ID, "ProcessorService")
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
 
     const activeContent = await GET(
       `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
@@ -1123,7 +1128,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(draftContent.status).toEqual(200)
 
-    await utils.draftModeSave("processor", "Level0", level0ID, "ProcessorService")
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
 
     const activeContent = await GET(
       `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
@@ -1750,12 +1760,12 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     expect(
       res.data.ProcessorService.$Annotations[
-      "ProcessorService.Incidents_attachments/up__ID"
+        "ProcessorService.Incidents_attachments/up__ID"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
     expect(
       res.data.ProcessorService.$Annotations[
-      "ProcessorService.Incidents_attachments/up_"
+        "ProcessorService.Incidents_attachments/up_"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
   })
@@ -1765,7 +1775,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-      "@UI.Facets"
+        "@UI.Facets"
       ]
     const attachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1782,7 +1792,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-      "@UI.Facets"
+        "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1801,7 +1811,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-      "@UI.Facets"
+        "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1820,7 +1830,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
-      "@UI.Facets"
+        "@UI.Facets"
       ]
 
     const attachmentFacets = facets.filter(
