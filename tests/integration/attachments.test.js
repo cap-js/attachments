@@ -960,6 +960,58 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).toBe(1)
   })
 
+  it("Child entity should still contain attachment file after saving", async () => {
+    // Create parent entity in draft mode
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Nested Save Test",
+    })
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      { ID: detailsID, description: "Nested Save Child" },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const filename = basename(filepath)
+    const fileContent = readFileSync(filepath)
+
+    // Add attachment to the child entity in the draft
+    const attachResChild = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: filename,
+        mimeType: "application/pdf",
+      },
+    )
+    const attachmentID = attachResChild.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    await PUT(
+        `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachmentID},IsActiveEntity=false)/content`,
+        fileContent,
+        {
+            headers: { "Content-Type": "application/pdf" },
+        },
+    )
+
+    // Save the draft
+    await POST(`odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/ProcessorService.draftActivate`)
+
+    await scanCleanWaiter
+
+    // Attempt to GET the file from the child entity
+    const contentResponse = await GET(
+      `odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
   it("Deleting Test deletes Test attachment", async () => {
     // Create Test entity and add attachment
     const testID = cds.utils.uuid()
