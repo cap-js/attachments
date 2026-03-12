@@ -27,6 +27,15 @@ service ProcessorService {
 
   entity Comments as projection on my.Comments;
 
+  @odata.draft.enabled
+  entity Level0 as projection on my.Level0;
+
+  entity Level0Notes as projection on my.Level0Notes;
+  entity Level1 as projection on my.Level1;
+  entity Level1Tags as projection on my.Level1Tags;
+  entity Level2 as projection on my.Level2;
+  entity Level3 as projection on my.Level3;
+
   action insertTestData() returns String;
 }
 
