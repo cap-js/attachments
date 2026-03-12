@@ -1,6 +1,10 @@
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const { computeHash, traverseEntity } = require("../lib/helper")
+const {
+  computeHash,
+  traverseEntity,
+  buildBackAssocChain,
+} = require("../lib/helper")
 
 class AttachmentsService extends cds.Service {
   init() {
@@ -147,21 +151,31 @@ class AttachmentsService extends cds.Service {
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
+   * @param {string[]} compositionPath - Composition path from root to attachment entity
+   * @param {import('@sap/cds').Entity} rootEntity - The draft-leading root entity definition
    * @returns {Function} - The draft save handler function
    */
-  draftSaveHandler(attachments) {
+  draftSaveHandler(attachments, compositionPath, rootEntity) {
     const queryFields = this.getFields(attachments)
+    const backAssocChain = buildBackAssocChain(rootEntity, compositionPath)
 
     return async (_, req) => {
+      backAssocChain
       // The below query loads the attachments into streams
       const cqn = SELECT(queryFields)
         .from(attachments.drafts)
-        .where([
-          ...req.subject.ref[0].where.map((x) =>
-            x.ref ? { ref: ["up_", ...x.ref] } : x,
-          ),
-          // NOTE: needs skip LargeBinary fix to Lean Draft
-        ])
+        .columns((a) => {
+          ;(a`.*`,
+            a.up_((u) => {
+              ;(u`.*`, u.replyTo(`*`))
+            }))
+        })
+      // .where([
+      //   ...req.subject.ref[0].where.map((x) =>
+      //     x.ref ? { ref: [...backAssocChain, ...x.ref] } : x,
+      //   ),
+      //   // NOTE: needs skip LargeBinary fix to Lean Draft
+      // ])
       cqn.where({ content: { "!=": null } })
       const draftAttachments = await cqn
 
@@ -212,7 +226,11 @@ class AttachmentsService extends cds.Service {
                   )
                   return
                 }
-                return this.draftSaveHandler(target)(res, req)
+                return this.draftSaveHandler(
+                  target,
+                  attachmentsEle,
+                  req.target,
+                )(res, req)
               },
             ),
           )

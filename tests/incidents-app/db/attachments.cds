@@ -54,3 +54,7 @@ extend my.NonDraftTest with {
 extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
 }
+
+extend my.Comments with {
+  attachments : Composition of many Attachments;
+}
