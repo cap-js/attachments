@@ -164,13 +164,18 @@ class AttachmentsService extends cds.Service {
       // The below query loads the attachments into streams
       const cqn = SELECT(queryFields)
         .from(attachments.drafts)
-        .columns(a => {a`.*`, a.up_(u => {u`.*`, u.replyTo(`*`)})})
-        // .where([
-        //   ...req.subject.ref[0].where.map((x) =>
-        //     x.ref ? { ref: [...backAssocChain, ...x.ref] } : x,
-        //   ),
-        //   // NOTE: needs skip LargeBinary fix to Lean Draft
-        // ])
+        .columns((a) => {
+          ;(a`.*`,
+            a.up_((u) => {
+              ;(u`.*`, u.replyTo(`*`))
+            }))
+        })
+      // .where([
+      //   ...req.subject.ref[0].where.map((x) =>
+      //     x.ref ? { ref: [...backAssocChain, ...x.ref] } : x,
+      //   ),
+      //   // NOTE: needs skip LargeBinary fix to Lean Draft
+      // ])
       cqn.where({ content: { "!=": null } })
       const draftAttachments = await cqn
 

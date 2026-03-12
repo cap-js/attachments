@@ -1,8 +1,6 @@
 const cds = require("@sap/cds")
 const { RequestSend } = require("../utils/api")
-const {
-  waitForScanStatus,
-} = require("../utils/testUtils")
+const { waitForScanStatus } = require("../utils/testUtils")
 const { readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
 
@@ -63,7 +61,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         headers: { "Content-Type": "application/pdf" },
       },
     )
-     await scanCleanWaiter
+    await scanCleanWaiter
 
     const contentResponseDraft = await GET(
       `odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=false)/content`,
