@@ -934,7 +934,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
   })
 
-  it("[#392] Attachment content on TestDetails is downloadable after draft activation (depth-2 named back-assoc)", async () => {
+  it("Attachment content on TestDetails is downloadable after draft activation (depth-2 named back-assoc)", async () => {
     const testID = cds.utils.uuid()
     await POST(`odata/v4/processor/Test`, {
       ID: testID,
@@ -991,7 +991,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(activeContent.data).toBeTruthy()
   })
 
-  it("[#392] Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
+  //TODO: Clean up test schemas
+  it("Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
     const level0ID = cds.utils.uuid()
     await POST(`odata/v4/processor/Level0`, {
       ID: level0ID,
@@ -1061,6 +1062,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(activeContent.data).toBeTruthy()
   })
 
+  //TODO: Clean up test schemas
   it("Attachment content at depth 4 (Level0 -> Level1 -> Level2 -> Level3 -> attachments) is downloadable after draft activation", async () => {
     const level0ID = cds.utils.uuid()
     await POST(`odata/v4/processor/Level0`, {
@@ -2666,6 +2668,49 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     )
     expect(attachments.data.value).toHaveLength(1)
     expect(attachments.data.value[0].filename).toBe("test.txt")
+  })
+
+  it("should not crash when activating a draft with deeply nested recursive compositions", async () => {
+    // This test verifies that the attachment discovery mechanism can handle
+    // deeply nested, recursive compositions without causing a stack overflow.
+    // The structure is Post -> comments(Comment) -> replies(Comment) -> ...
+
+    // Create a draft Post
+    const postRes = await POST("/odata/v4/processor/Posts", {
+      content: "Post with nested comments",
+    })
+    const postID = postRes.data.ID
+    expect(postID).toBeDefined()
+
+    // Create a nested Comment
+    const commentRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Level 1 Comment" },
+    )
+    const commentID = commentRes.data.ID
+    expect(commentID).toBeDefined()
+
+    // Create a deeply nested Reply (a Comment on a Comment)
+    const replyRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies`,
+      { content: "Level 2 Reply" },
+    )
+    const replyID = replyRes.data.ID
+    expect(replyID).toBeDefined()
+
+    let activationResponse
+    let responseError
+    try {
+      activationResponse = await POST(
+        `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+      )
+    } catch (e) {
+      // Fail the test explicitly if an error is thrown
+      responseError = e
+    }
+    expect(responseError).not.toBeTruthy()
+    expect(activationResponse.status).toEqual(201)
+    expect(activationResponse.data.ID).toEqual(postID)
   })
 })
 

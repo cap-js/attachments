@@ -114,6 +114,7 @@ entity Comments : cuid, managed {
     replies : Composition of many Comments on replies.replyTo = $self;
 }
 
+//TODO: Clean up test schemas
 /**
  * Deep nesting test entities for depth 3 and 4.
  * Each intermediate entity uses a named back-association (not up_)
