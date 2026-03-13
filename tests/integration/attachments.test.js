@@ -1510,61 +1510,59 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(getRes2.data.url).toBeTruthy()
   })
 
-  isNotLocal(
-    "Should detect infected files and automatically delete them after scan",
-    async () => {
-      const incidentID = await newIncident(POST, "processor")
-      const testMal =
-        "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
-      const fileContent = Buffer.from(testMal, "base64").toString("utf8")
+  // prettier-ignore
+  isNotLocal("Should detect and automatically delete infected files after scan", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const testMal =
+      "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
+    const fileContent = Buffer.from(testMal, "base64").toString("utf8")
 
-      const scanInfectedWaiter = waitForScanStatus("Infected")
+    const scanInfectedWaiter = waitForScanStatus("Infected")
 
-      await utils.draftModeEdit(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-      )
-      const res = await POST(
-        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-        {
-          up__ID: incidentID,
-          filename: "testmal.png",
-          mimeType: "image/png",
-          createdAt: new Date(),
-          createdBy: "alice",
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+    const res = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "testmal.png",
+        mimeType: "image/png",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(res.data.ID).toBeTruthy()
+
+    const deletionWaiter = waitForMalwareDeletion(res.data.ID)
+
+    await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "image/png",
+          "Content-Length": fileContent.length,
         },
-      )
-      expect(res.data.ID).toBeTruthy()
+      },
+    )
 
-      const deletionWaiter = waitForMalwareDeletion(res.data.ID)
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
 
-      await PUT(
-        `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${res.data.ID},IsActiveEntity=false)/content`,
-        fileContent,
-        {
-          headers: {
-            "Content-Type": "image/png",
-            "Content-Length": fileContent.length,
-          },
-        },
-      )
+    // Check that status is "infected" after scan
+    await scanInfectedWaiter
 
-      await utils.draftModeSave(
-        "processor",
-        "Incidents",
-        incidentID,
-        "ProcessorService",
-      )
-
-      // Check that status is "infected" after scan
-      await scanInfectedWaiter
-
-      // Wait for deletion to complete
-      await deletionWaiter
-    },
-  )
+    // Wait for deletion to complete
+    await deletionWaiter
+  })
 
   it("Must delete discarded files from the object store when active entity exists", async () => {
     const incidentID = await newIncident(POST, "processor")
@@ -2627,6 +2625,234 @@ describe("Row-level security on attachments composition", () => {
       restrictionID,
       "RestrictionService",
     )
+  })
+})
+
+describe("Testing renaming duplicate attachments", () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it("should rename duplicate attachments when both are added to same draft", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1.pdf",
+      "sample-2.pdf",
+      "sample.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample-2.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when first one has been saved", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    // Upload first attachment
+    await uploadDraftAttachment(utils, POST, GET, incidentID)
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(2)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual(["sample-1.pdf", "sample.pdf"])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(2)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when they already end with -1", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const initialFilename = "sample-1.pdf"
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
   })
 })
 
