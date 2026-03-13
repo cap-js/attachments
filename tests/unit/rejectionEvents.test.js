@@ -71,6 +71,7 @@ describe("AttachmentUploadRejected event", () => {
         keys: { ID: "att-123" },
         filename: "notes.txt",
         mimeType: "text/plain",
+        acceptableMediaTypes: ["image/jpeg", "image/png"],
         reason: expect.stringContaining("@Core.AcceptableMediaTypes"),
       }),
     )
