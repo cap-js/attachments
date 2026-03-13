@@ -11,6 +11,8 @@ const {
 
 let attachmentsSvc
 let originalConnectTo
+let spawnCallback
+let originalSpawn
 
 beforeEach(() => {
   jest.restoreAllMocks()
@@ -24,10 +26,18 @@ beforeEach(() => {
     if (name === "attachments") return Promise.resolve(attachmentsSvc)
     return originalConnectTo.call(cds.connect, name)
   })
+
+  spawnCallback = null
+  originalSpawn = cds.spawn
+  cds.spawn = jest.fn().mockImplementation((fn) => {
+    spawnCallback = fn
+    return { on: jest.fn() }
+  })
 })
 
 afterEach(() => {
   cds.connect.to = originalConnectTo
+  cds.spawn = originalSpawn
 })
 
 describe("AttachmentUploadRejected event", () => {
@@ -61,8 +71,8 @@ describe("AttachmentUploadRejected event", () => {
       },
     )
 
-    // Wait for the fire-and-forget promise to resolve
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    await spawnCallback()
 
     expect(attachmentsSvc.emit).toHaveBeenCalledWith(
       "AttachmentUploadRejected",
@@ -101,9 +111,7 @@ describe("AttachmentUploadRejected event", () => {
 
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
-
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(attachmentsSvc.emit).not.toHaveBeenCalled()
+    expect(cds.spawn).not.toHaveBeenCalled()
   })
 
   it("should still reject when event handler fails", async () => {
@@ -137,6 +145,44 @@ describe("AttachmentUploadRejected event", () => {
       {
         mimeType: "text/plain",
       },
+    )
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    // spawn callback should not throw even though emit rejects
+    await expect(spawnCallback()).resolves.toBeUndefined()
+  })
+
+  it("should emit via cds.spawn to survive req.reject transaction rollback", async () => {
+    const req = {
+      target: {
+        name: "TestService.Attachments",
+        _attachments: { isAttachmentsEntity: true },
+        elements: {
+          content: {
+            "@Core.AcceptableMediaTypes": ["image/jpeg"],
+          },
+        },
+      },
+      data: {
+        content: "test content",
+        mimeType: "text/plain",
+        ID: "att-123",
+        filename: "notes.txt",
+      },
+      reject: jest.fn(),
+    }
+
+    await validateAttachmentMimeType(req)
+
+    // cds.spawn is called, proving the emit runs in a separate transaction
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+
+    // Even after req.reject was called, the spawn callback can still emit
+    expect(req.reject).toHaveBeenCalled()
+    await spawnCallback()
+    expect(attachmentsSvc.emit).toHaveBeenCalledWith(
+      "AttachmentUploadRejected",
+      expect.anything(),
     )
   })
 })
@@ -174,8 +220,8 @@ describe("AttachmentSizeExceeded event", () => {
       }),
     )
 
-    // Wait for fire-and-forget promise
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    await spawnCallback()
 
     expect(attachmentsSvc.emit).toHaveBeenCalledWith(
       "AttachmentSizeExceeded",
@@ -207,9 +253,7 @@ describe("AttachmentSizeExceeded event", () => {
 
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
-
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(attachmentsSvc.emit).not.toHaveBeenCalled()
+    expect(cds.spawn).not.toHaveBeenCalled()
   })
 
   it("should still reject when event handler fails", async () => {
@@ -242,6 +286,42 @@ describe("AttachmentSizeExceeded event", () => {
     expect(req.reject).toHaveBeenCalledWith(
       expect.objectContaining({ status: 413 }),
     )
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    await expect(spawnCallback()).resolves.toBeUndefined()
+  })
+
+  it("should emit via cds.spawn to survive req.reject transaction rollback", async () => {
+    const target =
+      cds.model.definitions["AdminService.Incidents.maximumSizeAttachments"]
+
+    const keys = { up__ID: cds.utils.uuid(), ID: cds.utils.uuid() }
+    await INSERT.into(target).entries({
+      ...keys,
+      filename: "large-file.pdf",
+      status: "Scanning",
+    })
+
+    const req = {
+      target,
+      data: {
+        content: { pause: jest.fn() },
+        up__ID: keys.up__ID,
+        ID: keys.ID,
+      },
+      headers: { "content-length": "999999999999" },
+      reject: jest.fn(),
+    }
+
+    await validateAttachmentSize(req)
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    expect(req.reject).toHaveBeenCalled()
+    await spawnCallback()
+    expect(attachmentsSvc.emit).toHaveBeenCalledWith(
+      "AttachmentSizeExceeded",
+      expect.anything(),
+    )
   })
 })
 
@@ -272,6 +352,9 @@ describe("AttachmentDownloadRejected event", () => {
       403,
       "UnableToDownloadAttachmentScanStatusNotClean",
     )
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    await spawnCallback()
 
     expect(attachmentsSvc.emit).toHaveBeenCalledWith(
       "AttachmentDownloadRejected",
@@ -306,7 +389,68 @@ describe("AttachmentDownloadRejected event", () => {
     await require("../../lib/generic-handlers").validateAttachment(req)
 
     expect(req.reject).not.toHaveBeenCalled()
-    expect(attachmentsSvc.emit).not.toHaveBeenCalledWith(
+    expect(cds.spawn).not.toHaveBeenCalled()
+  })
+
+  it("should still reject when event handler fails", async () => {
+    attachmentsSvc.emit.mockRejectedValue(new Error("handler error"))
+
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Infected",
+      lastScan: new Date().toISOString(),
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    expect(req.reject).toHaveBeenCalledWith(
+      403,
+      "UnableToDownloadAttachmentScanStatusNotClean",
+    )
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    await expect(spawnCallback()).resolves.toBeUndefined()
+  })
+
+  it("should emit via cds.spawn to survive req.reject transaction rollback", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Infected",
+      lastScan: new Date().toISOString(),
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+    expect(req.reject).toHaveBeenCalled()
+    await spawnCallback()
+    expect(attachmentsSvc.emit).toHaveBeenCalledWith(
       "AttachmentDownloadRejected",
       expect.anything(),
     )
