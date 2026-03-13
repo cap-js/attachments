@@ -241,33 +241,33 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
 })
 
 describe("validateAttachmentMimeType - Unit tests", () => {
-  it("should return false when target is not an attachments entity", () => {
+  it("should return false when target is not an attachments entity", async () => {
     const req = {
       target: { _attachments: { isAttachmentsEntity: false } },
       data: { content: "test" },
       reject: jest.fn(),
     }
 
-    const result = validateAttachmentMimeType(req)
+    const result = await validateAttachmentMimeType(req)
 
     expect(result).toBe(false)
     expect(req.reject).not.toHaveBeenCalled()
   })
 
-  it("should return false when there is no content", () => {
+  it("should return false when there is no content", async () => {
     const req = {
       target: { _attachments: { isAttachmentsEntity: true } },
       data: {},
       reject: jest.fn(),
     }
 
-    const result = validateAttachmentMimeType(req)
+    const result = await validateAttachmentMimeType(req)
 
     expect(result).toBe(false)
     expect(req.reject).not.toHaveBeenCalled()
   })
 
-  it("should reject when mimeType does not match acceptable media types", () => {
+  it("should reject when mimeType does not match acceptable media types", async () => {
     const req = {
       target: {
         _attachments: { isAttachmentsEntity: true },
@@ -284,7 +284,7 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       reject: jest.fn(),
     }
 
-    const result = validateAttachmentMimeType(req)
+    const result = await validateAttachmentMimeType(req)
 
     expect(result).toBe(false)
     expect(req.reject).toHaveBeenCalledWith(
@@ -296,7 +296,7 @@ describe("validateAttachmentMimeType - Unit tests", () => {
     )
   })
 
-  it("should return true when mimeType matches acceptable media types", () => {
+  it("should return true when mimeType matches acceptable media types", async () => {
     const req = {
       target: {
         _attachments: { isAttachmentsEntity: true },
@@ -313,13 +313,13 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       reject: jest.fn(),
     }
 
-    const result = validateAttachmentMimeType(req)
+    const result = await validateAttachmentMimeType(req)
 
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
   })
 
-  it("should allow any mimeType when @Core.AcceptableMediaTypes is not defined (defaults to */*)", () => {
+  it("should allow any mimeType when @Core.AcceptableMediaTypes is not defined (defaults to */*)", async () => {
     const req = {
       target: {
         _attachments: { isAttachmentsEntity: true },
@@ -334,7 +334,7 @@ describe("validateAttachmentMimeType - Unit tests", () => {
       reject: jest.fn(),
     }
 
-    const result = validateAttachmentMimeType(req)
+    const result = await validateAttachmentMimeType(req)
 
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
