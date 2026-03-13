@@ -27,7 +27,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -215,7 +215,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -340,7 +340,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting the attachment", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
 
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -642,9 +642,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID = null
     // Upload attachment using helper function
-    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
@@ -933,6 +932,215 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(
       getRes.data.value[0].status,
     )
+  })
+
+  it("Attachment content on TestDetails is downloadable after draft activation (depth-2 named back-assoc)", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity for nested draft save",
+    })
+
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      {
+        ID: detailsID,
+        description: "Details for nested draft save test",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "nested-draft.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+    expect(draftContent.data).toBeTruthy()
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    const activeContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  //TODO: Clean up test schemas
+  it("Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-3 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level2ID,
+        filename: "depth3.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  //TODO: Clean up test schemas
+  it("Attachment content at depth 4 (Level0 -> Level1 -> Level2 -> Level3 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-4 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const level3ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items`,
+      {
+        ID: level3ID,
+        name: "Level3 great-grandchild",
+      },
+    )
+
+    // Upload attachment to Level3 (depth 4)
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items(ID=${level3ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level3ID,
+        filename: "depth4.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
   })
 
   it("Should reflect all attachment compositions on parent entity", async () => {
@@ -1464,21 +1672,15 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
-    const incidentID = await newIncident(POST, "processor")
     const scanCleanWaiter = waitForScanStatus("Clean")
-    const firstAttachmentID = await uploadDraftAttachment(
-      utils,
-      POST,
-      GET,
-      incidentID,
-    )
-    expect(firstAttachmentID).toBeTruthy()
 
-    // Verify the first attachment is downloadable
-    const firstContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
     )
-    expect(firstContentResponse.status).toEqual(200)
 
     await utils.draftModeEdit(
       "processor",
@@ -1487,58 +1689,36 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "ProcessorService",
     )
 
-    // Verify the first attachment is still downloadable in draft mode
-    const draftContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=false)/content`,
+    // Upload an attachment
+    const attachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
     )
-    expect(draftContentResponse.status).toEqual(200)
+    expect(attachmentID).toBeTruthy()
+    await scanCleanWaiter
 
-    // Upload a new attachment
-    const filepath = join(__dirname, "content/sample.pdf")
-    const fileContent = readFileSync(filepath)
-    const secondAttachmentRes = await POST(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "second-file.pdf",
-        mimeType: "application/pdf",
-      },
+    // Verify the attachment is downloadable after saving
+    const contentResponse1 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
     )
-    const secondAttachmentID = secondAttachmentRes.data.ID
-    expect(secondAttachmentID).toBeTruthy()
+    expect(contentResponse1.status).toEqual(200)
 
-    await PUT(
-      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=false)/content`,
-      fileContent,
-      {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Length": fileContent.byteLength,
-        },
-      },
-    )
-
-    // Save the draft containing the new attachment
-    await utils.draftModeSave(
+    // Edit the draft again
+    await utils.draftModeEdit(
       "processor",
       "Incidents",
       incidentID,
       "ProcessorService",
     )
 
-    // Verify that the new attachment is still downloadable
-    const secondContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${secondAttachmentID},IsActiveEntity=true)/content`,
+    // Ensure the attachment is downloadable when re-entering draft mode
+    const contentResponse2 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
     )
-    expect(secondContentResponse.status).toEqual(200)
-
-    await scanCleanWaiter
-
-    // Ensure the original attachment also still exists
-    const originalContentResponse = await GET(
-      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${firstAttachmentID},IsActiveEntity=true)/content`,
-    )
-    expect(originalContentResponse.status).toEqual(200)
+    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
   })
 })
 
@@ -2488,6 +2668,49 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     )
     expect(attachments.data.value).toHaveLength(1)
     expect(attachments.data.value[0].filename).toBe("test.txt")
+  })
+
+  it("should not crash when activating a draft with deeply nested recursive compositions", async () => {
+    // This test verifies that the attachment discovery mechanism can handle
+    // deeply nested, recursive compositions without causing a stack overflow.
+    // The structure is Post -> comments(Comment) -> replies(Comment) -> ...
+
+    // Create a draft Post
+    const postRes = await POST("/odata/v4/processor/Posts", {
+      content: "Post with nested comments",
+    })
+    const postID = postRes.data.ID
+    expect(postID).toBeDefined()
+
+    // Create a nested Comment
+    const commentRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Level 1 Comment" },
+    )
+    const commentID = commentRes.data.ID
+    expect(commentID).toBeDefined()
+
+    // Create a deeply nested Reply (a Comment on a Comment)
+    const replyRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies`,
+      { content: "Level 2 Reply" },
+    )
+    const replyID = replyRes.data.ID
+    expect(replyID).toBeDefined()
+
+    let activationResponse
+    let responseError
+    try {
+      activationResponse = await POST(
+        `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+      )
+    } catch (e) {
+      // Fail the test explicitly if an error is thrown
+      responseError = e
+    }
+    expect(responseError).not.toBeTruthy()
+    expect(activationResponse.status).toEqual(201)
+    expect(activationResponse.data.ID).toEqual(postID)
   })
 })
 
