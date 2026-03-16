@@ -104,7 +104,6 @@ entity SingleTestDetails : cuid {
 entity Posts : cuid, managed {
     content : String;
     comments  : Composition of many Comments on comments.post = $self;
-    attachments : Composition of many Attachments;
 }
 
 entity Comments : cuid, managed {
