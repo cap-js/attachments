@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Unreleased
+
+### Added
+
+- Native server-side `copy()` method on `AttachmentsService` for copying attachments between entities without transferring binary data through the application. Supports all storage backends (DB, AWS S3, Azure Blob Storage, GCP Cloud Storage) with backend-native copy operations.
+
 ## Version 3.9.0
 
 ### Fixed

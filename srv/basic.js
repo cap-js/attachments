@@ -12,6 +12,39 @@ class AttachmentsService extends cds.Service {
       await this.delete(msg.data.url, msg.data.target)
     })
 
+    this.on("CopyAttachment", async (msg) => {
+      const {
+        sourceTarget,
+        sourceKeys,
+        targetTarget,
+        targetKeys,
+        targetIsDraft = false,
+      } = msg.data
+      const sourceAttachments = cds.model.definitions[sourceTarget]
+      if (!sourceAttachments?.["@_is_media_data"]) {
+        const err = new Error(
+          `Invalid source entity: ${sourceTarget} is not an attachment entity`,
+        )
+        err.status = 400
+        throw err
+      }
+      const targetDef = cds.model.definitions[targetTarget]
+      if (!targetDef?.["@_is_media_data"]) {
+        const err = new Error(
+          `Invalid target entity: ${targetTarget} is not an attachment entity`,
+        )
+        err.status = 400
+        throw err
+      }
+      const targetAttachments = targetIsDraft ? targetDef?.drafts : targetDef
+      return this.copy(
+        sourceAttachments,
+        sourceKeys,
+        targetAttachments,
+        targetKeys,
+      )
+    })
+
     this.on("DeleteInfectedAttachment", async (msg) => {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one
@@ -462,6 +495,141 @@ class AttachmentsService extends cds.Service {
     if (attachmentsToDelete.length) {
       req.attachmentsToDelete = attachmentsToDelete
     }
+  }
+
+  /**
+   * Fields that are never allowed in targetKeys — they are controlled by the
+   * copy logic and must not be overridden by callers.
+   */
+  static _PROTECTED_FIELDS = new Set([
+    "ID",
+    "url",
+    "content",
+    "hash",
+    "status",
+    "lastScan",
+    "filename",
+    "mimeType",
+    "note",
+    "statusNav",
+    "createdAt",
+    "createdBy",
+    "modifiedAt",
+    "modifiedBy",
+  ])
+
+  /**
+   * Strips protected fields from targetKeys so callers cannot override
+   * security-sensitive metadata (status, hash, url, etc.).
+   * @param {object} targetKeys - Raw target keys from the caller
+   * @returns {object} - Sanitized target keys containing only FK fields
+   */
+  _sanitizeTargetKeys(targetKeys) {
+    const sanitized = {}
+    for (const [key, value] of Object.entries(targetKeys)) {
+      if (!AttachmentsService._PROTECTED_FIELDS.has(key)) {
+        sanitized[key] = value
+      } else {
+        LOG.warn(`Ignoring protected field in targetKeys: ${key}`)
+      }
+    }
+    return sanitized
+  }
+
+  /**
+   * Prepares a copy operation by validating the source and generating new identifiers.
+   * Shared by all storage backends.
+   * @param {import('@sap/cds').Entity} sourceAttachments - Source attachment entity definition
+   * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
+   * @returns {Promise<{ source: object, newID: string, newUrl: string }>}
+   */
+  async _prepareCopy(sourceAttachments, sourceKeys) {
+    const source = await SELECT.one
+      .from(sourceAttachments, sourceKeys)
+      .columns(
+        "url",
+        "filename",
+        "mimeType",
+        "note",
+        "hash",
+        "status",
+        "lastScan",
+      )
+    if (!source) {
+      const err = new Error("Source attachment not found")
+      err.status = 404
+      throw err
+    }
+    if (source.status === "Infected" || source.status === "Failed") {
+      const err = new Error(
+        `Cannot copy attachment with status: ${source.status}`,
+      )
+      err.status = 400
+      throw err
+    }
+    const isMultiTenancyEnabled = !!cds.env.requires.multitenancy
+    const objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
+    const newUrl =
+      isMultiTenancyEnabled && objectStoreKind === "shared"
+        ? `${cds.context.tenant}_${cds.utils.uuid()}`
+        : cds.utils.uuid()
+    return { source, newID: cds.utils.uuid(), newUrl }
+  }
+
+  /**
+   * Copies an attachment to a new record, reusing the binary content from storage.
+   * For DB storage, reads content and inserts a new record.
+   * Cloud backends override this to use native server-side copy.
+   * Scan status, lastScan, and hash are inherited from the source — no re-scan needed.
+   *
+   * Authorization note: this method uses raw CQL and does not enforce CDS
+   * service-level authorization (@requires / @restrict). Callers are responsible
+   * for verifying that the current user has read access to the source and write
+   * access to the target before invoking copy().
+   *
+   * Tenant note: only copies within the same tenant are supported. Cross-tenant
+   * copies are not allowed because the storage backends resolve credentials for
+   * the current tenant only.
+   *
+   * @param {import('@sap/cds').Entity} sourceAttachments - Source attachment entity definition.
+   *   Pass `sourceAttachments.drafts` to copy from a draft-only source.
+   * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
+   * @param {import('@sap/cds').Entity} targetAttachments - Target attachment entity definition.
+   *   Pass `targetAttachments.drafts` to insert into the draft shadow table (i.e. when the target
+   *   parent entity is currently in a draft editing session). In that case targetKeys must include
+   *   DraftAdministrativeData_DraftUUID.
+   * @param {object} [targetKeys={}] - Parent FK fields for the new record (e.g. { up__ID: '...' }).
+   *   When targeting a draft table, must also include DraftAdministrativeData_DraftUUID.
+   *   Protected fields (status, hash, url, etc.) are stripped automatically.
+   * @returns {Promise<object>} - New attachment metadata (without content)
+   */
+  async copy(
+    sourceAttachments,
+    sourceKeys,
+    targetAttachments,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (DB)", {
+      source: sourceAttachments.name,
+      sourceKeys,
+      target: targetAttachments.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachments,
+      sourceKeys,
+    )
+    const content = await this.get(sourceAttachments, sourceKeys)
+    const newRecord = {
+      ...safeTargetKeys,
+      ...source,
+      ID: newID,
+      url: newUrl,
+      content,
+    }
+    await INSERT(newRecord).into(targetAttachments)
+    const { content: _, ...metadata } = newRecord
+    return metadata
   }
 
   /**

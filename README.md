@@ -20,6 +20,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
     - [Non-Draft Upload](#non-draft-upload)
+    - [Copying Attachments](#copying-attachments)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
@@ -270,6 +271,83 @@ entity Incidents {
   @UI.Hidden : (status = #canceled ? true : false)
   attachments: Composition of many Attachments;
 }
+```
+
+### Copying Attachments
+
+The `AttachmentsService` exposes a programmatic `copy()` method that copies an attachment to a new record. On cloud storage backends (AWS S3, Azure Blob Storage, GCP Cloud Storage) this uses a backend-native server-side copy — no binary data is transferred through your application. On database storage it reads and inserts the content directly.
+
+```js
+const AttachmentsSrv = await cds.connect.to("attachments")
+
+await AttachmentsSrv.copy(
+  sourceAttachments,
+  { ID: sourceAttachmentID },
+  targetAttachments,
+  { up__ID: targetParentID },
+)
+```
+
+**Signature:**
+
+```js
+copy(sourceAttachments, sourceKeys, targetAttachments, (targetKeys = {}))
+```
+
+| Parameter           | Description                                                                                                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceAttachments` | CDS entity definition of the source attachment composition. Pass `sourceAttachments.drafts` to copy from a draft-only source.                                                                                                               |
+| `sourceKeys`        | Keys identifying the source attachment (e.g. `{ ID: '...' }`)                                                                                                                                                                               |
+| `targetAttachments` | CDS entity definition of the target attachment composition. Pass `targetAttachments.drafts` when the target parent is in an open draft editing session — the new record will be inserted into the draft shadow table and committed on save. |
+| `targetKeys`        | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachments` is a draft table, must also include `DraftAdministrativeData_DraftUUID` (the draft session UUID of the target parent).                             |
+
+The scan `status`, `lastScan`, and `hash` are inherited from the source — no re-scan is triggered since the binary content is identical. Copying an attachment with status `Infected` or `Failed` is rejected with a `400` error.
+
+> **Note:** Only copies within the same tenant are supported. Cross-tenant copies are not possible.
+
+> **Note:** `copy()` uses raw CQL internally and does not enforce CDS service-level authorization (`@requires` / `@restrict`). Callers are responsible for verifying that the current user has appropriate access to both the source and target entities before invoking `copy()`.
+
+**Supported scenarios:**
+
+| Source               | Target               | Description                                                                                            |
+| -------------------- | -------------------- | ------------------------------------------------------------------------------------------------------ |
+| `Attachments`        | `Attachments`        | Copy between two active records, e.g. duplicating an incident.                                         |
+| `Attachments`        | `Attachments.drafts` | Copy into a record that is in an open draft session, e.g. initialising a new incident from a template. |
+| `Attachments.drafts` | `Attachments.drafts` | Copy from a draft-only source (e.g. a template that has never been activated) into another draft.      |
+
+**Example — copy between two active records:**
+
+```js
+const { Incidents } = ProcessorService.entities
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments,
+  { up__ID: targetIncidentID },
+)
+```
+
+**Example — copy into a new draft record (e.g. creating an incident from a template):**
+
+```js
+const { Incidents } = ProcessorService.entities
+
+// Look up the draft session UUID for the target incident's open draft
+const targetDraft = await SELECT.one
+  .from(Incidents.drafts, { ID: targetIncidentID })
+  .columns("DraftAdministrativeData_DraftUUID")
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments.drafts,
+  {
+    up__ID: targetIncidentID,
+    DraftAdministrativeData_DraftUUID:
+      targetDraft.DraftAdministrativeData_DraftUUID,
+  },
+)
 ```
 
 ### Non-Draft Upload
