@@ -83,7 +83,7 @@ describe("Verify deep nesting entities and buildBackAssocChain", () => {
       expect.arrayContaining([
         ["left", "items", "attachments"],
         ["right", "items", "attachments"],
-      ])
+      ]),
     )
   })
 })

@@ -2784,43 +2784,51 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     // Attachment on the root Post itself
     const postAttRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
-      { up__ID: postID, filename: "post.pdf", mimeType: "application/pdf" }
+      { up__ID: postID, filename: "post.pdf", mimeType: "application/pdf" },
     )
     const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
     await PUT(
       `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=false)/content`,
-      fileContent, { headers: { "Content-Type": "application/pdf" } }
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
     )
 
     // Attachment on a nested reply
     const commentRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
-      { content: "Comment" }
+      { content: "Comment" },
     )
     const replyRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
-      { content: "Reply" }
+      { content: "Reply" },
     )
     const replyAttRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
-      { up__ID: replyRes.data.ID, filename: "reply.pdf", mimeType: "application/pdf" }
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
     )
     await PUT(
       `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
-      fileContent, { headers: { "Content-Type": "application/pdf" } }
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
     )
 
     await scanCleanWaiter
-    await POST(`odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`)
+    await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
 
     // Both should be accessible on the active entity
     const postContent = await GET(
-      `odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=true)/content`
+      `odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=true)/content`,
     )
     expect(postContent.status).toEqual(200)
 
     const replyContent = await GET(
-      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
     )
     expect(replyContent.status).toEqual(200)
   })
@@ -2831,20 +2839,25 @@ describe("Testing to prevent crash due to recursive overflow", () => {
 
     const commentRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
-      { content: "Comment" }
+      { content: "Comment" },
     )
     const replyRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
-      { content: "Reply" }
+      { content: "Reply" },
     )
     const replyAttRes = await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
-      { up__ID: replyRes.data.ID, filename: "reply.pdf", mimeType: "application/pdf" }
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
     )
     const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
     await PUT(
       `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
-      fileContent, { headers: { "Content-Type": "application/pdf" } }
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
     )
 
     // Discard the draft
@@ -2853,9 +2866,9 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     // The active entity should have no attachment content
     let errorThrown
     await GET(
-      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`
-    ).catch((e) => { 
-      errorThrown = e 
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
+    ).catch((e) => {
+      errorThrown = e
     })
     expect(errorThrown.response.status).toEqual(404)
   })
