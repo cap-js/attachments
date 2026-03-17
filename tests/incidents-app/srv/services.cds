@@ -36,10 +36,6 @@ service ProcessorService {
   entity Level2 as projection on my.Level2;
   entity Level3 as projection on my.Level3;
 
-  entity DiamondRoot as projection on my.DiamondRoot;
-  entity DiamondShared as projection on my.DiamondShared;
-  entity DiamondLeaf as projection on my.DiamondLeaf;
-
   action insertTestData() returns String;
 }
 

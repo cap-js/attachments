@@ -104,16 +104,17 @@ entity SingleTestDetails : cuid {
 entity Posts : cuid, managed {
     content : String;
     comments  : Composition of many Comments on comments.post = $self;
+    featured : Composition of many Comments on featured.featuredIn = $self;
 }
 
 entity Comments : cuid, managed {
     content : String;
     post : Association to Posts;
+    featuredIn : Association to Posts;
     replyTo : Association to Comments;
     replies : Composition of many Comments on replies.replyTo = $self;
 }
 
-//TODO: Clean up test schemas
 /**
  * Deep nesting test entities for depth 3 and 4.
  * Each intermediate entity uses a named back-association (not up_)
@@ -152,16 +153,4 @@ entity Level2 : cuid, managed {
 entity Level3 : cuid, managed {
     container : Association to Level2;
     name      : String;
-}
-
-entity DiamondRoot : cuid, managed {
-    left  : Composition of many DiamondShared on left.root  = $self;
-    right : Composition of many DiamondShared on right.root = $self;
-}
-entity DiamondShared : cuid {
-    root  : Association to DiamondRoot;
-    items : Composition of many DiamondLeaf on items.parent = $self;
-}
-entity DiamondLeaf : cuid {
-    parent : Association to DiamondShared;
 }

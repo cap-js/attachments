@@ -2694,7 +2694,7 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Testing to prevent crash due to recursive overflow", () => {
-  it("should not crash and allow attachment upload with recursive compositions", async () => {
+  it("Should not crash and allow attachment upload with recursive compositions", async () => {
     const postData = await POST(
       "/odata/v4/processor/Posts",
       {
@@ -2733,7 +2733,7 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     expect(attachments.data.value[0].filename).toBe("test.txt")
   })
 
-  it("should not crash when activating a draft with deeply nested recursive compositions", async () => {
+  it("Should not crash when activating a draft with deeply nested recursive compositions", async () => {
     // This test verifies that the attachment discovery mechanism can handle
     // deeply nested, recursive compositions without causing a stack overflow.
     // The structure is Post -> comments(Comment) -> replies(Comment) -> ...
