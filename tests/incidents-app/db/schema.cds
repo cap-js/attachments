@@ -153,3 +153,15 @@ entity Level3 : cuid, managed {
     container : Association to Level2;
     name      : String;
 }
+
+entity DiamondRoot : cuid, managed {
+    left  : Composition of many DiamondShared on left.root  = $self;
+    right : Composition of many DiamondShared on right.root = $self;
+}
+entity DiamondShared : cuid {
+    root  : Association to DiamondRoot;
+    items : Composition of many DiamondLeaf on items.parent = $self;
+}
+entity DiamondLeaf : cuid {
+    parent : Association to DiamondShared;
+}

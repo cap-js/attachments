@@ -74,4 +74,16 @@ describe("Verify deep nesting entities and buildBackAssocChain", () => {
     // Attachment -> Level3 via up_, Level3 -> Level2 via container, Level2 -> Level1 via holder, Level1 -> Level0 via parent
     expect(chain).toEqual(["up_", "container", "holder", "parent"])
   })
+
+  it("Diamond pattern: same shared entity reachable via two paths both find attachments", () => {
+    const root = model.definitions["ProcessorService.DiamondRoot"]
+    const comps = root._attachments.attachmentCompositions
+    expect(comps).toHaveLength(2)
+    expect(comps).toEqual(
+      expect.arrayContaining([
+        ["left", "items", "attachments"],
+        ["right", "items", "attachments"],
+      ])
+    )
+  })
 })

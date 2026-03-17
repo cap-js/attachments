@@ -72,3 +72,7 @@ extend my.Level2 with {
 extend my.Level3 with {
   attachments : Composition of many Attachments;
 }
+
+extend my.DiamondLeaf with {
+    attachments : Composition of many Attachments;
+}
