@@ -2818,7 +2818,7 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     )
 
     await Promise.all([postScanWaiter, replyScanWaiter])
-    
+
     await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
     )
