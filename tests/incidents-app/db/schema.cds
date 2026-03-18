@@ -104,17 +104,17 @@ entity SingleTestDetails : cuid {
 entity Posts : cuid, managed {
     content : String;
     comments  : Composition of many Comments on comments.post = $self;
-    attachments : Composition of many Attachments;
+    featured : Composition of many Comments on featured.featuredIn = $self;
 }
 
 entity Comments : cuid, managed {
     content : String;
     post : Association to Posts;
+    featuredIn : Association to Posts;
     replyTo : Association to Comments;
     replies : Composition of many Comments on replies.replyTo = $self;
 }
 
-//TODO: Clean up test schemas
 /**
  * Deep nesting test entities for depth 3 and 4.
  * Each intermediate entity uses a named back-association (not up_)
