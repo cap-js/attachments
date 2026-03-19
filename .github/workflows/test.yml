@@ -65,7 +65,7 @@ jobs:
           OBJECT_STORE_KIND: ${{ vars[format('OBJECT_STORE_KIND_{0}', matrix.hyperscaler)] }}
           NODE_VERSION: ${{ matrix.node-version }}
           SCANNER_AUTH: ${{ matrix.scanner-auth }}
-          
+
   integration-tests-postgres:
     runs-on: ubuntu-latest
     needs: requires-approval
