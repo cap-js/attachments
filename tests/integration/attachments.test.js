@@ -2628,7 +2628,7 @@ describe("Row-level security on attachments composition", () => {
   })
 })
 
-describe("Testing renaming duplicate attachments", () => {
+describe("Tests for renaming duplicate attachments", () => {
   beforeAll(async () => {
     utils = new RequestSend(POST)
   })
@@ -2853,6 +2853,112 @@ describe("Testing renaming duplicate attachments", () => {
       "sample-1-2.pdf",
       "sample-1.pdf",
     ])
+  })
+
+  it("should rename duplicate attachments on a parent with a composite key", async () => {
+    const key = { sampleID: "COMPKEY", gjahr: 2026 }
+    const { data: parent } = await POST(
+      "/odata/v4/processor/SampleRootWithComposedEntity",
+      key,
+    )
+    expect(parent.IsActiveEntity).toBe(false)
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    const { data: attachment1 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/attachments`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key.sampleID}',up__gjahr=${key.gjahr},ID=${attachment1.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Start a new draft session to add another file
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=true)/ProcessorService.draftEdit`,
+    )
+
+    const { data: attachment2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/attachments`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key.sampleID}',up__gjahr=${key.gjahr},ID=${attachment2.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    const { data: allAttachments } = await GET(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(allAttachments.value).toHaveLength(2)
+    const filenames = allAttachments.value.map((a) => a.filename).sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
+  })
+
+  it("should NOT rename attachments on different parents that share a partial composite key", async () => {
+    // Two parents sharing the same sampleID but different gjahr - these are distinct records
+    const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
+    const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
+    const key2 = { sampleID: sharedSampleID, gjahr: 2026 }
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key1)
+    const { data: att1 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key1.sampleID}',up__gjahr=${key1.gjahr},ID=${att1.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // 2. Create second parent (same sampleID, different gjahr) and upload sample.pdf
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key2)
+    const { data: att2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key2.sampleID}',up__gjahr=${key2.gjahr},ID=${att2.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Verify parent 2's attachment was NOT renamed - it's a different parent record
+    const { data: result } = await GET(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=true)/attachments`,
+    )
+    expect(result.value).toHaveLength(1)
+    expect(result.value[0].filename).toEqual("sample.pdf") // Should NOT be "sample-1.pdf"
   })
 })
 
