@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@cap-js/cds-test": ">=0",
-    "@cap-js/hana": "^2.7.0",
     "@cap-js/sqlite": "^2",
     "@eslint/js": "^10",
     "eslint": "^10",
