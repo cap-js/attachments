@@ -2918,8 +2918,8 @@ describe("Tests for renaming duplicate attachments", () => {
     ])
   })
 
-  it("should rename duplicate attachments on a parent with a composite key", async () => {
-    const key = { sampleID: "COMPKEY", gjahr: 2026 }
+  it("Should rename duplicate attachments on a parent with a composite key", async () => {
+    const key = { sampleID: `COMPKEY-${cds.utils.uuid()}`, gjahr: 2026 }
     const { data: parent } = await POST(
       "/odata/v4/processor/SampleRootWithComposedEntity",
       key,
@@ -2979,7 +2979,7 @@ describe("Tests for renaming duplicate attachments", () => {
     expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
   })
 
-  it("should NOT rename attachments on different parents that share a partial composite key", async () => {
+  it("Should NOT rename attachments on different parents that share a partial composite key", async () => {
     // Two parents sharing the same sampleID but different gjahr - these are distinct records
     const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
     const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
@@ -3022,6 +3022,30 @@ describe("Tests for renaming duplicate attachments", () => {
     )
     expect(result.value).toHaveLength(1)
     expect(result.value[0].filename).toEqual("sample.pdf") // Should NOT be "sample-1.pdf"
+  })
+
+  it("Should NOT rename attachment when two parents with same partial key are both in draft", async () => {
+    const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
+    const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
+    const key2 = { sampleID: sharedSampleID, gjahr: 2026 }
+    const filepath = join(__dirname, "content/sample.pdf")
+
+    // Create parent 1 and upload - but do NOT activate
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key1)
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+
+    // Create parent 2 while parent 1 is still in draft
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key2)
+    const { data: att2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+
+    // Should be "sample.pdf" - but with the bug it will be "sample-1.pdf"
+    expect(att2.filename).toEqual("sample.pdf")
   })
 })
 
