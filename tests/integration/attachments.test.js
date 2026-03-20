@@ -3141,7 +3141,7 @@ describe("Testing to prevent crash due to recursive overflow", () => {
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
       { up__ID: postID, filename: "post.pdf", mimeType: "application/pdf" },
     )
-
+    const postScanWaiter = waitForScanStatus("Clean", postAttRes.data.ID)
     const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
     await PUT(
       `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=false)/content`,
@@ -3166,21 +3166,18 @@ describe("Testing to prevent crash due to recursive overflow", () => {
         mimeType: "application/pdf",
       },
     )
-
+    const replyScanWaiter = waitForScanStatus("Clean", replyAttRes.data.ID)
     await PUT(
       `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
       fileContent,
       { headers: { "Content-Type": "application/pdf" } },
     )
 
-    const postScanWaiter = waitForScanStatus("Clean", postAttRes.data.ID)
-    const replyScanWaiter = waitForScanStatus("Clean", replyAttRes.data.ID)
+    await Promise.all([postScanWaiter, replyScanWaiter])
 
     await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
     )
-
-    await Promise.all([postScanWaiter, replyScanWaiter])
 
     // Both should be accessible on the active entity
     const postContent = await GET(
