@@ -3001,7 +3001,7 @@ describe("Tests for renaming duplicate attachments", () => {
       `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
     )
 
-    // 2. Create second parent (same sampleID, different gjahr) and upload sample.pdf
+    // Create second parent (same sampleID, different gjahr) and upload sample.pdf
     await POST("/odata/v4/processor/SampleRootWithComposedEntity", key2)
     const { data: att2 } = await POST(
       `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/attachments`,
