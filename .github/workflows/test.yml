@@ -30,7 +30,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm i -g @sap/cds-dk
@@ -94,7 +94,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix['node-version'] }}
       - name: Integration tests (Postgres)
@@ -109,4 +109,4 @@ jobs:
           npm i pg
           (cd tests/incidents-app && npm i)
           cds deploy --to postgres
-          npm run test
+          npm run test -- --testPathPattern="tests/integration"
