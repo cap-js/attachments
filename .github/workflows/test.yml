@@ -35,7 +35,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm i -g @sap/cds-dk
       - run: npm i
-      - run: cd tests/incidents-app && npm i
+      - run: npm i --prefix tests/incidents-app
       - run: npm run test
 
   integration-tests:
@@ -107,6 +107,6 @@ jobs:
           npm i -g @sap/cds-dk
           npm i
           npm i pg
-          (cd tests/incidents-app && npm i)
+          npm i --prefix tests/incidents-app
           cds deploy --to postgres
-          npm run test -- --testPathPattern="tests/integration"
+          npm run test -- --testPathPatterns="tests/integration"
