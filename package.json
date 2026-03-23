@@ -17,6 +17,8 @@
   "scripts": {
     "lint": "npx eslint .",
     "test": "npx jest --silent=true",
+    "test:postgres": "PG_USER=postgres PG_PASSWORD=password PG_HOST=localhost PG_PORT=5432 npx jest --silent=true",
+    "deploy:postgres": "PG_USER=postgres PG_PASSWORD=password PG_HOST=localhost PG_PORT=5432 cds deploy --to postgres",
     "prepare": "husky"
   },
   "dependencies": {

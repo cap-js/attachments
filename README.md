@@ -453,6 +453,26 @@ The unit tests in this module do not need a binding to the respective object sto
 The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, please see the section [Storage Targets](#storage-targets).
 
+Local testing is also available using a Postgres database. This must be done using a containerized setup such as Docker or Podman. This can be done using a command such as:
+
+```cds
+docker run --name pg-local -e POSTGRES_PASSWORD=password -e POSTGRES_DB=postgres -p 5432:5432 -d postgres
+```
+
+Or, alternatively:
+
+```cds
+podman run --name pg-local -e POSTGRES_PASSWORD=password -e POSTGRES_DB=postgres -p 5432:5432 -d postgres
+```
+
+With the container ready, the database must be deployed to the server for the initial setup:
+
+```cds
+npm run deploy:postgres
+```
+
+On subsequent uses of Postgres testing, `docker start pg-local ` is sufficient to prepare the database. Finally, use the command `npm run test:postgres` to run the test using Postgres.
+
 ### Supported Storage Provider
 
 - **Standard** (`kind: "standard"`) | Depending on the bound object store credentials, uses AWS S3, Azure Blob Storage or GCP Cloud Storage. You can manually specify the implementation by adjusting the type to:
