@@ -96,10 +96,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix['node-version'] }}
+      - run: npm i -g @sap/cds-dk
+      - run: npm i
+      - name: Deploy to Postgres
+        run: npm run deploy:postgres
       - name: Integration tests (Postgres)
-        run: |
-          npm i -g @sap/cds-dk
-          npm i
-          npm i --prefix tests/incidents-app
-          npm run deploy:postgres
-          npm run test -- --testPathPatterns="tests/integration"
+        run: CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
