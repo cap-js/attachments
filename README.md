@@ -276,7 +276,7 @@ To reduce pressure on the shared rate limit, the plugin limits how many scan req
 
 | Option               | Default | Description                                                                                            |
 | -------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `maxConcurrentScans` | `30`     | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
+| `maxConcurrentScans` | `30`    | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
 
 A scan that is retrying due to a 429 response holds its concurrency slot during the backoff wait, preventing retry storms from competing with new scans.
 
