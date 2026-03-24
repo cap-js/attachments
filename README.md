@@ -450,6 +450,8 @@ resources:
 
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the command `rm -rf node_modules` should be used before installation.
 
+For testing locally with a Postgres database, create a Podman (or Docker) container and run the command `podman compose -f tests/pg.yml up -d`. This should be run every time the container is stopped. On the initial setup, the database must be deployed with `npm run deploy:postgres`. From then on, running the tests with Postgres is simply `npm run test:postgres`. For more information on Postgres setup, see the official [Capire documentation](https://cap.cloud.sap/docs/guides/databases/postgres).
+
 The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, please see the section [Storage Targets](#storage-targets).
 
