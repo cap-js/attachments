@@ -107,5 +107,5 @@ jobs:
           npm i -g @sap/cds-dk
           npm i
           npm i --prefix tests/incidents-app
-          cds deploy --profile pg --project-directory tests/incidents-app
+          npm run deploy:postgres
           CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
