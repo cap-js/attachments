@@ -55,6 +55,14 @@ extend my.SingleTestDetails with {
   attachments : Composition of many Attachments;
 }
 
+extend my.Posts with {
+  attachments : Composition of many Attachments;
+}
+
+extend my.Comments with {
+  attachments : Composition of many Attachments;
+}
+
 // Depth 3: Level0 -> children(Level1) -> children(Level2) -> attachments
 extend my.Level2 with {
   attachments : Composition of many Attachments;
