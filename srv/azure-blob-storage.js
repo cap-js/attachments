@@ -324,7 +324,7 @@ module.exports = class AzureAttachmentsService extends (
       if (error.statusCode === 404) {
         response = error
       } else {
-        throw error;
+        throw error
       }
     }
 

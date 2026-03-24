@@ -350,12 +350,12 @@ module.exports = class GoogleAttachmentsService extends (
     const file = bucket.file(blobName)
     let response
     try {
-        response = await file.delete()
+      response = await file.delete()
     } catch (error) {
       if (error.statusCode === 404) {
         response = error
       } else {
-        throw error;
+        throw error
       }
     }
     if (response?.[0]?.statusCode !== 204) {
