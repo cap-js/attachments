@@ -67,23 +67,13 @@ describe("Audit logging for security events (audit-logging dependency present)",
   })
 })
 
-describe("Audit logging when audit-logging dependency is absent", () => {
+describe("Audit logging when audit-logging is disabled", () => {
   const log = cds.test.log()
-  let helperModule
-  let originalHasAuditLogging
-
-  beforeAll(() => {
-    helperModule = require("../../lib/helper")
-    originalHasAuditLogging = helperModule.hasAuditLogging
-  })
-
-  afterAll(() => {
-    helperModule.hasAuditLogging = originalHasAuditLogging
-  })
 
   it("should not register audit log handlers when hasAuditLogging returns false", async () => {
     // Override hasAuditLogging to return false
-    helperModule.hasAuditLogging = () => false
+    const originalLog = cds.env.requires['audit-log']
+    cds.env.requires['audit-log'] = false
 
     // Create a fresh AttachmentsService instance with audit logging disabled
     const AttachmentsService = require("../../srv/basic")
@@ -113,5 +103,6 @@ describe("Audit logging when audit-logging dependency is absent", () => {
 
     // Verify no audit log output was produced
     expect(log.output).not.toContain("[audit-log] - SecurityEvent:")
+    cds.env.requires['audit-log'] = originalLog;
   })
 })

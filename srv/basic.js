@@ -5,7 +5,6 @@ const {
   computeHash,
   traverseEntity,
   buildBackAssocChain,
-  hasAuditLogging,
 } = require("../lib/helper")
 
 class AttachmentsService extends cds.Service {
@@ -49,7 +48,7 @@ class AttachmentsService extends cds.Service {
       }
     })
 
-    if (hasAuditLogging()) {
+    if (cds.env.requires["audit-log"]) {
       DEBUG && DEBUG(`Register audit logging handlers for security events.`)
       this.on(
         [
@@ -59,15 +58,9 @@ class AttachmentsService extends cds.Service {
         ],
         async (msg) => {
           const audit = await cds.connect.to("audit-log")
-          const ipAddress = msg.data.ipAddress
-          if (ipAddress) delete msg.data.ipAddress
+          const { ipAddress, ...eventData } = msg.data
           await audit.log("SecurityEvent", {
-            data: Object.assign(
-              {
-                event: msg.event,
-              },
-              msg.data,
-            ),
+            data: { event: msg.event, ...eventData },
             ip: ipAddress || undefined,
           })
         },
