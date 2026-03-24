@@ -991,7 +991,71 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(activeContent.data).toBeTruthy()
   })
 
-  //TODO: Clean up test schemas
+  it("Attachment content on deeply nested comment is downloadable after draft activation with depth 3", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    // Create Post
+    const postRes = await POST("odata/v4/processor/Posts", {
+      content: "Top-level post",
+    })
+    const postID = postRes.data.ID
+
+    // Create Comment
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "First-level comment" },
+    )
+    const commentID = commentRes.data.ID
+
+    // Create Reply
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies`,
+      { content: "Second-level reply" },
+    )
+    const replyID = replyRes.data.ID
+
+    // Add attachment to the deeply nested reply
+    const filepath = join(__dirname, "content/sample.pdf")
+    const filename = basename(filepath)
+    const fileContent = readFileSync(filepath)
+
+    const attachRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies(ID=${replyID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyID,
+        filename: filename,
+        mimeType: "application/pdf",
+      },
+    )
+    const attachmentID = attachRes.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: { "Content-Type": "application/pdf" },
+      },
+    )
+    await scanCleanWaiter
+
+    await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=false)/content`,
+    )
+
+    // Save the draft
+    await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Attempt to GET the file from the deeply nested attachment
+    const contentResponse = await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
   it("Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
     const level0ID = cds.utils.uuid()
     await POST(`odata/v4/processor/Level0`, {
@@ -1062,7 +1126,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(activeContent.data).toBeTruthy()
   })
 
-  //TODO: Clean up test schemas
   it("Attachment content at depth 4 (Level0 -> Level1 -> Level2 -> Level3 -> attachments) is downloadable after draft activation", async () => {
     const level0ID = cds.utils.uuid()
     await POST(`odata/v4/processor/Level0`, {
@@ -2631,7 +2694,7 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Testing to prevent crash due to recursive overflow", () => {
-  it("should not crash and allow attachment upload with recursive compositions", async () => {
+  it("Should not crash and allow attachment upload with recursive compositions", async () => {
     const postData = await POST(
       "/odata/v4/processor/Posts",
       {
@@ -2670,7 +2733,7 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     expect(attachments.data.value[0].filename).toBe("test.txt")
   })
 
-  it("should not crash when activating a draft with deeply nested recursive compositions", async () => {
+  it("Should not crash when activating a draft with deeply nested recursive compositions", async () => {
     // This test verifies that the attachment discovery mechanism can handle
     // deeply nested, recursive compositions without causing a stack overflow.
     // The structure is Post -> comments(Comment) -> replies(Comment) -> ...
@@ -2711,6 +2774,105 @@ describe("Testing to prevent crash due to recursive overflow", () => {
     expect(responseError).not.toBeTruthy()
     expect(activationResponse.status).toEqual(201)
     expect(activationResponse.data.ID).toEqual(postID)
+  })
+
+  it("Attachments at multiple nesting levels are all saved on draft activation", async () => {
+    const postRes = await POST("odata/v4/processor/Posts", { content: "Post" })
+    const postID = postRes.data.ID
+
+    // Attachment on the root Post itself
+    const postAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
+      { up__ID: postID, filename: "post.pdf", mimeType: "application/pdf" },
+    )
+    const postScanWaiter = waitForScanStatus("Clean", postAttRes.data.ID)
+    const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
+    await PUT(
+      `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    // Attachment on a nested reply
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Comment" },
+    )
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
+      { content: "Reply" },
+    )
+    const replyAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    const replyScanWaiter = waitForScanStatus("Clean", replyAttRes.data.ID)
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await Promise.all([postScanWaiter, replyScanWaiter])
+
+    await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Both should be accessible on the active entity
+    const postContent = await GET(
+      `odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(postContent.status).toEqual(200)
+
+    const replyContent = await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(replyContent.status).toEqual(200)
+  })
+
+  it("Canceling a draft removes unsaved reply attachments", async () => {
+    const postRes = await POST("odata/v4/processor/Posts", { content: "Post" })
+    const postID = postRes.data.ID
+
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Comment" },
+    )
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
+      { content: "Reply" },
+    )
+    const replyAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    // Discard the draft
+    await DELETE(`odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)`)
+
+    // The active entity should have no attachment content
+    let errorThrown
+    await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
+    ).catch((e) => {
+      errorThrown = e
+    })
+    expect(errorThrown.response.status).toEqual(404)
   })
 })
 
