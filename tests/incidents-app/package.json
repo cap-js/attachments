@@ -4,7 +4,8 @@
   "dependencies": {
     "@cap-js/attachments": "file:../../.",
     "@cap-js/audit-logging": "^1.2.0",
-    "@cap-js/hana": "2.6.0"
+    "@cap-js/hana": "2.6.0",
+    "@cap-js/postgres": "^2.2.0"
   },
   "cds": {
     "log": {
