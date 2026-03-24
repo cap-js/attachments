@@ -297,12 +297,12 @@ class AttachmentsService extends cds.Service {
     for (const attachment of req.attachmentsToDelete) {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to("attachments")
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitting DeleteAttachment for:",
           attachment.url,
         )
         await attachmentsSrv.emit("DeleteAttachment", attachment)
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitted DeleteAttachment for:",
           attachment.url,
         )
@@ -313,7 +313,7 @@ class AttachmentsService extends cds.Service {
         )
       }
     }
-    LOG.info("[deleteAttachmentsWithKeys] Finished")
+    LOG.debug("[deleteAttachmentsWithKeys] Finished")
   }
 
   /**
