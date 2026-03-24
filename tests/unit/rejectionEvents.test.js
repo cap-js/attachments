@@ -61,7 +61,7 @@ describe("AttachmentUploadRejected event", () => {
       reject: jest.fn(),
     }
 
-    await validateAttachmentMimeType(req)
+    validateAttachmentMimeType(req)
 
     expect(req.reject).toHaveBeenCalledWith(
       400,
