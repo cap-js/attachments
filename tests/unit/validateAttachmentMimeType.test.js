@@ -254,7 +254,7 @@ describe("validateAttachmentMimeType - Unit tests", () => {
     expect(req.reject).not.toHaveBeenCalled()
   })
 
-  it("should return false when there is no content", async () => {
+  it("should return false when there is no content", () => {
     const req = {
       target: { _attachments: { isAttachmentsEntity: true } },
       data: {},
