@@ -238,7 +238,6 @@ You can configure the retry behavior in `package.json` or `.cdsrc.json`:
     "requires": {
       "malwareScanner": {
         "retry": {
-          "enabled": true,
           "maxAttempts": 5,
           "initialDelay": 1000,
           "maxDelay": 30000
@@ -251,14 +250,13 @@ You can configure the retry behavior in `package.json` or `.cdsrc.json`:
 
 | Option               | Default | Description                                            |
 | -------------------- | ------- | ------------------------------------------------------ |
-| `retry.enabled`      | `true`  | Enable or disable automatic retry on 429 responses     |
 | `retry.maxAttempts`  | `5`     | Total number of attempts including the initial request |
 | `retry.initialDelay` | `1000`  | Base delay in milliseconds before the first retry      |
 | `retry.maxDelay`     | `30000` | Maximum delay in milliseconds between retries          |
 
 When a 429 response includes a `Retry-After` header, the plugin respects that value (capped at `maxDelay`). Only 429 responses trigger retries — other errors fail immediately.
 
-To disable retry and restore the previous behavior (immediate failure on 429), set `retry.enabled` to `false`.
+To disable retry and restore the previous behavior (immediate failure on 429), set `retry` to `false`.
 
 #### Scan Concurrency Limiting
 
@@ -269,7 +267,7 @@ To reduce pressure on the shared rate limit, the plugin limits how many scan req
   "cds": {
     "requires": {
       "malwareScanner": {
-        "maxConcurrentScans": 5
+        "maxConcurrentScans": 10
       }
     }
   }
@@ -278,7 +276,7 @@ To reduce pressure on the shared rate limit, the plugin limits how many scan req
 
 | Option               | Default | Description                                                                                            |
 | -------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `maxConcurrentScans` | `5`     | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
+| `maxConcurrentScans` | `30`     | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
 
 A scan that is retrying due to a 429 response holds its concurrency slot during the backoff wait, preventing retry storms from competing with new scans.
 
