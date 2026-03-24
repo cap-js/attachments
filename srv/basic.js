@@ -1,5 +1,6 @@
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
+const DEBUG = cds.debug("attachments")
 const {
   computeHash,
   traverseEntity,
@@ -49,6 +50,7 @@ class AttachmentsService extends cds.Service {
     })
 
     if (hasAuditLogging()) {
+      DEBUG && DEBUG(`Register audit logging handlers for security events.`)
       this.on(
         [
           "AttachmentDownloadRejected",
