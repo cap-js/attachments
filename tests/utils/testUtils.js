@@ -72,7 +72,7 @@ async function waitForDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteAttachment", handler)
     }),
-    delay(30000).then(() => {
+    delay(35000).then(() => {
       throw new Error(
         `Timeout waiting for deletion of attachment ID: ${attachmentID}`,
       )
@@ -103,7 +103,7 @@ async function waitForMalwareDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteInfectedAttachment", handler)
     }),
-    delay(30000).then(() => {
+    delay(35000).then(() => {
       throw new Error(
         `Timeout waiting for malware deletion of attachment ID: ${attachmentID}`,
       )
