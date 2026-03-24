@@ -30,7 +30,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm i -g @sap/cds-dk
@@ -80,8 +80,7 @@ jobs:
         image: postgres:14.5
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
@@ -94,19 +93,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix['node-version'] }}
+      - run: npm i -g @sap/cds-dk
+      - run: npm i
+      - name: Deploy to Postgres
+        run: npm run deploy:postgres
       - name: Integration tests (Postgres)
-        env:
-          PG_USER: postgres
-          PG_PASSWORD: password
-          PG_HOST: localhost
-          PG_PORT: 5432
-        run: |
-          npm i -g @sap/cds-dk
-          npm i
-          npm i pg
-          (cd tests/incidents-app && npm i)
-          cds deploy --to postgres
-          npm run test
+        run: CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"

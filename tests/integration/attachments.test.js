@@ -3173,11 +3173,11 @@ describe("Testing to prevent crash due to recursive overflow", () => {
       { headers: { "Content-Type": "application/pdf" } },
     )
 
-    await Promise.all([postScanWaiter, replyScanWaiter])
-
     await POST(
       `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
     )
+
+    await Promise.all([postScanWaiter, replyScanWaiter])
 
     // Both should be accessible on the active entity
     const postContent = await GET(

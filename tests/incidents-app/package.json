@@ -4,7 +4,7 @@
   "dependencies": {
     "@cap-js/attachments": "file:../../.",
     "@cap-js/hana": "2.6.0",
-    "@cap-js/postgres": "^1"
+    "@cap-js/postgres": "^2.2.0"
   },
   "cds": {
     "log": {
