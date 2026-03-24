@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.10.0
+
+### Fixed
+
+- Fixed bug where deeply nested attachments were not properly handled.
+- Fixed bug to allow navigation of self-referencing entities.
+
 ## Version 3.9.0
 
 ### Fixed

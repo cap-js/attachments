@@ -106,7 +106,7 @@ jobs:
         run: |
           npm i -g @sap/cds-dk
           npm i
-          npm i pg
           npm i --prefix tests/incidents-app
-          cds deploy --to postgres
-          npm run test -- --testPathPatterns="tests/integration"
+          cd tests/incidents-app && cds deploy --profile pg
+          cd ../../
+          CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
