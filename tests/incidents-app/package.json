@@ -48,17 +48,6 @@
             }
           }
         }
-      },
-      "[postgres]": {
-        "db": {
-          "kind": "postgres",
-          "credentials": {
-            "url": "postgresql://postgres:password@localhost:5432/postgres",
-            "host": "localhost",
-            "port": 5432,
-            "password": "password"
-          }
-        }
       }
     }
   },
