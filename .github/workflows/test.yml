@@ -80,8 +80,7 @@ jobs:
         image: postgres:14.5
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
@@ -98,14 +97,9 @@ jobs:
         with:
           node-version: ${{ matrix['node-version'] }}
       - name: Integration tests (Postgres)
-        env:
-          PG_USER: postgres
-          PG_PASSWORD: password
-          PG_HOST: localhost
-          PG_PORT: 5432
         run: |
           npm i -g @sap/cds-dk
           npm i
           npm i --prefix tests/incidents-app
           npm run deploy:postgres
-          CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
+          npm run test -- --testPathPatterns="tests/integration"
