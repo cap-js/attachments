@@ -66,7 +66,7 @@ class AttachmentsService extends cds.Service {
               },
               msg.data,
             ),
-            ip: ipAddress ?? undefined,
+            ip: ipAddress || undefined,
           })
         },
       )
