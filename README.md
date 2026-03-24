@@ -245,7 +245,8 @@ By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Download
 ### Audit logging
 
 The attachment service emits the following three events:
-- AttachmentDownloadRejected, 
+
+- AttachmentDownloadRejected,
 - AttachmentSizeExceeded,
 - AttachmentUploadRejected
 
@@ -254,8 +255,8 @@ When `@cap-js/audit-logging` is a dependency of your app, the three events will 
 You can register custom handlers for the three events by writing:
 
 ```js
-const attachments = await cds.connect.to('attachments');
-attachments.on('AttachmentDownloadRejected', msg => {})
+const attachments = await cds.connect.to("attachments")
+attachments.on("AttachmentDownloadRejected", (msg) => {})
 ```
 
 ### Visibility Control for Attachments UI Facet Generation
