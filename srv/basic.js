@@ -4,6 +4,7 @@ const {
   computeHash,
   traverseEntity,
   buildBackAssocChain,
+  hasAuditLogging,
 } = require("../lib/helper")
 
 class AttachmentsService extends cds.Service {
@@ -46,6 +47,21 @@ class AttachmentsService extends cds.Service {
         )
       }
     })
+
+    if (hasAuditLogging()) {
+      this.on(['AttachmentDownloadRejected', 'AttachmentSizeExceeded', 'AttachmentUploadRejected'], async msg => {
+        const audit = await cds.connect.to('audit-log')
+        const ipAddress = msg.data.ipAddress;
+        if (ipAddress) delete msg.data.ipAddress;
+        await audit.log('SecurityEvent', {
+          data: Object.assign({
+            event: msg.event
+          }, msg.data),
+          ip: ipAddress ?? undefined
+        })
+      })
+    }
+
     return super.init()
   }
 

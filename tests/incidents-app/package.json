@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@cap-js/attachments": "file:../../.",
+    "@cap-js/audit-logging": "^1.2.0",
     "@cap-js/hana": "2.6.0"
   },
   "cds": {
