@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [Upcoming] Version 3.11.0
 
-### Feater
+### Added
 
 - Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected
 - If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events
