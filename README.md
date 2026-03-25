@@ -242,6 +242,23 @@ According to the recommendation of the [Malware Scanning Service](http://help.sa
 
 By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
 
+### Audit logging
+
+The attachment service emits the following three events:
+
+- AttachmentDownloadRejected,
+- AttachmentSizeExceeded,
+- AttachmentUploadRejected
+
+When `@cap-js/audit-logging` is a dependency of your app, the three events will be automatically logged as security events in the audit log service.
+
+You can register custom handlers for the three events by writing:
+
+```js
+const attachments = await cds.connect.to("attachments")
+attachments.on("AttachmentDownloadRejected", (msg) => {})
+```
+
 ### Visibility Control for Attachments UI Facet Generation
 
 By setting the `@UI.Hidden` property to `true`, developers can hide the visibility of the plugin in the UI. This feature is particularly useful in scenarios where the visibility of the plugin needs to be dynamically controlled based on certain conditions.
