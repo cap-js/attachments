@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@cap-js/attachments": "file:../../.",
+    "@cap-js/audit-logging": "^1.2.0",
     "@cap-js/hana": "2.6.0",
     "@cap-js/postgres": "^2.2.0"
   },
@@ -13,6 +14,10 @@
       }
     },
     "requires": {
+      "queue": {
+        "parallel": true,
+        "chunkSize": 20
+      },
       "attachments": {
         "scanExpiryMs": 30000
       },
