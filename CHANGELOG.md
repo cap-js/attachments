@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Upcoming] Version 3.11.0
+
+### Feater
+
+- Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected
+- If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events
+
 ## Version 3.10.0
 
 ### Fixed
