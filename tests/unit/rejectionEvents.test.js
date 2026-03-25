@@ -87,7 +87,7 @@ describe("AttachmentUploadRejected event", () => {
     )
   })
 
-  it("should not emit when MIME type is allowed", async () => {
+  it("should not emit when MIME type is allowed", () => {
     const req = {
       target: {
         name: "TestService.Attachments",
@@ -107,7 +107,7 @@ describe("AttachmentUploadRejected event", () => {
       reject: jest.fn(),
     }
 
-    const result = await validateAttachmentMimeType(req)
+    const result = validateAttachmentMimeType(req)
 
     expect(result).toBe(true)
     expect(req.reject).not.toHaveBeenCalled()
@@ -136,7 +136,7 @@ describe("AttachmentUploadRejected event", () => {
       reject: jest.fn(),
     }
 
-    const result = await validateAttachmentMimeType(req)
+    const result = validateAttachmentMimeType(req)
 
     expect(result).toBe(false)
     expect(req.reject).toHaveBeenCalledWith(
@@ -172,7 +172,7 @@ describe("AttachmentUploadRejected event", () => {
       reject: jest.fn(),
     }
 
-    await validateAttachmentMimeType(req)
+    validateAttachmentMimeType(req)
 
     // cds.spawn is called, proving the emit runs in a separate transaction
     expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
