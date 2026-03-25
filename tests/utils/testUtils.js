@@ -23,6 +23,7 @@ async function waitForScanStatus(status, attachmentID) {
           req.event === "UPDATE" &&
           req.query.UPDATE.data.status &&
           req.target.name.includes(".attachments") &&
+          !req.target.isDraft &&
           (!attachmentID ||
             (req.query.UPDATE.entity.ref.at(-1).where &&
               req.query.UPDATE.entity.ref
