@@ -8,8 +8,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected
-- If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events
+- Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected.
+- If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events.
+- Duplicate file names to a single attachment entity are automatically assigned a distinguishing suffix.
+- Local testing using a Postgres database now possible.
 
 ### Fixed
 
