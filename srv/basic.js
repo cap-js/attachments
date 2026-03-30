@@ -1,5 +1,6 @@
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
+const DEBUG = cds.debug("attachments")
 const {
   computeHash,
   traverseEntity,
@@ -79,6 +80,26 @@ class AttachmentsService extends cds.Service {
         )
       }
     })
+
+    if (cds.env.requires["audit-log"]) {
+      DEBUG && DEBUG(`Register audit logging handlers for security events.`)
+      this.on(
+        [
+          "AttachmentDownloadRejected",
+          "AttachmentSizeExceeded",
+          "AttachmentUploadRejected",
+        ],
+        async (msg) => {
+          const audit = await cds.connect.to("audit-log")
+          const { ipAddress, ...eventData } = msg.data
+          await audit.log("SecurityEvent", {
+            data: { event: msg.event, ...eventData },
+            ip: ipAddress || undefined,
+          })
+        },
+      )
+    }
+
     return super.init()
   }
 
@@ -309,12 +330,12 @@ class AttachmentsService extends cds.Service {
     for (const attachment of req.attachmentsToDelete) {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to("attachments")
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitting DeleteAttachment for:",
           attachment.url,
         )
         await attachmentsSrv.emit("DeleteAttachment", attachment)
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitted DeleteAttachment for:",
           attachment.url,
         )
@@ -325,7 +346,7 @@ class AttachmentsService extends cds.Service {
         )
       }
     }
-    LOG.info("[deleteAttachmentsWithKeys] Finished")
+    LOG.debug("[deleteAttachmentsWithKeys] Finished")
   }
 
   /**

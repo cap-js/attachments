@@ -350,9 +350,18 @@ module.exports = class AzureAttachmentsService extends (
     )
 
     const blobClient = containerClient.getBlockBlobClient(blobName)
-    const response = await blobClient.delete()
+    let response
+    try {
+      response = await blobClient.delete()
+    } catch (error) {
+      if (error.statusCode === 404) {
+        response = error
+      } else {
+        throw error
+      }
+    }
 
-    if (response._response.status !== 202) {
+    if (response._response?.status !== 202) {
       LOG.warn("File has not been deleted from Azure Blob Storage", {
         blobName,
         containerName: containerClient.containerName,

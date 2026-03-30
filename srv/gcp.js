@@ -389,8 +389,17 @@ module.exports = class GoogleAttachmentsService extends (
     )
 
     const file = bucket.file(blobName)
-    const response = await file.delete()
-    if (response[0]?.statusCode !== 204) {
+    let response
+    try {
+      response = await file.delete()
+    } catch (error) {
+      if (error.statusCode === 404) {
+        response = error
+      } else {
+        throw error
+      }
+    }
+    if (response?.[0]?.statusCode !== 204) {
       LOG.warn("File has not been deleted from Google Cloud Storage", {
         blobName,
         bucketName: bucket.name,
