@@ -558,16 +558,16 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
-   * 
-   * @param {*} data 
-   * @returns 
+   *
+   * @param {*} data
+   * @returns
    */
   createUrlForAttachment() {
     const isMultiTenancyEnabled = !!cds.env.requires.multitenancy
     const objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
     return isMultiTenancyEnabled && objectStoreKind === "shared"
-        ? `${cds.context.tenant}_${cds.utils.uuid()}`
-        : cds.utils.uuid()
+      ? `${cds.context.tenant}_${cds.utils.uuid()}`
+      : cds.utils.uuid()
   }
 
   /**
@@ -579,17 +579,19 @@ class AttachmentsService extends cds.Service {
    */
   async _prepareCopy(sourceAttachments, sourceKeys) {
     // this.run so auth is enforced
-    const source = await this.run(SELECT.one
-      .from(sourceAttachments, sourceKeys)
-      .columns(
-        "url",
-        "filename",
-        "mimeType",
-        "note",
-        "hash",
-        "status",
-        "lastScan",
-      ))
+    const source = await this.run(
+      SELECT.one
+        .from(sourceAttachments, sourceKeys)
+        .columns(
+          "url",
+          "filename",
+          "mimeType",
+          "note",
+          "hash",
+          "status",
+          "lastScan",
+        ),
+    )
     if (!source) {
       const err = new Error("Source attachment not found")
       err.status = 404
@@ -603,7 +605,7 @@ class AttachmentsService extends cds.Service {
       throw err
     }
     const newUrl = this.createUrlForAttachment(source)
-      
+
     return { source, newID: cds.utils.uuid(), newUrl }
   }
 
