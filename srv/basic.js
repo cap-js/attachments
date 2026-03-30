@@ -524,10 +524,11 @@ class AttachmentsService extends cds.Service {
    * @returns {Promise<{ source: object, newID: string, newUrl: string }>}
    */
   async _prepareCopy(sourceAttachmentsEntity, sourceKeys) {
-    // this.run so auth is enforced
-    const source = await this.run(
-      SELECT.one
-        .from(sourceAttachmentsEntity, sourceKeys)
+    // srv.run so auth is enforced
+    const srv = await cds.connect.to(sourceAttachmentsEntity._service?.name ?? 'db')
+    const source = await srv.run(
+      SELECT
+        .one.from(sourceAttachmentsEntity, sourceKeys)
         .columns(
           "url",
           "filename",
@@ -595,12 +596,13 @@ class AttachmentsService extends cds.Service {
     )
     const content = await this.get(sourceAttachmentsEntity, sourceKeys)
     const newRecord = {
-      ...safeTargetKeys,
       ...source,
+      // Must be spread into afterwards else source up_ overrides target keys
+      ...safeTargetKeys,
       ID: newID,
       url: newUrl,
     }
-    await INSERT(newRecord).into({
+    await INSERT.into(targetAttachmentsEntity).entries({
       ...newRecord,
       content,
     })

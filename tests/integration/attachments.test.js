@@ -6,6 +6,7 @@ const {
   delay,
   waitForMalwareDeletion,
   waitForDeletion,
+  runWithUser,
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
@@ -14,6 +15,7 @@ const { Readable } = require("stream")
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
+const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 
 let utils = null
 
@@ -3295,12 +3297,12 @@ describe("Tests for copy() on AttachmentsService", () => {
     const { ProcessorService } = cds.services
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
-    const newAtt = await AttachmentsSrv.copy(
+    const newAtt = await runWithUser(alice, () => AttachmentsSrv.copy(
       Attachments,
       { ID: sourceAttachmentID },
       Attachments,
       { up__ID: targetIncidentID },
-    )
+    ))
     expect(newAtt.ID).not.toEqual(sourceAttachmentID)
     expect(newAtt.url).toBeTruthy()
     expect(newAtt.filename).toEqual("sample.pdf")
@@ -3352,7 +3354,7 @@ describe("Tests for copy() on AttachmentsService", () => {
       .columns("DraftAdministrativeData_DraftUUID")
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
-    const newAtt = await AttachmentsSrv.copy(
+    const newAtt = await await runWithUser(alice, () => AttachmentsSrv.copy(
       Attachments,
       { ID: sourceAttachmentID },
       Attachments.drafts,
@@ -3361,7 +3363,7 @@ describe("Tests for copy() on AttachmentsService", () => {
         DraftAdministrativeData_DraftUUID:
           targetDraft.DraftAdministrativeData_DraftUUID,
       },
-    )
+    ))
     expect(newAtt.ID).toBeTruthy()
     expect(newAtt.status).toEqual("Clean")
 
@@ -3423,7 +3425,7 @@ describe("Tests for copy() on AttachmentsService", () => {
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
     // Source is the active Attachments entity (uploaded via draft, now active after save)
-    const newAtt = await AttachmentsSrv.copy(
+    const newAtt = await await runWithUser(alice, () => AttachmentsSrv.copy(
       Attachments,
       { ID: sourceAttachmentID },
       Attachments.drafts,
@@ -3432,7 +3434,7 @@ describe("Tests for copy() on AttachmentsService", () => {
         DraftAdministrativeData_DraftUUID:
           targetDraft.DraftAdministrativeData_DraftUUID,
       },
-    )
+    ))
     expect(newAtt.ID).toBeTruthy()
     expect(newAtt.status).toEqual("Clean")
 
@@ -3465,9 +3467,9 @@ describe("Tests for copy() on AttachmentsService", () => {
     )
 
     await expect(
-      AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
+      runWithUser(alice, () => AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
         up__ID: incidentID,
-      }),
+      })),
     ).rejects.toMatchObject({ status: 400 })
   })
 
@@ -3478,9 +3480,9 @@ describe("Tests for copy() on AttachmentsService", () => {
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
     await expect(
-      AttachmentsSrv.copy(Attachments, { ID: cds.utils.uuid() }, Attachments, {
+      runWithUser(alice, () => AttachmentsSrv.copy(Attachments, { ID: cds.utils.uuid() }, Attachments, {
         up__ID: incidentID,
-      }),
+      })),
     ).rejects.toMatchObject({ status: 404 })
   })
 
@@ -3509,7 +3511,7 @@ describe("Tests for copy() on AttachmentsService", () => {
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
     // Attempt to override protected fields via targetKeys
-    const newAtt = await AttachmentsSrv.copy(
+    const newAtt = await runWithUser(alice, () => AttachmentsSrv.copy(
       Attachments,
       { ID: sourceAttachmentID },
       Attachments,
@@ -3520,7 +3522,7 @@ describe("Tests for copy() on AttachmentsService", () => {
         filename: "evil.exe",
         mimeType: "application/x-evil",
       },
-    )
+    ))
 
     // Protected fields must reflect the source, not the attacker's values
     expect(newAtt.status).toEqual("Clean")
