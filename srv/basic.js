@@ -558,6 +558,19 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
+   * 
+   * @param {*} data 
+   * @returns 
+   */
+  createUrlForAttachment() {
+    const isMultiTenancyEnabled = !!cds.env.requires.multitenancy
+    const objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
+    return isMultiTenancyEnabled && objectStoreKind === "shared"
+        ? `${cds.context.tenant}_${cds.utils.uuid()}`
+        : cds.utils.uuid()
+  }
+
+  /**
    * Prepares a copy operation by validating the source and generating new identifiers.
    * Shared by all storage backends.
    * @param {import('@sap/cds').Entity} sourceAttachments - Source attachment entity definition
@@ -565,7 +578,8 @@ class AttachmentsService extends cds.Service {
    * @returns {Promise<{ source: object, newID: string, newUrl: string }>}
    */
   async _prepareCopy(sourceAttachments, sourceKeys) {
-    const source = await SELECT.one
+    // this.run so auth is enforced
+    const source = await this.run(SELECT.one
       .from(sourceAttachments, sourceKeys)
       .columns(
         "url",
@@ -575,25 +589,21 @@ class AttachmentsService extends cds.Service {
         "hash",
         "status",
         "lastScan",
-      )
+      ))
     if (!source) {
       const err = new Error("Source attachment not found")
       err.status = 404
       throw err
     }
-    if (source.status === "Infected" || source.status === "Failed") {
+    if (source.status !== "Clean") {
       const err = new Error(
-        `Cannot copy attachment with status: ${source.status}`,
+        `Cannot copy attachment with status: ${source.status}. Only a Clean Status is allowed`,
       )
       err.status = 400
       throw err
     }
-    const isMultiTenancyEnabled = !!cds.env.requires.multitenancy
-    const objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
-    const newUrl =
-      isMultiTenancyEnabled && objectStoreKind === "shared"
-        ? `${cds.context.tenant}_${cds.utils.uuid()}`
-        : cds.utils.uuid()
+    const newUrl = this.createUrlForAttachment(source)
+      
     return { source, newID: cds.utils.uuid(), newUrl }
   }
 
@@ -602,11 +612,6 @@ class AttachmentsService extends cds.Service {
    * For DB storage, reads content and inserts a new record.
    * Cloud backends override this to use native server-side copy.
    * Scan status, lastScan, and hash are inherited from the source — no re-scan needed.
-   *
-   * Authorization note: this method uses raw CQL and does not enforce CDS
-   * service-level authorization (@requires / @restrict). Callers are responsible
-   * for verifying that the current user has read access to the source and write
-   * access to the target before invoking copy().
    *
    * Tenant note: only copies within the same tenant are supported. Cross-tenant
    * copies are not allowed because the storage backends resolve credentials for
