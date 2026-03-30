@@ -1781,6 +1781,38 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(contentResponse2.status).toEqual(200)
     expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
   })
+
+  it("Creating attachment with content in POST returns the posted metadata", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filename = "sample.pdf"
+    const mimeType = "application/pdf"
+
+    const response = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename,
+        mimeType,
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+      },
+    )
+
+    expect(response.status).toEqual(201)
+    expect(response.data).toMatchObject({
+      up__ID: incidentID,
+      filename,
+      mimeType,
+    })
+    expect(response.data.ID).toBeTruthy()
+    expect(response.data.status).toBeDefined()
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
