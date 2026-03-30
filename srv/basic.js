@@ -486,27 +486,6 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
-   * Fields that are never allowed in targetKeys — they are controlled by the
-   * copy logic and must not be overridden by callers.
-   */
-  static _PROTECTED_FIELDS = new Set([
-    "ID",
-    "url",
-    "content",
-    "hash",
-    "status",
-    "lastScan",
-    "filename",
-    "mimeType",
-    "note",
-    "statusNav",
-    "createdAt",
-    "createdBy",
-    "modifiedAt",
-    "modifiedBy",
-  ])
-
-  /**
    * Strips protected fields from targetKeys so callers cannot override
    * security-sensitive metadata (status, hash, url, etc.).
    * @param {object} targetKeys - Raw target keys from the caller
@@ -515,7 +494,7 @@ class AttachmentsService extends cds.Service {
   _sanitizeTargetKeys(targetKeys) {
     const sanitized = {}
     for (const [key, value] of Object.entries(targetKeys)) {
-      if (!AttachmentsService._PROTECTED_FIELDS.has(key)) {
+      if (key.startsWith('up_')) {
         sanitized[key] = value
       } else {
         LOG.warn(`Ignoring protected field in targetKeys: ${key}`)
