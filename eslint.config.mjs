@@ -4,10 +4,10 @@ export default [
   {
     rules: {
       "no-unused-vars": [
-        'error',
-        { argsIgnorePattern: '^_', reportUsedIgnorePattern: true },
-      ]
-    }
+        "error",
+        { argsIgnorePattern: "^_", reportUsedIgnorePattern: true },
+      ],
+    },
   },
   {
     name: "test-files-config",

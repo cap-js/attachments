@@ -623,7 +623,7 @@ class AttachmentsService extends cds.Service {
     }
     await INSERT(newRecord).into({
       ...newRecord,
-      content
+      content,
     })
     return newRecord
   }
