@@ -494,7 +494,7 @@ class AttachmentsService extends cds.Service {
   _sanitizeTargetKeys(targetKeys) {
     const sanitized = {}
     for (const [key, value] of Object.entries(targetKeys)) {
-      if (key.startsWith("up_")) {
+      if (key.startsWith("up_") || key.startsWith('DraftAdministrativeData')) {
         sanitized[key] = value
       } else {
         LOG.warn(`Ignoring protected field in targetKeys: ${key}`)
