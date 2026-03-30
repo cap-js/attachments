@@ -333,7 +333,7 @@ module.exports = class AzureAttachmentsService extends (
     const sourceBlobClient = containerClient.getBlockBlobClient(source.url)
     const targetBlobClient = containerClient.getBlockBlobClient(newUrl)
     await targetBlobClient.syncCopyFromURL(sourceBlobClient.url)
-    const newRecord = { ...safeTargetKeys, ...source, ID: newID, url: newUrl }
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
     await INSERT(newRecord).into(targetAttachmentsEntity)
     return newRecord
   }

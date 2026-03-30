@@ -372,7 +372,7 @@ module.exports = class GoogleAttachmentsService extends (
       throw err
     }
     await bucket.file(source.url).copy(bucket.file(newUrl))
-    const newRecord = { ...safeTargetKeys, ...source, ID: newID, url: newUrl }
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
     await INSERT(newRecord).into(targetAttachmentsEntity)
     return newRecord
   }

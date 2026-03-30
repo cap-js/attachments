@@ -361,7 +361,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         Key: newUrl,
       }),
     )
-    const newRecord = { ...safeTargetKeys, ...source, ID: newID, url: newUrl }
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
     await INSERT(newRecord).into(targetAttachmentsEntity)
     return newRecord
   }
