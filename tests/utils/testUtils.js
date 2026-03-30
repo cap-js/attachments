@@ -148,5 +148,5 @@ module.exports = {
   newIncident,
   waitForDeletion,
   waitForMalwareDeletion,
-  runWithUser
+  runWithUser,
 }

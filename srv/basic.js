@@ -525,10 +525,12 @@ class AttachmentsService extends cds.Service {
    */
   async _prepareCopy(sourceAttachmentsEntity, sourceKeys) {
     // srv.run so auth is enforced
-    const srv = await cds.connect.to(sourceAttachmentsEntity._service?.name ?? 'db')
+    const srv = await cds.connect.to(
+      sourceAttachmentsEntity._service?.name ?? "db",
+    )
     const source = await srv.run(
-      SELECT
-        .one.from(sourceAttachmentsEntity, sourceKeys)
+      SELECT.one
+        .from(sourceAttachmentsEntity, sourceKeys)
         .columns(
           "url",
           "filename",

@@ -3297,12 +3297,14 @@ describe("Tests for copy() on AttachmentsService", () => {
     const { ProcessorService } = cds.services
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
-    const newAtt = await runWithUser(alice, () => AttachmentsSrv.copy(
-      Attachments,
-      { ID: sourceAttachmentID },
-      Attachments,
-      { up__ID: targetIncidentID },
-    ))
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        { up__ID: targetIncidentID },
+      ),
+    )
     expect(newAtt.ID).not.toEqual(sourceAttachmentID)
     expect(newAtt.url).toBeTruthy()
     expect(newAtt.filename).toEqual("sample.pdf")
@@ -3354,16 +3356,18 @@ describe("Tests for copy() on AttachmentsService", () => {
       .columns("DraftAdministrativeData_DraftUUID")
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
-    const newAtt = await await runWithUser(alice, () => AttachmentsSrv.copy(
-      Attachments,
-      { ID: sourceAttachmentID },
-      Attachments.drafts,
-      {
-        up__ID: targetIncidentID,
-        DraftAdministrativeData_DraftUUID:
-          targetDraft.DraftAdministrativeData_DraftUUID,
-      },
-    ))
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
     expect(newAtt.ID).toBeTruthy()
     expect(newAtt.status).toEqual("Clean")
 
@@ -3425,16 +3429,18 @@ describe("Tests for copy() on AttachmentsService", () => {
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
     // Source is the active Attachments entity (uploaded via draft, now active after save)
-    const newAtt = await await runWithUser(alice, () => AttachmentsSrv.copy(
-      Attachments,
-      { ID: sourceAttachmentID },
-      Attachments.drafts,
-      {
-        up__ID: targetIncidentID,
-        DraftAdministrativeData_DraftUUID:
-          targetDraft.DraftAdministrativeData_DraftUUID,
-      },
-    ))
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
     expect(newAtt.ID).toBeTruthy()
     expect(newAtt.status).toEqual("Clean")
 
@@ -3467,9 +3473,11 @@ describe("Tests for copy() on AttachmentsService", () => {
     )
 
     await expect(
-      runWithUser(alice, () => AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
-        up__ID: incidentID,
-      })),
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
+          up__ID: incidentID,
+        }),
+      ),
     ).rejects.toMatchObject({ status: 400 })
   })
 
@@ -3480,9 +3488,16 @@ describe("Tests for copy() on AttachmentsService", () => {
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
     await expect(
-      runWithUser(alice, () => AttachmentsSrv.copy(Attachments, { ID: cds.utils.uuid() }, Attachments, {
-        up__ID: incidentID,
-      })),
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(
+          Attachments,
+          { ID: cds.utils.uuid() },
+          Attachments,
+          {
+            up__ID: incidentID,
+          },
+        ),
+      ),
     ).rejects.toMatchObject({ status: 404 })
   })
 
@@ -3511,18 +3526,20 @@ describe("Tests for copy() on AttachmentsService", () => {
     const Attachments = ProcessorService.entities["Incidents.attachments"]
 
     // Attempt to override protected fields via targetKeys
-    const newAtt = await runWithUser(alice, () => AttachmentsSrv.copy(
-      Attachments,
-      { ID: sourceAttachmentID },
-      Attachments,
-      {
-        up__ID: targetIncidentID,
-        status: "Unscanned",
-        hash: "tampered-hash",
-        filename: "evil.exe",
-        mimeType: "application/x-evil",
-      },
-    ))
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        {
+          up__ID: targetIncidentID,
+          status: "Unscanned",
+          hash: "tampered-hash",
+          filename: "evil.exe",
+          mimeType: "application/x-evil",
+        },
+      ),
+    )
 
     // Protected fields must reflect the source, not the attacker's values
     expect(newAtt.status).toEqual("Clean")
