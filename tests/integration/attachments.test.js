@@ -3494,23 +3494,6 @@ describe("Tests for copy() on AttachmentsService", () => {
     expect(newAtt.filename).toEqual("sample.pdf")
     expect(newAtt.mimeType).not.toEqual("application/x-evil")
   })
-
-  it("CopyAttachment event rejects non-attachment entity names", async () => {
-    const AttachmentsSrv = cds.unboxed(await cds.connect.to("attachments"))
-    const { ProcessorService } = cds.services
-
-    // Use a real non-attachment entity name
-    const nonAttachmentEntity = ProcessorService.entities.Incidents.name
-
-    await expect(
-      AttachmentsSrv.send("CopyAttachment", {
-        sourceTarget: nonAttachmentEntity,
-        sourceKeys: { ID: cds.utils.uuid() },
-        targetTarget: nonAttachmentEntity,
-        targetKeys: {},
-      }),
-    ).rejects.toMatchObject({ status: 400 })
-  })
 })
 
 /**

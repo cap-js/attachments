@@ -13,39 +13,6 @@ class AttachmentsService extends cds.Service {
       await this.delete(msg.data.url, msg.data.target)
     })
 
-    this.on("CopyAttachment", async (msg) => {
-      const {
-        sourceTarget,
-        sourceKeys,
-        targetTarget,
-        targetKeys,
-        targetIsDraft = false,
-      } = msg.data
-      const sourceAttachments = cds.model.definitions[sourceTarget]
-      if (!sourceAttachments?.["@_is_media_data"]) {
-        const err = new Error(
-          `Invalid source entity: ${sourceTarget} is not an attachment entity`,
-        )
-        err.status = 400
-        throw err
-      }
-      const targetDef = cds.model.definitions[targetTarget]
-      if (!targetDef?.["@_is_media_data"]) {
-        const err = new Error(
-          `Invalid target entity: ${targetTarget} is not an attachment entity`,
-        )
-        err.status = 400
-        throw err
-      }
-      const targetAttachments = targetIsDraft ? targetDef?.drafts : targetDef
-      return this.copy(
-        sourceAttachments,
-        sourceKeys,
-        targetAttachments,
-        targetKeys,
-      )
-    })
-
     this.on("DeleteInfectedAttachment", async (msg) => {
       const { target, hash, keys } = msg.data
       const attachment = await SELECT.one
@@ -653,11 +620,12 @@ class AttachmentsService extends cds.Service {
       ...source,
       ID: newID,
       url: newUrl,
-      content,
     }
-    await INSERT(newRecord).into(targetAttachments)
-    const { content: _, ...metadata } = newRecord
-    return metadata
+    await INSERT(newRecord).into({
+      ...newRecord,
+      content
+    })
+    return newRecord
   }
 
   /**
