@@ -311,7 +311,7 @@ await AttachmentsSrv.copy(
 | `sourceAttachmentsEntity` | CDS entity definition of the source attachment composition.                                                                                                       |
 | `sourceKeys`              | Keys of the attachment (e.g. `{ ID: '...' }`)                                                                                                                     |
 | `targetAttachmentsEntity` | CDS entity definition of the target attachment composition.                                                                                                       |
-| `targetKeys`              | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachments` is a draft table, must also include `DraftAdministrativeData_DraftUUID`. |
+| `targetKeys`              | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachmentsEntity` is a draft table, must also include `DraftAdministrativeData_DraftUUID`. |
 
 The scan `status`, `lastScan`, and `hash` are inherited from the source — no re-scan is triggered since the binary content is identical. Copying an attachment when the status is not `Clean` is rejected with a `400` error.
 

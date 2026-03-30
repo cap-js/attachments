@@ -55,12 +55,12 @@ class ProcessorService extends cds.ApplicationService {
       return req.reject(500, "Failed to create draft")
 
     // Copy all attachments from the active source into the new draft
-    const sourceAttachments = await SELECT.from(Attachments).where({
+    const sourceAttachmentsEntity = await SELECT.from(Attachments).where({
       up__ID: sourceID,
     })
-    if (sourceAttachments.length > 0) {
+    if (sourceAttachmentsEntity.length > 0) {
       const AttachmentsSrv = await cds.connect.to("attachments")
-      for (const att of sourceAttachments) {
+      for (const att of sourceAttachmentsEntity) {
         await AttachmentsSrv.copy(
           Attachments,
           { ID: att.ID },

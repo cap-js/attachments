@@ -333,19 +333,19 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
    * @inheritdoc
    */
   async copy(
-    sourceAttachments,
+    sourceAttachmentsEntity,
     sourceKeys,
-    targetAttachments,
+    targetAttachmentsEntity,
     targetKeys = {},
   ) {
     LOG.debug("Copying attachment (S3)", {
-      source: sourceAttachments.name,
+      source: sourceAttachmentsEntity.name,
       sourceKeys,
-      target: targetAttachments.name,
+      target: targetAttachmentsEntity.name,
     })
     const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
     const { source, newID, newUrl } = await this._prepareCopy(
-      sourceAttachments,
+      sourceAttachmentsEntity,
       sourceKeys,
     )
     const { client, bucket } = await this.retrieveClient()
@@ -362,7 +362,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
       }),
     )
     const newRecord = { ...safeTargetKeys, ...source, ID: newID, url: newUrl }
-    await INSERT(newRecord).into(targetAttachments)
+    await INSERT(newRecord).into(targetAttachmentsEntity)
     return newRecord
   }
 

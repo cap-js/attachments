@@ -519,15 +519,15 @@ class AttachmentsService extends cds.Service {
   /**
    * Prepares a copy operation by validating the source and generating new identifiers.
    * Shared by all storage backends.
-   * @param {import('@sap/cds').Entity} sourceAttachments - Source attachment entity definition
+   * @param {import('@sap/cds').Entity} sourceAttachmentsEntity - Source attachment entity definition
    * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
    * @returns {Promise<{ source: object, newID: string, newUrl: string }>}
    */
-  async _prepareCopy(sourceAttachments, sourceKeys) {
+  async _prepareCopy(sourceAttachmentsEntity, sourceKeys) {
     // this.run so auth is enforced
     const source = await this.run(
       SELECT.one
-        .from(sourceAttachments, sourceKeys)
+        .from(sourceAttachmentsEntity, sourceKeys)
         .columns(
           "url",
           "filename",
@@ -565,11 +565,11 @@ class AttachmentsService extends cds.Service {
    * copies are not allowed because the storage backends resolve credentials for
    * the current tenant only.
    *
-   * @param {import('@sap/cds').Entity} sourceAttachments - Source attachment entity definition.
-   *   Pass `sourceAttachments.drafts` to copy from a draft-only source.
+   * @param {import('@sap/cds').Entity} sourceAttachmentsEntity - Source attachment entity definition.
+   *   Pass `sourceAttachmentsEntity.drafts` to copy from a draft-only source.
    * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
-   * @param {import('@sap/cds').Entity} targetAttachments - Target attachment entity definition.
-   *   Pass `targetAttachments.drafts` to insert into the draft shadow table (i.e. when the target
+   * @param {import('@sap/cds').Entity} targetAttachmentsEntity - Target attachment entity definition.
+   *   Pass `targetAttachmentsEntity.drafts` to insert into the draft shadow table (i.e. when the target
    *   parent entity is currently in a draft editing session). In that case targetKeys must include
    *   DraftAdministrativeData_DraftUUID.
    * @param {object} [targetKeys={}] - Parent FK fields for the new record (e.g. { up__ID: '...' }).
@@ -578,22 +578,22 @@ class AttachmentsService extends cds.Service {
    * @returns {Promise<object>} - New attachment metadata (without content)
    */
   async copy(
-    sourceAttachments,
+    sourceAttachmentsEntity,
     sourceKeys,
-    targetAttachments,
+    targetAttachmentsEntity,
     targetKeys = {},
   ) {
     LOG.debug("Copying attachment (DB)", {
-      source: sourceAttachments.name,
+      source: sourceAttachmentsEntity.name,
       sourceKeys,
-      target: targetAttachments.name,
+      target: targetAttachmentsEntity.name,
     })
     const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
     const { source, newID, newUrl } = await this._prepareCopy(
-      sourceAttachments,
+      sourceAttachmentsEntity,
       sourceKeys,
     )
-    const content = await this.get(sourceAttachments, sourceKeys)
+    const content = await this.get(sourceAttachmentsEntity, sourceKeys)
     const newRecord = {
       ...safeTargetKeys,
       ...source,

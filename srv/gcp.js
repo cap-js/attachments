@@ -350,19 +350,19 @@ module.exports = class GoogleAttachmentsService extends (
    * @inheritdoc
    */
   async copy(
-    sourceAttachments,
+    sourceAttachmentsEntity,
     sourceKeys,
-    targetAttachments,
+    targetAttachmentsEntity,
     targetKeys = {},
   ) {
     LOG.debug("Copying attachment (GCP)", {
-      source: sourceAttachments.name,
+      source: sourceAttachmentsEntity.name,
       sourceKeys,
-      target: targetAttachments.name,
+      target: targetAttachmentsEntity.name,
     })
     const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
     const { source, newID, newUrl } = await this._prepareCopy(
-      sourceAttachments,
+      sourceAttachmentsEntity,
       sourceKeys,
     )
     const { bucket } = await this.retrieveClient()
@@ -373,7 +373,7 @@ module.exports = class GoogleAttachmentsService extends (
     }
     await bucket.file(source.url).copy(bucket.file(newUrl))
     const newRecord = { ...safeTargetKeys, ...source, ID: newID, url: newUrl }
-    await INSERT(newRecord).into(targetAttachments)
+    await INSERT(newRecord).into(targetAttachmentsEntity)
     return newRecord
   }
 
