@@ -568,9 +568,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     const attachmentsID = cds.utils.uuid()
     const user = new cds.User({ id: "alice", roles: { support: 1 } })
-    user._is_privileged = true
-    const req = new cds.Request({
-      query: INSERT.into(
+    const ctx = cds.EventContext.for({
+      id: cds.utils.uuid(),
+      http: { req: null, res: null },
+    })
+    ctx.user = user
+    await cds._with(ctx, () => Catalog.run(INSERT.into(
         Catalog.entities["Incidents.attachments"].drafts,
       ).entries({
         ID: attachmentsID,
@@ -585,10 +588,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
         ),
         createdBy: "alice",
-      }),
-      user: user,
-    })
-    await Catalog.dispatch(req)
+      })))
 
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
@@ -1826,12 +1826,12 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     expect(
       res.data.ProcessorService.$Annotations[
-        "ProcessorService.Incidents_attachments/up__ID"
+      "ProcessorService.Incidents_attachments/up__ID"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
     expect(
       res.data.ProcessorService.$Annotations[
-        "ProcessorService.Incidents_attachments/up_"
+      "ProcessorService.Incidents_attachments/up_"
       ]?.["@UI.Hidden"],
     ).toEqual(true)
   })
@@ -1841,7 +1841,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const attachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1858,7 +1858,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1877,7 +1877,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Incidents"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
     const hiddenAttachmentsFacetLabel = facets.some(
       (facet) => facet.Label === "Attachments",
@@ -1896,7 +1896,7 @@ describe("Tests for attachments facet disable", () => {
     expect(res.status).toEqual(200)
     const facets =
       res.data.ProcessorService.$Annotations["ProcessorService.Customers"][
-        "@UI.Facets"
+      "@UI.Facets"
       ]
 
     const attachmentFacets = facets.filter(
