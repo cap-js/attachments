@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fixed bug where deeply nested attachments were not properly handled.
 - Fixed bug to allow navigation of self-referencing entities.
+- Fix that POST requests for attachments did not have a response when the plugin is used with an object store.
 
 ## Version 3.9.0
 
