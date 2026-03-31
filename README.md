@@ -20,6 +20,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
     - [Non-Draft Upload](#non-draft-upload)
+    - [Copying Attachments](#copying-attachments)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
@@ -288,6 +289,79 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
+
+### Copying Attachments
+
+The `AttachmentsService` exposes a programmatic `copy()` method that copies an attachment to a new record. On cloud storage backends (AWS S3, Azure Blob Storage, GCP Cloud Storage) this uses a backend-native server-side copy — no binary data is transferred through your application. On database storage it reads and inserts the content directly.
+
+**Signature:**
+
+```js
+const AttachmentsSrv = await cds.connect.to("attachments")
+await AttachmentsSrv.copy(
+  sourceAttachmentsEntity,
+  sourceKeys,
+  targetAttachmentsEntity,
+  (targetKeys = {}),
+)
+```
+
+| Parameter                 | Description                                                                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceAttachmentsEntity` | CDS entity definition of the source attachment composition.                                                                                                             |
+| `sourceKeys`              | Keys of the attachment (e.g. `{ ID: '...' }`)                                                                                                                           |
+| `targetAttachmentsEntity` | CDS entity definition of the target attachment composition.                                                                                                             |
+| `targetKeys`              | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachmentsEntity` is a draft table, must also include `DraftAdministrativeData_DraftUUID`. |
+
+The scan `status`, `lastScan`, and `hash` are inherited from the source — no re-scan is triggered since the binary content is identical. Copying an attachment when the status is not `Clean` is rejected with a `400` error.
+
+> [!NOTE]
+> Only copies within the same tenant are supported. Cross-tenant copies are not possible.
+
+#### Examples
+
+<details>
+
+<summary>copy between two active records:</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments,
+  { up__ID: targetIncidentID },
+)
+```
+
+</details>
+
+<details>
+
+<summary>copy into a new draft record (e.g. creating an incident from a template)</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+// Look up the draft session UUID for the target incident's open draft
+const targetDraft = await SELECT.one
+  .from(Incidents.drafts, { ID: targetIncidentID })
+  .columns("DraftAdministrativeData_DraftUUID")
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments.drafts,
+  {
+    up__ID: targetIncidentID,
+    DraftAdministrativeData_DraftUUID:
+      targetDraft.DraftAdministrativeData_DraftUUID,
+  },
+)
+```
+
+</details>
 
 ### Non-Draft Upload
 

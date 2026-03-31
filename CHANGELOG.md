@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events.
 - Duplicate file names to a single attachment entity are automatically assigned a distinguishing suffix.
 - Local testing using a Postgres database now possible.
+- Native server-side `copy()` method on `AttachmentsService` for copying attachments between entities without transferring binary data through the application. Supports all storage backends (DB, AWS S3, Azure Blob Storage, GCP Cloud Storage) with backend-native copy operations.
 
 ### Fixed
 
