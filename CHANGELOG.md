@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Upcoming] Version 3.10.0
+## Version 3.10.0
 
 ### Added
 
@@ -12,11 +12,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events.
 - Duplicate file names to a single attachment entity are automatically assigned a distinguishing suffix.
 - Local testing using a Postgres database now possible.
+- Native server-side `copy()` method on `AttachmentsService` for copying attachments between entities without transferring binary data through the application. Supports all storage backends (DB, AWS S3, Azure Blob Storage, GCP Cloud Storage) with backend-native copy operations.
 
 ### Fixed
 
 - Fixed bug where deeply nested attachments were not properly handled.
 - Fixed bug to allow navigation of self-referencing entities.
+- Fix that POST requests for attachments did not have a response when the plugin is used with an object store.
 
 ## Version 3.9.0
 

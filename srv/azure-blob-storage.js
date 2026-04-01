@@ -306,6 +306,39 @@ module.exports = class AzureAttachmentsService extends (
   }
 
   /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (Azure)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { containerClient } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    const sourceBlobClient = containerClient.getBlockBlobClient(source.url)
+    const targetBlobClient = containerClient.getBlockBlobClient(newUrl)
+    await targetBlobClient.syncCopyFromURL(sourceBlobClient.url)
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
+  }
+
+  /**
    * Deletes a file from Azure Blob Storage
    * @param {string} Key - The key of the file to delete
    * @returns {Promise} - Promise resolving when deletion is complete

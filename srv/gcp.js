@@ -105,6 +105,17 @@ module.exports = class GoogleAttachmentsService extends (
   }
 
   /**
+   * Checks if a file exists in Google Cloud Storage
+   * @param {string} fileName - The name/key of the file to check
+   * @returns {Promise<boolean>} - True if the file exists, false otherwise
+   */
+  async exists(fileName) {
+    const { bucket } = await this.retrieveClient()
+    const [exists] = await bucket.file(fileName).exists()
+    return exists
+  }
+
+  /**
    * @inheritdoc
    */
   async put(attachments, data) {
@@ -151,8 +162,7 @@ module.exports = class GoogleAttachmentsService extends (
 
       const file = bucket.file(blobName)
 
-      const [exists] = await file.exists()
-      if (exists) {
+      if (await this.exists(blobName)) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
@@ -334,6 +344,37 @@ module.exports = class GoogleAttachmentsService extends (
 
       throw error
     }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (GCP)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { bucket } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    await bucket.file(source.url).copy(bucket.file(newUrl))
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
   }
 
   /**

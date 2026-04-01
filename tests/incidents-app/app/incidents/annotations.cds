@@ -154,6 +154,17 @@ annotate service.Incidents with {
         ![@UI.TextArrangement] : #TextOnly,
     }
 };
+
+annotate service.Incidents with @(
+    UI.Identification : [{
+        $Type              : 'UI.DataFieldForAction',
+        Label              : 'Copy Incident',
+        Action             : 'ProcessorService.copyIncident',
+        ![@UI.Hidden]      : { $edmJson: { $Not: { $Path: 'IsActiveEntity' } } },
+        InvocationGrouping : #Isolated,
+    }]
+);
+
 annotate service.Incidents.conversation with @(
     title : '{i18n>Conversation}',
     UI.LineItem #i18nConversation1 : [

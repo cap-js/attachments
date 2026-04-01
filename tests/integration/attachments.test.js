@@ -6,6 +6,7 @@ const {
   delay,
   waitForMalwareDeletion,
   waitForDeletion,
+  runWithUser,
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
@@ -14,6 +15,7 @@ const { Readable } = require("stream")
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
+const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 
 let utils = null
 
@@ -568,27 +570,29 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     const attachmentsID = cds.utils.uuid()
     const user = new cds.User({ id: "alice", roles: { support: 1 } })
-    user._is_privileged = true
-    const req = new cds.Request({
-      query: INSERT.into(
-        Catalog.entities["Incidents.attachments"].drafts,
-      ).entries({
-        ID: attachmentsID,
-        up__ID: incidentID,
-        IsActiveEntity: false,
-        DraftAdministrativeData_DraftUUID:
-          incident.DraftAdministrativeData_DraftUUID,
-        filename: "sample.pdf",
-        content: fileContent,
-        mimeType: "application/pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
-      }),
-      user: user,
+    const ctx = cds.EventContext.for({
+      id: cds.utils.uuid(),
+      http: { req: null, res: null },
     })
-    await Catalog.dispatch(req)
+    ctx.user = user
+    await cds._with(ctx, () =>
+      Catalog.run(
+        INSERT.into(Catalog.entities["Incidents.attachments"].drafts).entries({
+          ID: attachmentsID,
+          up__ID: incidentID,
+          IsActiveEntity: false,
+          DraftAdministrativeData_DraftUUID:
+            incident.DraftAdministrativeData_DraftUUID,
+          filename: "sample.pdf",
+          content: fileContent,
+          mimeType: "application/pdf",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          ),
+          createdBy: "alice",
+        }),
+      ),
+    )
 
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
@@ -1780,6 +1784,38 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentResponse2.status).toEqual(200)
     expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
+  })
+
+  it("Creating attachment with content in POST returns the posted metadata", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filename = "sample.pdf"
+    const mimeType = "application/pdf"
+
+    const response = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename,
+        mimeType,
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+      },
+    )
+
+    expect(response.status).toEqual(201)
+    expect(response.data).toMatchObject({
+      up__ID: incidentID,
+      filename,
+      mimeType,
+    })
+    expect(response.data.ID).toBeTruthy()
+    expect(response.data.status).toBeDefined()
   })
 })
 
@@ -3229,6 +3265,287 @@ describe("Testing to prevent crash due to recursive overflow", () => {
       errorThrown = e
     })
     expect(errorThrown.response.status).toEqual(404)
+  })
+})
+
+describe("Tests for copy() on AttachmentsService", () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it("Copies a clean attachment to a different incident", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor")
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        { up__ID: targetIncidentID },
+      ),
+    )
+    expect(newAtt.ID).not.toEqual(sourceAttachmentID)
+    expect(newAtt.url).toBeTruthy()
+    expect(newAtt.filename).toEqual("sample.pdf")
+    expect(newAtt.mimeType).toBeTruthy()
+    expect(newAtt.hash).toBeTruthy()
+    // Scan status is inherited from source — no re-scan needed
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify the copied record is in the DB under the target incident
+    const copied = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments`,
+    )
+    expect(copied.status).toEqual(200)
+    expect(copied.data.value.length).toEqual(1)
+    expect(copied.data.value[0].ID).toEqual(newAtt.ID)
+    expect(copied.data.value[0].filename).toEqual("sample.pdf")
+
+    // Verify content is downloadable
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments(up__ID=${targetIncidentID},ID=${newAtt.ID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
+  it("Copies an active attachment into a draft incident (active -> draft)", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor") // starts as draft
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Look up the DraftUUID of the target incident's draft session
+    const targetDraft = await SELECT.one
+      .from(ProcessorService.entities.Incidents.drafts, {
+        ID: targetIncidentID,
+      })
+      .columns("DraftAdministrativeData_DraftUUID")
+    expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
+
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
+    expect(newAtt.ID).toBeTruthy()
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify the record exists in the draft table (IsActiveEntity=false)
+    const draftAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftAttachments.status).toEqual(200)
+    expect(draftAttachments.data.value.length).toEqual(1)
+    expect(draftAttachments.data.value[0].ID).toEqual(newAtt.ID)
+
+    // After saving the draft, the attachment should appear in the active entity
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    const activeAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments`,
+    )
+    expect(activeAttachments.status).toEqual(200)
+    expect(activeAttachments.data.value.length).toEqual(1)
+    expect(activeAttachments.data.value[0].ID).toEqual(newAtt.ID)
+
+    // Content should be downloadable from the active entity
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments(up__ID=${targetIncidentID},ID=${newAtt.ID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
+  it("Copies a draft attachment into another draft incident (draft -> draft)", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor") // draft
+    const targetIncidentID = await newIncident(POST, "processor") // draft
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    // Upload to source as draft, then save it to active so it gets scanned
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Look up DraftUUID for target draft session
+    const targetDraft = await SELECT.one
+      .from(ProcessorService.entities.Incidents.drafts, {
+        ID: targetIncidentID,
+      })
+      .columns("DraftAdministrativeData_DraftUUID")
+    expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
+
+    // Source is the active Attachments entity (uploaded via draft, now active after save)
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
+    expect(newAtt.ID).toBeTruthy()
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify it is visible in draft context
+    const draftAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftAttachments.status).toEqual(200)
+    expect(draftAttachments.data.value.length).toEqual(1)
+    expect(draftAttachments.data.value[0].ID).toEqual(newAtt.ID)
+  })
+
+  it("Copy rejects attachment with Infected status", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Directly insert a fake infected attachment record
+    const infectedID = cds.utils.uuid()
+    await cds.run(
+      INSERT({
+        ID: infectedID,
+        url: cds.utils.uuid(),
+        filename: "infected.pdf",
+        mimeType: "application/pdf",
+        status: "Infected",
+        up__ID: incidentID,
+      }).into(Attachments),
+    )
+
+    await expect(
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
+          up__ID: incidentID,
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it("Copy rejects non-existent source attachment", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    await expect(
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(
+          Attachments,
+          { ID: cds.utils.uuid() },
+          Attachments,
+          {
+            up__ID: incidentID,
+          },
+        ),
+      ),
+    ).rejects.toMatchObject({ status: 404 })
+  })
+
+  it("Copy strips protected fields from targetKeys", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor")
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Attempt to override protected fields via targetKeys
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        {
+          up__ID: targetIncidentID,
+          status: "Unscanned",
+          hash: "tampered-hash",
+          filename: "evil.exe",
+          mimeType: "application/x-evil",
+        },
+      ),
+    )
+
+    // Protected fields must reflect the source, not the attacker's values
+    expect(newAtt.status).toEqual("Clean")
+    expect(newAtt.hash).not.toEqual("tampered-hash")
+    expect(newAtt.filename).toEqual("sample.pdf")
+    expect(newAtt.mimeType).not.toEqual("application/x-evil")
   })
 })
 
