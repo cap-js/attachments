@@ -80,9 +80,7 @@ class AttachmentsService extends cds.Service {
    */
   _isContentUpdateRestricted(attachments) {
     const nonUpdateable =
-      attachments[
-        "@Capabilities.UpdateRestrictions.NonUpdateableProperties"
-      ]
+      attachments["@Capabilities.UpdateRestrictions.NonUpdateableProperties"]
     // If annotation is not set, allow content overwrite by default
     if (!nonUpdateable) return false
     // If it's an array, check if 'content' is listed
