@@ -1861,7 +1861,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         true,
       )
     }
-    
+
     // Second scan round needed due to scan expiry limit for other tests. Triggered via rescan
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
