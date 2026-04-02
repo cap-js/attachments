@@ -4,6 +4,7 @@ const {
   waitForScanStatus,
   newIncident,
   waitForDeletion,
+  delay,
 } = require("../utils/testUtils")
 const { join, resolve } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
@@ -18,6 +19,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   axios.defaults.auth = { username: "alice" }
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
+
+  // Allow background operations (malware scan status updates) to complete before teardown
+  afterAll(() => delay(2000))
 
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
     const resCreate = await POST("/odata/v4/admin/Incidents", {

@@ -5,10 +5,13 @@ const { join } = cds.utils.path
 const app = join(__dirname, "../incidents-app")
 const { axios, POST, PUT, GET } = cds.test(app)
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
-const { newIncident } = require("../utils/testUtils")
+const { newIncident, delay } = require("../utils/testUtils")
 
 describe("validateAttachmentMimeType - Content-Type header bypass security test", () => {
   axios.defaults.auth = { username: "alice" }
+
+  // Allow background operations (malware scan status updates) to complete before teardown
+  afterAll(() => delay(2000))
 
   /**
    * Security Test: Content-Type Header Bypass Attack
