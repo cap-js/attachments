@@ -1846,19 +1846,20 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const resultResponse = await PATCH(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`,
       {
-        status_code: 'N'
-      }
+        status_code: "N",
+      },
     )
     expect(resultResponse.status).toEqual(200)
 
     try {
       await waitForDeletion(sampleDocID)
       // Should throw due to timeout
-      expect(true).toEqual(false);
-    } catch(error) {
-      expect(error.message.startsWith('Timeout waiting for deletion')).toEqual(true);
+      expect(true).toEqual(false)
+    } catch (error) {
+      expect(error.message.startsWith("Timeout waiting for deletion")).toEqual(
+        true,
+      )
     }
-
 
     // Second round needed due to scan expiry limit for other tests
     const scanCleanWaiter2 = waitForScanStatus("Clean")

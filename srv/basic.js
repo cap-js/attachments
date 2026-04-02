@@ -417,7 +417,7 @@ class AttachmentsService extends cds.Service {
       // If no draft exists at all, this means it is the bypass draft option where
       // active entities can be modified
       if (!draft) {
-        draft = active;
+        draft = active
       }
 
       if (!active) return
