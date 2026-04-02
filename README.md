@@ -17,10 +17,12 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
       - [Automatic file rescanning](#automatic-file-rescanning)
+    - [Audit logging](#audit-logging)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
-    - [Non-Draft Upload](#non-draft-upload)
     - [Copying Attachments](#copying-attachments)
+      - [Examples](#examples)
+    - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
@@ -469,7 +471,7 @@ annotate Incidents.attachments with
 With this annotation in place, uploading new content via `PUT` to an attachment that already has content will overwrite the existing content instead of returning a `409` error.
 
 > [!NOTE]
-> This annotation is evaluated at runtime by all storage backends (database, AWS S3, Azure Blob Storage, GCP Cloud Storage). When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
+> This annotation is evaluated at runtime by all storage backends. When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
 
 ## Releases
 
