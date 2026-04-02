@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
+- When `cds.env.fiori.bypass_draft` was enabled attachments were wrongfully deleted
+
 ## Version 3.10.0
 
 ### Added
