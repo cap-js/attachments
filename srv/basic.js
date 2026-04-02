@@ -410,10 +410,15 @@ class AttachmentsService extends cds.Service {
         }
       }
 
-      const [draft, active] = await Promise.all([
+      let [draft, active] = await Promise.all([
         SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
         SELECT.one.from(req.target).where(whereCond).columns(columns),
       ])
+      // If no draft exists at all, this means it is the bypass draft option where
+      // active entities can be modified
+      if (!draft) {
+        draft = active;
+      }
 
       if (!active) return
 
