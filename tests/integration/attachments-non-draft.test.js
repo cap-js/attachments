@@ -224,6 +224,51 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
+  it("should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+    const incidentID = await newIncident(POST, "admin")
+
+    // Create attachment metadata on overwritableAttachments
+    const createRes = await POST(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments`,
+      { filename: "sample.pdf" },
+      { headers: { "Content-Type": "application/json" } },
+    )
+    const attachmentID = createRes.data.ID
+    expect(attachmentID).toBeDefined()
+
+    // Upload initial file content
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    const uploadRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+    expect(uploadRes.status).toBe(204)
+
+    // Overwrite with different content - this should succeed
+    const newFileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/test.pdf"),
+    )
+    const overwriteRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      newFileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": newFileContent.length,
+        },
+      },
+    )
+    expect(overwriteRes.status).toBe(204)
+  })
+
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()

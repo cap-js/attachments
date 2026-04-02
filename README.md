@@ -17,15 +17,18 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
       - [Automatic file rescanning](#automatic-file-rescanning)
+    - [Audit logging](#audit-logging)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
-    - [Non-Draft Upload](#non-draft-upload)
     - [Copying Attachments](#copying-attachments)
+      - [Examples](#examples)
+    - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
       - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
       - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
+    - [Allow Overwriting Attachment Content](#allow-overwriting-attachment-content)
   - [Releases](#releases)
   - [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
   - [Architecture Overview](#architecture-overview)
@@ -445,6 +448,30 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
+
+### Allow Overwriting Attachment Content
+
+By default, the `Attachments` aspect annotates the entity with `@Capabilities.UpdateRestrictions.NonUpdateableProperties: [content]`, which prevents overwriting the content of an existing attachment. Any attempt to upload new content to an attachment that already has content will be rejected with a `409 Conflict` error.
+
+To allow overwriting attachment content, override the annotation with an empty array on the specific attachment composition:
+
+```cds
+using { Attachments } from '@cap-js/attachments';
+
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+// Allow content to be overwritten
+annotate Incidents.attachments with
+  @Capabilities.UpdateRestrictions.NonUpdateableProperties: [] {};
+```
+
+With this annotation in place, uploading new content via `PUT` to an attachment that already has content will overwrite the existing content instead of returning a `409` error.
+
+> [!NOTE]
+> This annotation is evaluated at runtime by all storage backends. When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
 
 ## Releases
 

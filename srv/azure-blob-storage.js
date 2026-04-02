@@ -156,7 +156,10 @@ module.exports = class AzureAttachmentsService extends (
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
-      if (await this.exists(blobName)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(blobName))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error

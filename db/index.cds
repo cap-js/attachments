@@ -38,6 +38,10 @@ context sap.attachments {
     note : String  @title: '{i18n>Note}'  @UI.MultiLineText;
   }
 
+  annotate Attachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties : [
+    content
+  ];
+
 
   // -- Fiori Annotations ----------------------------------------------------------
 

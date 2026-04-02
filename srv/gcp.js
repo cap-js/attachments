@@ -162,7 +162,10 @@ module.exports = class GoogleAttachmentsService extends (
 
       const file = bucket.file(blobName)
 
-      if (await this.exists(blobName)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(blobName))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
