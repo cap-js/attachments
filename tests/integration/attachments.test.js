@@ -1851,7 +1851,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(resultResponse.status).toEqual(200)
 
-    // Second round needed due to scan expiry limit for other tests
     const scanCleanWaiter2 = waitForScanStatus("Clean")
     try {
       await waitForDeletion(attachmentResponse.data.value[0].url)
@@ -1862,7 +1861,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         true,
       )
     }
-
+    
+    // Second scan round needed due to scan expiry limit for other tests. Triggered via rescan
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
     )
