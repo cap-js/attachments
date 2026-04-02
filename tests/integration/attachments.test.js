@@ -1852,7 +1852,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(resultResponse.status).toEqual(200)
 
     try {
-      await waitForDeletion(sampleDocID)
+      await waitForDeletion(attachmentResponse.data.value[0].url)
       // Should throw due to timeout
       expect(true).toEqual(false)
     } catch (error) {
