@@ -410,7 +410,7 @@ class AttachmentsService extends cds.Service {
         }
       }
 
-      let [draft, active] = await Promise.all([
+      const [draft, active] = await Promise.all([
         SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
         SELECT.one.from(req.target).where(whereCond).columns(columns),
       ])
