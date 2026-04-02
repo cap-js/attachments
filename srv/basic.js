@@ -417,7 +417,8 @@ class AttachmentsService extends cds.Service {
       // If no draft exists at all, this means it is the bypass draft option where
       // active entities can be modified
       if (!draft) {
-        draft = active
+        DEBUG?.(`Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `, whereCond);
+        return;
       }
 
       if (!active) return
