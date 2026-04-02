@@ -30,7 +30,7 @@ annotate my.Incidents.mediaTypeAttachments with {
 }
 
 // Allow overwriting content for overwritableAttachments by setting empty NonUpdateableProperties
-annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties: [] {};
+annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties: [];
 
 @UI.Facets: [{
   $Type : 'UI.ReferenceFacet',
