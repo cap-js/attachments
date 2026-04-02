@@ -40,7 +40,7 @@ context sap.attachments {
 
   annotate Attachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties : [
     content
-  ] {}
+  ];
 
 
   // -- Fiori Annotations ----------------------------------------------------------
