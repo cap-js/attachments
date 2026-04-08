@@ -171,7 +171,10 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      if (await this.exists(Key)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(Key))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error

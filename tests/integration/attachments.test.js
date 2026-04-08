@@ -1817,6 +1817,62 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(response.data.ID).toBeTruthy()
     expect(response.data.status).toBeDefined()
   })
+
+  it("Updating parent should not cause attachment deletes", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    let sampleDocID
+    const scanCleanWaiter = waitForScanStatus("Clean")
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+
+    //read attachments list for Incident
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    sampleDocID = attachmentResponse.data.value[0].ID
+
+    await scanCleanWaiter
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+
+    const resultResponse = await PATCH(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`,
+      {
+        status_code: "N",
+      },
+    )
+    expect(resultResponse.status).toEqual(200)
+
+    const scanCleanWaiter2 = waitForScanStatus("Clean")
+    try {
+      await waitForDeletion(attachmentResponse.data.value[0].url)
+      // Should throw due to timeout
+      expect(true).toEqual(false)
+    } catch (error) {
+      expect(error.message.startsWith("Timeout waiting for deletion")).toEqual(
+        true,
+      )
+    }
+
+    // Second scan round needed due to scan expiry limit for other tests. Triggered via rescan
+    await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    await scanCleanWaiter2
+    const contentAfterActiveUpdate = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    expect(contentAfterActiveUpdate.status).toEqual(200)
+    expect(contentAfterActiveUpdate.data).toBeTruthy()
+  })
 })
 
 describe("Tests for attachments facet disable", () => {

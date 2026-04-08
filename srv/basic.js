@@ -71,6 +71,28 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
+   * Checks whether content updates are restricted for the given attachment entity.
+   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdateableProperties,
+   * meaning overwriting existing content is NOT allowed.
+   * Returns false if the annotation is missing, is an empty array, or does not include `content`.
+   * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
+   * @returns {boolean}
+   */
+  _isContentUpdateRestricted(attachments) {
+    const nonUpdateable =
+      attachments["@Capabilities.UpdateRestrictions.NonUpdateableProperties"]
+    // If annotation is not set, allow content overwrite by default
+    if (!nonUpdateable) return false
+    // If it's an array, check if 'content' is listed
+    if (Array.isArray(nonUpdateable)) {
+      return nonUpdateable.some(
+        (prop) => prop === "content" || prop?.["="] === "content",
+      )
+    }
+    return false
+  }
+
+  /**
    * Uploads attachments to the database and initiates malware scans for database-stored files
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @param {Array|Object} data - The attachment data to be uploaded
@@ -81,14 +103,16 @@ class AttachmentsService extends cds.Service {
       data = [data]
     }
 
-    // Check if an attachment with this ID already has content
-    const existing = await SELECT.one
-      .from(attachments)
-      .where({ ID: { in: data.map((d) => d.ID) }, content: { "!=": null } })
-    if (existing) {
-      const error = new Error("Attachment already exists")
-      error.status = 409
-      throw error
+    // Check if an attachment with this ID already has content (only if content is non-updateable)
+    if (this._isContentUpdateRestricted(attachments)) {
+      const existing = await SELECT.one
+        .from(attachments)
+        .where({ ID: { in: data.map((d) => d.ID) }, content: { "!=": null } })
+      if (existing) {
+        const error = new Error("Attachment already exists")
+        error.status = 409
+        throw error
+      }
     }
 
     LOG.debug("Starting database attachment upload", {
@@ -390,6 +414,15 @@ class AttachmentsService extends cds.Service {
         SELECT.one.from(req.target?.drafts).where(whereCond).columns(columns),
         SELECT.one.from(req.target).where(whereCond).columns(columns),
       ])
+      // If no draft exists at all, this means it is the bypass draft option where
+      // active entities can be modified
+      if (!draft) {
+        DEBUG?.(
+          `Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `,
+          whereCond,
+        )
+        return
+      }
 
       if (!active) return
 

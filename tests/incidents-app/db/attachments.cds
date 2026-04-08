@@ -16,6 +16,9 @@ extend my.Incidents with {
 
   @UI.Hidden
   maximumSizeAttachments : Composition of many Attachments;
+
+  @UI.Hidden
+  overwritableAttachments : Composition of many Attachments;
 }
 
 annotate my.Incidents.maximumSizeAttachments with {
@@ -25,6 +28,9 @@ annotate my.Incidents.maximumSizeAttachments with {
 annotate my.Incidents.mediaTypeAttachments with {
   content @Core.AcceptableMediaTypes: ['image/jpeg'];
 }
+
+// Allow overwriting content for overwritableAttachments by setting empty NonUpdateableProperties
+annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties: [];
 
 @UI.Facets: [{
   $Type : 'UI.ReferenceFacet',
