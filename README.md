@@ -159,6 +159,8 @@ Both methods directly add the respective UI Facet. To use the plugin with an SAP
 annotate service.Incidents with @odata.draft.enabled;
 ```
 
+Draft enablement is not required if SAP Fiori elements are chosen not to be used. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
 ### Storage Targets
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
