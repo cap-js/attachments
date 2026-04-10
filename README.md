@@ -379,7 +379,7 @@ The entity is accessible by its fully-qualified name `"<Entity>.attachments"` vi
 const Attachments = ProcessorService.entities["Incidents.attachments"]
 ```
 
-Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy, url) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
+Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
 
 ```js
 const attachmentsMeta = await SELECT.from(Attachments).where({
