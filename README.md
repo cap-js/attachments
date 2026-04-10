@@ -382,7 +382,9 @@ const Attachments = ProcessorService.entities["Incidents.attachments"]
 Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy, url) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
 
 ```js
-const attachmentsMeta = await SELECT.from(Attachments).where({ up__ID: incidentID })
+const attachmentsMeta = await SELECT.from(Attachments).where({
+  up__ID: incidentID,
+})
 ```
 
 The `up__ID` column in this case is the auto-generated parent foreign key, following the pattern `up__<parentKeyName>`.
