@@ -387,7 +387,7 @@ const attachmentsMeta = await SELECT.from(Attachments).where({
 })
 ```
 
-The `up__ID` column in this case is the auto-generated parent foreign key, following the pattern `up__<parentKeyName>`.
+The `up__ID` column is the auto-generated foreign key back to the parent record. The suffix after `up__` is the parent entity's key field name (e.g. `ID`).
 
 ### Non-Draft Upload
 
