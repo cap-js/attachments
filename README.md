@@ -371,7 +371,7 @@ await AttachmentsSrv.copy(
 
 ### Querying Attachments Programmatically
 
-Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using cds.ql in the same way as querying any other entity in a CAP service.
+Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using [cds.ql](https://cap.cloud.sap/docs/node.js/cds-ql) in the same way as querying any other entity in a CAP service.
 
 The entity is accessible by its fully-qualified name `"<Entity>.attachments"` via `service.entities`, for example:
 
