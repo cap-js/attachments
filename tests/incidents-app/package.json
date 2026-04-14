@@ -8,6 +8,9 @@
     "@cap-js/postgres": "^2.2.0"
   },
   "cds": {
+    "fiori": {
+      "bypass_draft": true
+    },
     "log": {
       "levels": {
         "cds": "info"

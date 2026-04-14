@@ -45,9 +45,6 @@
     "node": ">=18.0.0"
   },
   "cds": {
-    "fiori": {
-      "bypass_draft": true
-    },
     "requires": {
       "malwareScanner": {
         "vcap": {

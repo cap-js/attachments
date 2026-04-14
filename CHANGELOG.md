@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.12.0 - Upcoming
+
+### Fixed
+
+- Wrong file name being shown when rejecting an attachment due to file size.
+
 ## Version 3.11.0
 
 ### Added

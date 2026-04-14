@@ -22,6 +22,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
       - [Example Usage](#example-usage)
     - [Copying Attachments](#copying-attachments)
       - [Examples](#examples)
+    - [Querying Attachments Programmatically](#querying-attachments-programmatically)
     - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
@@ -158,6 +159,8 @@ Both methods directly add the respective UI Facet. To use the plugin with an SAP
 ```cds
 annotate service.Incidents with @odata.draft.enabled;
 ```
+
+If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
 
 ### Storage Targets
 
@@ -365,6 +368,26 @@ await AttachmentsSrv.copy(
 ```
 
 </details>
+
+### Querying Attachments Programmatically
+
+Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using [cds.ql](https://cap.cloud.sap/docs/node.js/cds-ql) in the same way as querying any other entity in a CAP service.
+
+The entity is accessible by its fully-qualified name `"<Entity>.attachments"` via `service.entities`, for example:
+
+```js
+const Attachments = ProcessorService.entities["Incidents.attachments"]
+```
+
+Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
+
+```js
+const attachmentsMeta = await SELECT.from(Attachments).where({
+  up__ID: incidentID,
+})
+```
+
+The `up__ID` column is the auto-generated foreign key back to the parent record. The suffix after `up__` is the parent entity's key field name (e.g. `ID`).
 
 ### Non-Draft Upload
 
