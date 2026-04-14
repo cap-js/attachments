@@ -4,12 +4,37 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.12.0 - Upcoming
+
+### Fixed
+
+- Wrong file name being shown when rejecting an attachment due to file size.
+
+## Version 3.11.0
+
+### Added
+
+- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdateableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
+
+### Fixed
+
+- When `cds.env.fiori.bypass_draft` was enabled attachments were wrongfully deleted
+
 ## Version 3.10.0
+
+### Added
+
+- Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected.
+- If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events.
+- Duplicate file names to a single attachment entity are automatically assigned a distinguishing suffix.
+- Local testing using a Postgres database now possible.
+- Native server-side `copy()` method on `AttachmentsService` for copying attachments between entities without transferring binary data through the application. Supports all storage backends (DB, AWS S3, Azure Blob Storage, GCP Cloud Storage) with backend-native copy operations.
 
 ### Fixed
 
 - Fixed bug where deeply nested attachments were not properly handled.
 - Fixed bug to allow navigation of self-referencing entities.
+- Fix that POST requests for attachments did not have a response when the plugin is used with an object store.
 
 ## Version 3.9.0
 

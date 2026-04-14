@@ -6,7 +6,9 @@ using from '../db/attachments';
  */
 service ProcessorService {
   @cds.redirection.target
-  entity Incidents                    as projection on my.Incidents;
+  entity Incidents                    as projection on my.Incidents actions {
+    action copyIncident() returns Incidents;
+  };
 
   entity Customers @readonly          as projection on my.Customers;
 

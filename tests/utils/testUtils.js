@@ -133,10 +133,20 @@ async function newIncident(
   }
 }
 
+async function runWithUser(user, fn) {
+  const ctx = cds.EventContext.for({
+    id: cds.utils.uuid(),
+    http: { req: null, res: null },
+  })
+  ctx.user = user
+  return cds._with(ctx, fn)
+}
+
 module.exports = {
   delay,
   waitForScanStatus,
   newIncident,
   waitForDeletion,
   waitForMalwareDeletion,
+  runWithUser,
 }

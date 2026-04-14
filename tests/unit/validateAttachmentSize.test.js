@@ -48,4 +48,52 @@ describe("validateAttachmentSize", () => {
     validateAttachmentSize(req)
     expect(req.reject).not.toHaveBeenCalled()
   })
+
+  it("should SELECT the correct attachment by ID, not a random one from the parent", async () => {
+    const target =
+      cds.model.definitions["AdminService.Incidents.maximumSizeAttachments"]
+    const parentID = cds.utils.uuid()
+    const targetID = cds.utils.uuid()
+
+    // Insert many decoys under the same parent so a wrong SELECT
+    // (e.g. missing WHERE or wrong key) is very likely to return a decoy
+    const decoys = Array.from({ length: 10 }, (_, i) => ({
+      up__ID: parentID,
+      ID: cds.utils.uuid(),
+      filename: `decoy-${i + 1}.pdf`,
+      status: "Scanning",
+    }))
+
+    await INSERT.into(target).entries([
+      ...decoys.slice(0, 5),
+      {
+        up__ID: parentID,
+        ID: targetID,
+        filename: "target-file.pdf",
+        status: "Scanning",
+      },
+      ...decoys.slice(5),
+    ])
+
+    const req = {
+      target,
+      data: {
+        content: { pause: jest.fn() },
+        up__ID: parentID,
+        ID: targetID,
+      },
+      headers: { "content-length": "999999999999" },
+      reject: jest.fn(),
+    }
+
+    await validateAttachmentSize(req)
+
+    expect(req.reject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 413,
+        message: "AttachmentSizeExceeded",
+        args: ["target-file.pdf", "5MB"],
+      }),
+    )
+  })
 })

@@ -3,6 +3,7 @@ const {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  CopyObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
@@ -170,7 +171,10 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      if (await this.exists(Key)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(Key))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
@@ -326,6 +330,43 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       throw error
     }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (S3)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { client, bucket } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    await client.send(
+      new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${bucket}/${source.url}`,
+        Key: newUrl,
+      }),
+    )
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
   }
 
   /**

@@ -224,6 +224,51 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
+  it("should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+    const incidentID = await newIncident(POST, "admin")
+
+    // Create attachment metadata on overwritableAttachments
+    const createRes = await POST(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments`,
+      { filename: "sample.pdf" },
+      { headers: { "Content-Type": "application/json" } },
+    )
+    const attachmentID = createRes.data.ID
+    expect(attachmentID).toBeDefined()
+
+    // Upload initial file content
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    const uploadRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+    expect(uploadRes.status).toBe(204)
+
+    // Overwrite with different content - this should succeed
+    const newFileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/test.pdf"),
+    )
+    const overwriteRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      newFileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": newFileContent.length,
+        },
+      },
+    )
+    expect(overwriteRes.status).toBe(204)
+  })
+
   it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
@@ -335,58 +380,56 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
   })
 
-  isNotLocal(
-    "should delete file from object store if data is deleted",
-    async () => {
-      const detailsID = cds.utils.uuid()
+  // prettier-ignore
+  isNotLocal("should delete file from object store if data is deleted", async () => {
+    const detailsID = cds.utils.uuid()
 
-      const testID = await newIncident(
-        POST,
-        "processor",
-        {
-          name: "Non-draft Test",
-          singledetails: { ID: detailsID, abc: "child" },
-        },
-        "NonDraftTest",
-      )
+    const testID = await newIncident(
+      POST,
+      "processor",
+      {
+        name: "Non-draft Test",
+        singledetails: { ID: detailsID, abc: "child" },
+      },
+      "NonDraftTest",
+    )
 
-      const attachResTest = await POST(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
-        {
-          up__ID: testID,
-          filename: "parentfile.pdf",
-          mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
-        },
-      )
-      expect(attachResTest.data.url).toBeTruthy()
-      await uploadAttachmentContent(
-        testID,
-        attachResTest.data.ID,
-        "content/sample.pdf",
-        "processor",
-        "NonDraftTest",
-      )
+    const attachResTest = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachResTest.data.url).toBeTruthy()
+    await uploadAttachmentContent(
+      testID,
+      attachResTest.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
 
-      const deletion = waitForDeletion(attachResTest.data.url)
+    const deletion = waitForDeletion(attachResTest.data.url)
 
-      // Delete parent attachment
-      const delParent = await DELETE(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
-      )
-      expect(delParent.status).toBe(204)
+    // Delete parent attachment
+    const delParent = await DELETE(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    )
+    expect(delParent.status).toBe(204)
 
-      // Confirm parent attachment is deleted
-      await GET(
-        `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
-      ).catch((e) => {
-        expect(e.response.status).toBe(404)
-      })
+    // Confirm parent attachment is deleted
+    await GET(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    ).catch((e) => {
+      expect(e.response.status).toBe(404)
+    })
 
-      expect(await deletion).toBe(true)
-    },
-  )
+    expect(await deletion).toBe(true)
+  })
 
   it("should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
     const firstID = cds.utils.uuid()
@@ -496,6 +539,36 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
+  })
+
+  it("should handle duplicate filenames on deep insert", async () => {
+    const incidentID = cds.utils.uuid()
+    const { data: incident } = await POST("/odata/v4/admin/Incidents", {
+      ID: incidentID,
+      title: "Deep Insert Test",
+      attachments: [
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+      ],
+    })
+
+    expect(incident.attachments.length).toBe(2)
+    const filenames = incident.attachments.map((a) => a.filename).sort()
+    expect(filenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
+
+    const response = await GET(
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+    )
+    expect(response.status).toBe(200)
+    expect(response.data.value.length).toBe(2)
+    const fetchedFilenames = response.data.value.map((a) => a.filename).sort()
+    expect(fetchedFilenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
   })
 })
 
@@ -792,6 +865,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 })
+
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 

@@ -156,7 +156,10 @@ module.exports = class AzureAttachmentsService extends (
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
-      if (await this.exists(blobName)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(blobName))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
@@ -306,6 +309,39 @@ module.exports = class AzureAttachmentsService extends (
   }
 
   /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (Azure)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { containerClient } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    const sourceBlobClient = containerClient.getBlockBlobClient(source.url)
+    const targetBlobClient = containerClient.getBlockBlobClient(newUrl)
+    await targetBlobClient.syncCopyFromURL(sourceBlobClient.url)
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
+  }
+
+  /**
    * Deletes a file from Azure Blob Storage
    * @param {string} Key - The key of the file to delete
    * @returns {Promise} - Promise resolving when deletion is complete
@@ -317,9 +353,18 @@ module.exports = class AzureAttachmentsService extends (
     )
 
     const blobClient = containerClient.getBlockBlobClient(blobName)
-    const response = await blobClient.delete()
+    let response
+    try {
+      response = await blobClient.delete()
+    } catch (error) {
+      if (error.statusCode === 404) {
+        response = error
+      } else {
+        throw error
+      }
+    }
 
-    if (response._response.status !== 202) {
+    if (response._response?.status !== 202) {
       LOG.warn("File has not been deleted from Azure Blob Storage", {
         blobName,
         containerName: containerClient.containerName,
