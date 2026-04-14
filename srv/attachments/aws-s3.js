@@ -8,12 +8,12 @@ const {
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const utils = require("../lib/helper")
+const utils = require("../../lib/helper")
 const {
   MAX_FILE_SIZE,
   sizeInBytes,
   createSizeCheckHandler,
-} = require("../lib/helper")
+} = require("../../lib/helper")
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**

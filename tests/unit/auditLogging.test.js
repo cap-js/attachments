@@ -76,7 +76,7 @@ describe("Audit logging when audit-logging is disabled", () => {
     cds.env.requires["audit-log"] = false
 
     // Create a fresh AttachmentsService instance with audit logging disabled
-    const AttachmentsService = require("../../srv/basic")
+    const AttachmentsService = require("../../srv/attachments/basic")
     const svc = new AttachmentsService()
     svc.model = cds.model
     // Stub super.init() to avoid full service bootstrap
