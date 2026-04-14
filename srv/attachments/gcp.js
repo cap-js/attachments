@@ -1,38 +1,38 @@
-const { BlobServiceClient } = require("@azure/storage-blob")
-const { AbortController } = require("abort-controller")
+const { Storage } = require("@google-cloud/storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const utils = require("../lib/helper")
+const utils = require("../../lib/helper")
 const {
   MAX_FILE_SIZE,
   sizeInBytes,
   createSizeCheckHandler,
-} = require("../lib/helper")
+} = require("../../lib/helper")
 
-module.exports = class AzureAttachmentsService extends (
+module.exports = class GoogleAttachmentsService extends (
   require("./object-store")
 ) {
   /**
-   * Creates or retrieves a cached Azure Blob Storage client for the given tenant
-   * @returns {Promise<{blobServiceClient: import('@azure/storage-blob').BlobServiceClient, containerClient: import('@azure/storage-blob').ContainerClient}>}
+   * Creates or retrieves a cached Google Cloud Platform client for the given tenant
+   * @returns {Promise<{bucket: import('@google-cloud/storage').Bucket}>}
    */
   async retrieveClient() {
     const tenantID = this.separateObjectStore ? cds.context.tenant : "shared"
-    LOG.debug("Retrieving tenant-specific Azure Blob Storage client", {
+    LOG.debug("Retrieving tenant-specific Google Cloud Platform client", {
       tenantID,
     })
-
     const existingClient = this.clientsCache.get(tenantID)
     if (existingClient) {
-      LOG.debug("Using cached Azure Blob Storage client", {
+      LOG.debug("Using cached GCP client", {
         tenantID,
-        containerName: existingClient.containerClient.containerName,
+        bucketName: existingClient.bucket.name,
       })
       return existingClient
     }
 
     try {
-      LOG.debug("Fetching object store credentials for tenant", { tenantID })
+      LOG.debug(
+        `Fetching object store credentials for tenant ${tenantID}. Using ${this.separateObjectStore ? "shared" : "tenant-specific"} object store.`,
+      )
       const credentials = this.separateObjectStore
         ? (await utils.getObjectStoreCredentials(tenantID))?.credentials
         : cds.env.requires?.objectStore?.credentials
@@ -41,7 +41,12 @@ module.exports = class AzureAttachmentsService extends (
         throw new Error("SAP Object Store instance is not bound.")
       }
 
-      const requiredFields = ["container_name", "container_uri", "sas_token"]
+      // Validate required credentials
+      const requiredFields = [
+        "bucket",
+        "projectId",
+        "base64EncodedPrivateKeyData",
+      ]
       const missingFields = requiredFields.filter(
         (field) => !credentials[field],
       )
@@ -49,65 +54,53 @@ module.exports = class AzureAttachmentsService extends (
       if (missingFields.length > 0) {
         if (credentials.access_key_id) {
           throw new Error(
-            "AWS S3 credentials found where Azure Blob Storage credentials expected, please check your service bindings.",
+            "AWS S3 credentials found where Google Cloud Platform credentials expected, please check your service bindings.",
           )
-        } else if (credentials.projectId) {
+        } else if (credentials.container_name) {
           throw new Error(
-            "Google Cloud Platform credentials found where Azure Blob Storage credentials expected, please check your service bindings.",
+            "Azure credentials found where Google Cloud Platform credentials expected, please check your service bindings.",
           )
         }
         throw new Error(
-          `Missing Azure Blob Storage credentials: ${missingFields.join(", ")}`,
+          `Missing Google Cloud Platform credentials: ${missingFields.join(", ")}`,
         )
       }
 
-      LOG.debug("Creating Azure Blob Storage client for tenant", {
+      LOG.debug("Creating Google Cloud Platform client for tenant", {
         tenantID,
-        containerName: credentials.container_name,
+        bucketName: credentials.bucket,
       })
 
-      const blobServiceClient = new BlobServiceClient(
-        credentials.container_uri + "?" + credentials.sas_token,
-      )
-      const containerClient = blobServiceClient.getContainerClient(
-        credentials.container_name,
-      )
+      const storageClient = new Storage({
+        projectId: credentials.projectId,
+        credentials: JSON.parse(
+          Buffer.from(
+            credentials.base64EncodedPrivateKeyData,
+            "base64",
+          ).toString("utf8"),
+        ),
+      })
 
-      const newAzureCredentials = {
-        containerClient,
+      const newGoogleClient = {
+        bucket: storageClient.bucket(credentials.bucket),
       }
 
-      this.clientsCache.set(tenantID, newAzureCredentials)
+      this.clientsCache.set(tenantID, newGoogleClient)
 
-      LOG.debug("Azure Blob Storage client has been created successful", {
+      LOG.debug("Google Cloud Platform client has been created successful", {
         tenantID,
-        containerName: containerClient.containerName,
+        bucketName: newGoogleClient.bucket.name,
       })
-      return newAzureCredentials
+
+      return newGoogleClient
     } catch (error) {
       LOG.error(
-        "Failed to create tenant-specific Azure Blob Storage client",
+        "Failed to create tenant-specific Google Cloud Platform client",
         error,
-        "Check Service Manager and Azure Blob Storage instance configuration",
+        "Check Service Manager and Google Cloud Platform instance configuration",
         { tenantID },
       )
       throw error
-    }
-  }
-
-  async exists(blobName) {
-    const { containerClient } = await this.retrieveClient()
-    const blobClient = containerClient.getBlockBlobClient(blobName)
-    try {
-      await blobClient.getProperties()
-      // If no error, blob exists
-      return true
-    } catch (err) {
-      // Anything besides 404 BlobNotFound is an actual error
-      if (err.statusCode !== 404 && err.code !== "BlobNotFound") {
-        throw err
-      }
-      return false
     }
   }
 
@@ -125,18 +118,20 @@ module.exports = class AzureAttachmentsService extends (
 
     const startTime = Date.now()
 
-    LOG.debug("Starting file upload to Azure Blob Storage", {
+    LOG.debug("Starting file upload to Google Cloud Platform", {
       attachmentEntity: attachments.name,
       tenant: cds.context.tenant,
     })
-    const { containerClient } = await this.retrieveClient()
+
+    const { bucket } = await this.retrieveClient()
+
     try {
-      let { content, ...metadata } = data
+      const { content, ...metadata } = data
       const blobName = metadata.url
 
       if (!blobName) {
         LOG.error(
-          "File key/URL is required for Azure Blob Storage upload",
+          "File key/URL is required for Google Cloud Platform upload",
           null,
           "Ensure attachment data includes a valid URL/key",
           { metadata: { ...metadata, content: !!content } },
@@ -146,7 +141,7 @@ module.exports = class AzureAttachmentsService extends (
 
       if (!content) {
         LOG.error(
-          "File content is required for Azure Blob Storage upload",
+          "File content is required for Google Cloud Platform upload",
           null,
           "Ensure attachment data includes file content",
           { key: blobName, hasContent: !!content },
@@ -154,9 +149,10 @@ module.exports = class AzureAttachmentsService extends (
         throw new Error("File content is required for upload")
       }
 
-      const blobClient = containerClient.getBlockBlobClient(blobName)
+      const file = bucket.file(blobName)
 
-      if (await this.exists(blobName)) {
+      const [exists] = await file.exists()
+      if (exists) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
@@ -174,24 +170,32 @@ module.exports = class AzureAttachmentsService extends (
             ) ?? MAX_FILE_SIZE)
           : MAX_FILE_SIZE
 
-      LOG.debug("Uploading file to Azure Blob Storage", {
-        containerName: containerClient.containerName,
+      LOG.debug("Uploading file to Google Cloud Platform", {
+        bucketName: bucket.name,
         blobName,
         maxFileSize,
       })
 
       const sizeLimit =
         attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const writeStream = file.createWriteStream()
 
-      const abortController = new AbortController()
+      let resolveUpload
+      const uploadPromise = new Promise((resolve) => {
+        resolveUpload = resolve
+      })
+
       const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
         maxFileSize,
         filename: attachmentRef?.filename,
         sizeLimit,
         onSizeExceeded: () => {
-          abortController.abort()
+          // Unpipe and destroy the write stream to abort the upload
+          content.unpipe(writeStream)
+          writeStream.destroy()
           // Resume content to drain it (prevents backpressure from hanging the connection)
           content.resume()
+          resolveUpload()
         },
       })
 
@@ -199,9 +203,22 @@ module.exports = class AzureAttachmentsService extends (
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
       try {
-        await blobClient.uploadStream(content, undefined, undefined, {
-          abortSignal: abortController.signal,
-        })
+        await Promise.race([
+          uploadPromise,
+          new Promise((resolve, reject) => {
+            content.pipe(writeStream)
+            writeStream.on("finish", resolve)
+            writeStream.on("error", (err) => {
+              // Ignore errors if size exceeded - we intentionally destroyed the stream
+              if (getSizeExceeded()) {
+                resolve()
+              } else {
+                reject(err)
+              }
+            })
+            content.on("error", reject)
+          }),
+        ])
       } catch (err) {
         if (getSizeExceeded()) {
           throw createError()
@@ -209,12 +226,23 @@ module.exports = class AzureAttachmentsService extends (
         throw err
       }
 
+      // Check after promise resolves if size was exceeded
+      if (getSizeExceeded()) {
+        // Try to delete the partial upload
+        try {
+          await file.delete({ ignoreNotFound: true })
+        } catch {
+          // Ignore delete errors
+        }
+        throw createError()
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
-      LOG.debug("File upload to Azure Blob Storage completed successfully", {
+      LOG.debug("File upload to Google Cloud Platform completed successfully", {
         fileId: metadata.ID,
-        containerName: containerClient.containerName,
+        bucketName: bucket.name,
         blobName,
         duration,
       })
@@ -224,12 +252,12 @@ module.exports = class AzureAttachmentsService extends (
       }
       const duration = Date.now() - startTime
       LOG.error(
-        "File upload to Azure Blob Storage failed",
+        "File upload to Google Cloud Platform failed",
         err,
-        "Check Azure Blob Storage connectivity, credentials, and container permissions",
+        "Check Google Cloud Platform connectivity, credentials, and container permissions",
         {
           fileId: data?.ID,
-          containerName: containerClient.containerName,
+          bucketName: bucket.name,
           blobName: data?.url,
           duration,
         },
@@ -243,12 +271,12 @@ module.exports = class AzureAttachmentsService extends (
    */
   async get(attachments, keys) {
     const startTime = Date.now()
-    LOG.debug("Starting stream from Azure Blob Storage", {
+    LOG.debug("Starting stream from Google Cloud Platform", {
       attachmentEntity: attachments.name,
       keys,
       tenant: cds.context.tenant,
     })
-    const { containerClient } = await this.retrieveClient()
+    const { bucket } = await this.retrieveClient()
 
     try {
       LOG.debug("Fetching attachment metadata", { keys })
@@ -264,38 +292,41 @@ module.exports = class AzureAttachmentsService extends (
         return null
       }
 
-      LOG.debug("Streaming file from Azure Blob Storage", {
-        containerName: containerClient.containerName,
-        fileId: keys.ID,
-        blobName: response.url,
+      const blobName = response.url
+
+      LOG.debug("Streaming file from Google Cloud Platform", {
+        bucketName: bucket.name,
+        blobName,
       })
 
-      const blobClient = containerClient.getBlockBlobClient(response.url)
-      const downloadResponse = await blobClient.download()
+      const file = bucket.file(blobName)
+      const readStream = await file.createReadStream()
 
       const duration = Date.now() - startTime
-      LOG.debug("File streamed from Azure Blob Storage successfully", {
+      LOG.debug("File streamed from Google Cloud Platform successfully", {
         fileId: keys.ID,
+        bucketName: bucket.name,
+        blobName,
         duration,
       })
 
-      return downloadResponse.readableStreamBody
+      return readStream
     } catch (error) {
       const duration = Date.now() - startTime
       const suggestion =
         error.code === "BlobNotFound"
-          ? "File may have been deleted from Azure Blob Storage or URL is incorrect"
+          ? "File may have been deleted from Google Cloud Platform or URL is incorrect"
           : error.code === "AuthenticationFailed"
-            ? "Check Azure Blob Storage credentials and SAS token"
-            : "Check Azure Blob Storage connectivity and configuration"
+            ? "Check Google Cloud Platform credentials and SAS token"
+            : "Check Google Cloud Platform connectivity and configuration"
 
       LOG.error(
-        "File download from Azure Blob Storage failed",
+        "File download from Google Cloud Platform failed",
         error,
         suggestion,
         {
           fileId: keys?.ID,
-          containerName: containerClient.containerName,
+          bucketName: bucket.name,
           attachmentName: attachments.name,
           duration,
         },
@@ -306,23 +337,22 @@ module.exports = class AzureAttachmentsService extends (
   }
 
   /**
-   * Deletes a file from Azure Blob Storage
+   * Deletes a file from Google Cloud Platform
    * @param {string} Key - The key of the file to delete
    * @returns {Promise} - Promise resolving when deletion is complete
    */
   async delete(blobName) {
-    const { containerClient } = await this.retrieveClient()
+    const { bucket } = await this.retrieveClient()
     LOG.debug(
-      `[Azure] Executing delete for file ${blobName} in bucket ${containerClient.containerName}`,
+      `[GCP] Executing delete for file ${blobName} in bucket ${bucket.name}`,
     )
 
-    const blobClient = containerClient.getBlockBlobClient(blobName)
-    const response = await blobClient.delete()
-
-    if (response._response.status !== 202) {
-      LOG.warn("File has not been deleted from Azure Blob Storage", {
+    const file = bucket.file(blobName)
+    const response = await file.delete()
+    if (response[0]?.statusCode !== 204) {
+      LOG.warn("File has not been deleted from Google Cloud Storage", {
         blobName,
-        containerName: containerClient.containerName,
+        bucketName: bucket.name,
         response,
       })
     }

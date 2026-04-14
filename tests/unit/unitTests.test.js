@@ -21,8 +21,8 @@ global.fetch = jest.fn(() =>
 jest.mock("axios")
 
 // Mock individual functions used in malwareScanner since it imports logger
-jest.doMock("../../srv/malwareScanner", () => {
-  const original = jest.requireActual("../../srv/malwareScanner")
+jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
+  const original = jest.requireActual("../../srv/malware-scanner/malwareScanner")
   return {
     ...original,
     // Override streamToString to return a simple string

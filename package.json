@@ -57,28 +57,28 @@
       },
       "kinds": {
         "malwareScanner-mock": {
-          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
+          "model": "@cap-js/attachments/srv/malware-scanner/malwareScanner-mocked"
         },
         "malwareScanner-mocked": {
-          "model": "@cap-js/attachments/srv/malwareScanner-mocked"
+          "model": "@cap-js/attachments/srv/malware-scanner/malwareScanner-mocked"
         },
         "malwareScanner-btp": {
-          "model": "@cap-js/attachments/srv/malwareScanner"
+          "model": "@cap-js/attachments/srv/malware-scanner/malwareScanner"
         },
         "attachments-db": {
-          "impl": "@cap-js/attachments/srv/basic"
+          "impl": "@cap-js/attachments/srv/attachments/basic"
         },
         "attachments-standard": {
-          "impl": "@cap-js/attachments/srv/standard"
+          "impl": "@cap-js/attachments/srv/attachments/standard"
         },
         "attachments-s3": {
-          "impl": "@cap-js/attachments/srv/aws-s3"
+          "impl": "@cap-js/attachments/srv/attachments/aws-s3"
         },
         "attachments-azure": {
-          "impl": "@cap-js/attachments/srv/azure-blob-storage"
+          "impl": "@cap-js/attachments/srv/attachments/azure-blob-storage"
         },
         "attachments-gcp": {
-          "impl": "@cap-js/attachments/srv/gcp"
+          "impl": "@cap-js/attachments/srv/attachments/gcp"
         }
       },
       "serviceManager": {

@@ -4,7 +4,7 @@ const {
   computeHash,
   traverseEntity,
   buildBackAssocChain,
-} = require("../lib/helper")
+} = require("../../lib/helper")
 
 class AttachmentsService extends cds.Service {
   init() {
