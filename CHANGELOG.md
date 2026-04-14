@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ## Version 3.12.0 - Upcoming
 
 ### Added
+
 - A maximum concurrent amount of scans can now be configured for the malware scanner.
 
 ### Changed
