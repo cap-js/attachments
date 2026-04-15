@@ -46,9 +46,10 @@ async function waitForScanStatus(status, attachmentID) {
       }
       db.after("*", handler)
     }),
-    delay(40000).then(() => {
+    delay(40000).then(async () => {
+      const {messagesAmount} = await SELECT.one.from('cds.outbox.Messages').columns('count(1) as messagesAmount')
       throw new Error(
-        `Timeout waiting for attachment ${attachmentID || ""} to reach status: ${status}, last known status: ${latestStatus}`,
+        `Timeout waiting for attachment ${attachmentID || ""} to reach status: ${status}, last known status: ${latestStatus}. ${messagesAmount} in outbox.`,
       )
     }),
   ])
@@ -74,9 +75,10 @@ async function waitForDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteAttachment", handler)
     }),
-    delay(30000).then(() => {
+    delay(30000).then(async () => {
+      const {messagesAmount} = await SELECT.one.from('cds.outbox.Messages').columns('count(1) as messagesAmount')
       throw new Error(
-        `Timeout waiting for deletion of attachment ID: ${attachmentID}`,
+        `Timeout waiting for deletion of attachment ID: ${attachmentID}. ${messagesAmount} in outbox.`,
       )
     }),
   ])
@@ -105,9 +107,10 @@ async function waitForMalwareDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteInfectedAttachment", handler)
     }),
-    delay(30000).then(() => {
+    delay(30000).then(async () => {
+      const {messagesAmount} = await SELECT.one.from('cds.outbox.Messages').columns('count(1) as messagesAmount')
       throw new Error(
-        `Timeout waiting for malware deletion of attachment ID: ${attachmentID}`,
+        `Timeout waiting for malware deletion of attachment ID: ${attachmentID}. ${messagesAmount} in outbox.`,
       )
     }),
   ])
