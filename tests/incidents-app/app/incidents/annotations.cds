@@ -262,12 +262,19 @@ annotate service.SingleAttachment with @(
         {
             $Type : 'UI.ReferenceFacet',
             Label : 'Attachment',
-            Target : 'myAttachment/@UI.LineItem'
+            Target : '@UI.FieldGroup#MyAttachment'
         }
     ],
     UI.FieldGroup #General : {
         Data : [
             { Value : name },
+        ]
+    },
+    UI.FieldGroup #MyAttachment : {
+        Data : [
+            { Value : myAttachment_content  },
+            { Value : myAttachment_filename },
+            { Value : myAttachment_status   },
         ]
     }
 );
