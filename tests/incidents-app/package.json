@@ -22,7 +22,6 @@
         "chunkSize": 50,
         "maxAttempts": 2
       },
-
       "auth": {
         "[development]": {
           "users": {

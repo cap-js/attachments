@@ -263,8 +263,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentResponse.status).toEqual(200)
     expect(contentResponse.data).toBeTruthy()
-    const Incidents_attachments = cds.entities('sap.capire.incidents')['Incidents.attachments'];
-    await UPDATE.entity(Incidents_attachments).where({ID: sampleDocID}).set({lastScan: '2020-01-01T00:00:00'});
+    const Incidents_attachments = cds.entities("sap.capire.incidents")[
+      "Incidents.attachments"
+    ]
+    await UPDATE.entity(Incidents_attachments)
+      .where({ ID: sampleDocID })
+      .set({ lastScan: "2020-01-01T00:00:00" })
 
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
