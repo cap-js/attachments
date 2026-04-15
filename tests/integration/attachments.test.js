@@ -3,7 +3,6 @@ const { RequestSend } = require("../utils/api")
 const {
   waitForScanStatus,
   newIncident,
-  delay,
   waitForMalwareDeletion,
   waitForDeletion,
   runWithUser,
@@ -264,9 +263,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentResponse.status).toEqual(200)
     expect(contentResponse.data).toBeTruthy()
-
-    // Wait for 45 seconds to let the scan status expire
-    await delay(45 * 1000)
+    const Incidents_attachments = cds.entities('sap.capire.incidents')['Incidents.attachments'];
+    await UPDATE.entity(Incidents_attachments).where({ID: sampleDocID}).set({lastScan: '2020-01-01T00:00:00'});
 
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
@@ -1851,7 +1849,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(resultResponse.status).toEqual(200)
 
-    const scanCleanWaiter2 = waitForScanStatus("Clean")
     try {
       await waitForDeletion(attachmentResponse.data.value[0].url)
       // Should throw due to timeout
@@ -1862,11 +1859,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       )
     }
 
-    // Second scan round needed due to scan expiry limit for other tests. Triggered via rescan
-    await GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
-    )
-    await scanCleanWaiter2
     const contentAfterActiveUpdate = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
     )

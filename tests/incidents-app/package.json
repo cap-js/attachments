@@ -19,11 +19,10 @@
     "requires": {
       "queue": {
         "parallel": true,
-        "chunkSize": 20
+        "chunkSize": 50,
+        "maxAttempts": 2
       },
-      "attachments": {
-        "scanExpiryMs": 30000
-      },
+
       "auth": {
         "[development]": {
           "users": {

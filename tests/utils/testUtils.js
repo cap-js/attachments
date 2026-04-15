@@ -30,7 +30,9 @@ async function waitForScanStatus(status, attachmentID) {
                 .where.some((e) => e.val && e.val === attachmentID)) ||
             (req.query.UPDATE.where &&
               req.query.UPDATE.where.some(
+                (e) => (e.val && e.val === attachmentID) || (e.xpr && e.xpr.some(
                 (e) => e.val && e.val === attachmentID,
+              )),
               )))
         ) {
           // Store the latest status for timeout reporting
