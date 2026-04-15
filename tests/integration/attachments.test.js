@@ -25,7 +25,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   //Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -148,7 +148,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
     const scanStartWaiter = waitForScanStatus("Scanning")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -273,7 +273,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
   it("Deleting the attachment", async () => {
     const incidentID = await newIncident(POST, "processor")
-    let sampleDocID = null
+    let sampleDocID
 
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -575,7 +575,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID = null
+    let sampleDocID
     // Upload attachment using helper function
     sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
@@ -1291,11 +1291,31 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 })
 
 describe("Tests for single attachment entity", () => {
-  it("should create a SingleAttachment with an attachment", async () => {
+  it("Should correctly detect inline attachment fields on SingleAttachment", async () => {
+    const Catalog = await cds.connect.to("ProcessorService")
+    const SingleAttachment = Catalog.entities.SingleAttachment
+    const Incidents_attachments = Catalog.entities["Incidents.attachments"]
+
+    // SingleAttachment has `myAttachment : Attachment` — an inline single field
+    expect(SingleAttachment._attachments.inlineAttachmentPrefixes).toEqual(["myAttachment"])
+    expect(SingleAttachment._attachments.hasInlineAttachments).toBe(true)
+
+    // It is NOT itself a media entity, and has no composition to one
+    expect(SingleAttachment._attachments.isAttachmentsEntity).toBe(false)
+    expect(SingleAttachment._attachments.hasAttachmentsComposition).toBe(false)
+
+    // A composition-based attachment entity must NOT be detected as inline
+    expect(Incidents_attachments._attachments.inlineAttachmentPrefixes).toEqual([])
+    expect(Incidents_attachments._attachments.hasInlineAttachments).toBe(false)
+    expect(Incidents_attachments._attachments.isAttachmentsEntity).toBe(true)
+  })
+  
+  it("Should create a SingleAttachment with an attachment", async () => {
     const { data: singleAttachment } = await POST(
       "/odata/v4/processor/SingleAttachment",
       {
         name: "My Single Attachment Test",
+        myAttachment_filename: "sample.pdf",
       },
     )
     expect(singleAttachment.ID).toBeDefined()
@@ -1304,17 +1324,8 @@ describe("Tests for single attachment entity", () => {
     const filepath = join(__dirname, "content/sample.pdf")
     const fileContent = readFileSync(filepath)
 
-    const putRes = await PUT(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
-      {
-        filename: basename(filepath),
-        mimeType: "application/pdf",
-      },
-    )
-    expect(putRes.status).toEqual(200)
-
     const putContentRes = await PUT(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       fileContent,
       {
         headers: {
@@ -1324,67 +1335,164 @@ describe("Tests for single attachment entity", () => {
     )
     expect(putContentRes.status).toEqual(204)
 
-    // Activate the draft
     await POST(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
     )
 
-    // Verify active document
     const getRes = await GET(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
     )
-    expect(getRes.data.filename).toBe(basename(filepath))
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toEqual(fileContent.toString())
   })
 
-  it("should delete a SingleAttachment and its attachment", async () => {
-    // Create a new entity to delete
+  it("Should delete a SingleAttachment and its attachment", async () => {
     const { data: singleAttachment } = await POST(
       "/odata/v4/processor/SingleAttachment",
       {
         name: "Entity to be deleted",
+        myAttachment_filename: "sample.pdf",
       },
     )
+
+    expect(singleAttachment.ID).toBeDefined()
+
     const filepath = join(__dirname, "content/sample.pdf")
     const fileContent = readFileSync(filepath)
-
     await PUT(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment`,
-      {
-        filename: basename(filepath),
-        mimeType: "application/pdf",
-      },
-    )
-
-    await PUT(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment/content`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       fileContent,
       { headers: { "Content-Type": "application/pdf" } },
     )
 
     await POST(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
     )
 
-    const activeAttachment = await GET(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment`,
+    await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
-    const attachmentUrl = activeAttachment.data.url
-    expect(attachmentUrl).toBeDefined()
+    
+    expect(singleAttachment.myAttachment_url).toBeDefined()
 
-    // Now, delete the parent entity
     const deleteRes = await DELETE(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
     expect(deleteRes.status).toEqual(204)
+    
+    await expect(GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`)).rejects.toThrow('404')
 
-    // Verify the attachment content is gone from the object store (which is the DB in this test setup)
     const db = await cds.connect.to("db")
-    const content = await db.run(
+    const record = await db.run(
       SELECT.one
-        .from("sap.attachments.Attachments")
-        .where({ url: attachmentUrl }),
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
     )
-    expect(content.content).toBeNull()
+    expect(record).toBeUndefined()
+  })
+
+  it("Should create a SingleAttachment with content in a single POST", async () => {
+    const fileContent = "inline attachment content via single POST"
+    const fileContentB64 = Buffer.from(fileContent).toString("base64")
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "My Single Attachment (deep create)",
+        myAttachment_filename: "sample.txt",
+        myAttachment_content: fileContentB64,
+      },
+    )
+
+    expect(singleAttachment.ID).toBeDefined()
+    expect(singleAttachment.myAttachment_url).toBeDefined()
+    expect(singleAttachment.myAttachment_content).toBeUndefined()
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({ 
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: singleAttachment.ID })
+    )
+
+    const getContentRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getContentRes.status).toEqual(200)
+    expect(getContentRes.data).toEqual(fileContent)
+  })
+
+  it("Should fail to upload content that exceeds the size limit", async () => {
+    const { data: singleAttachment } = await POST("/odata/v4/processor/SingleAttachment", {
+      name: "Attachment too large",
+      myAttachment_filename: "large.txt",
+    })
+
+    const largeContent = "a".repeat(6 * 1024 * 1024) // 6MB string
+
+    const promise = PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      largeContent,
+      {
+        headers: {
+          "Content-Type": "text/plain",
+          "Content-Length": Buffer.byteLength(largeContent),
+        },
+      }
+    )
+
+    await expect(promise).rejects.toThrow("413")
+    const err = await promise.catch((e) => e)
+    expect(err.response.data.error.message).toMatch(
+      'The size of "large.txt" exceeds the maximum allowed limit of 400MB',
+    )
+  })
+
+  it("Should trigger a re-scan when getting content with an expired scan date", async () => {
+    const { data: singleAttachment } = await POST("/odata/v4/processor/SingleAttachment", {
+      name: "My Attachment for Rescan",
+      myAttachment_filename: "rescan.txt",
+    })
+
+    const fileContent = "this content needs to be rescanned"
+    const putContentRes = await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } }
+    )
+    expect(putContentRes.status).toEqual(204)
+
+    await POST(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`, {})
+
+    const { data: active } = await GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`)
+
+    // Manually update the scan status to simulate an old scan
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date(2000, 1, 1).toISOString(), // A very old date
+        })
+        .where({ ID: singleAttachment.ID })
+    )
+
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`
+    )
+    
+    expect(getRes.status).toEqual(202)
+    expect(getRes.data?.error?.message).toBe('The last scan is older than 3 days. Please wait while the attachment is being rescanned.')
   })
 })
 
