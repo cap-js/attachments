@@ -7,6 +7,9 @@ module.exports = class RemoteAttachmentsService extends require("./basic") {
   objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
   separateObjectStore =
     this.isMultiTenancyEnabled && this.objectStoreKind === "separate"
+  // Skip inline hash computation in put() — the malware scanner already
+  // returns SHA-256, avoiding a redundant remote file download from object store.
+  _skipInlineHash = true
 
   init() {
     LOG.debug(`${this.constructor.name} initialization`, {
