@@ -26,10 +26,10 @@ class ProcessorService extends cds.ApplicationService {
     this.on("insertTestData", () => this.insertTestData())
     this.prepend(() =>
       this.on("*", (req, next) => {
-        if (req.path && req.path.endsWith('insertTestData'))
+        if (req.path && req.path.endsWith("insertTestData"))
           return this.insertTestData()
         return next()
-      })
+      }),
     )
     this.on("copyIncident", (req) => this.onCopyIncident(req))
 

@@ -617,7 +617,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // srv.send dispatches a request with no CQN query — the pattern
     // CAP docs show for calling custom actions programmatically.
     const result = await runWithUser(alice, () =>
-      srv.send({ method: 'POST', path: "ProcessorService.insertTestData", data: {} }),
+      srv.send({
+        method: "POST",
+        path: "ProcessorService.insertTestData",
+        data: {},
+      }),
     )
 
     expect(result).toBe("Test data inserted")
