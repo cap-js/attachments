@@ -539,6 +539,36 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(responseContent.status).toEqual(200)
   })
 
+  it("Uploading attachment that exceeds annotation size limit via direct POST should fail", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    // Temporarily lower the max to 1KB so we stay well under Express body limit
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities["Incidents.maximumSizeAttachments"].elements.content
+    const origMax = el["@Validation.Maximum"]
+    el["@Validation.Maximum"] = "1KB"
+
+    const content = Buffer.from("a".repeat(2 * 1024)).toString("base64") // 2KB > 1KB limit
+
+    let expectedError
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/maximumSizeAttachments`,
+      {
+        up__ID: incidentID,
+        filename: "toobig.txt",
+        mimeType: "text/plain",
+        content,
+      },
+    ).catch((e) => { expectedError = e })
+
+    el["@Validation.Maximum"] = origMax
+
+    expect(expectedError?.response?.status).toEqual(413)
+    expect(expectedError?.response?.data?.error?.message).toMatch(
+      'The size of "toobig.txt" exceeds the maximum allowed limit of 1KB',
+    )
+  })
+
   it("should fail to upload attachment to non-existent entity", async () => {
     const incidentID = await newIncident(POST, "admin")
     const fileContent = readFileSync(
@@ -1453,6 +1483,29 @@ describe("Tests for single attachment entity", () => {
     expect(expectedError.response.status).toEqual(413)
     expect(expectedError.response.data.error.message).toMatch(
       'The size of "large.txt" exceeds the maximum allowed limit of 5MB',
+    )
+  })
+
+  it("Should fail to create a SingleAttachment with oversized content in a single POST", async () => {
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities.SingleAttachment.elements.myAttachment_content
+    const origMax = el["@Validation.Maximum"]
+    el["@Validation.Maximum"] = "1KB"
+
+    const content = Buffer.from("a".repeat(2 * 1024)).toString("base64") // 2KB > 1KB
+
+    let expectedError
+    await POST("/odata/v4/processor/SingleAttachment", {
+      name: "Oversized inline attachment",
+      myAttachment_filename: "large.txt",
+      myAttachment_content: content,
+    }).catch((e) => { expectedError = e })
+
+    el["@Validation.Maximum"] = origMax
+
+    expect(expectedError?.response?.status).toEqual(413)
+    expect(expectedError?.response?.data?.error?.message).toMatch(
+      'The size of "large.txt" exceeds the maximum allowed limit of 1KB',
     )
   })
 
