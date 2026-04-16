@@ -21,10 +21,10 @@ async function waitForScanStatus(status, attachmentID) {
 
         if (
           req.event === "UPDATE" &&
-          req.query.UPDATE.data.status &&
+          req.query?.UPDATE?.data?.status &&
           req.target.name.includes(".attachments") &&
           (!attachmentID ||
-            (req.query.UPDATE.entity.ref.at(-1).where &&
+            (req.query.UPDATE.entity?.ref?.at(-1)?.where &&
               req.query.UPDATE.entity.ref
                 .at(-1)
                 .where.some((e) => e.val && e.val === attachmentID)) ||
@@ -40,7 +40,7 @@ async function waitForScanStatus(status, attachmentID) {
 
           if (req.query.UPDATE.data.status === status) {
             resolved = true
-            resolve(req.query.UPDATE.where || req.query.UPDATE.entity.ref)
+            resolve(req.query.UPDATE.where || req.query.UPDATE.entity?.ref)
           }
         }
       }

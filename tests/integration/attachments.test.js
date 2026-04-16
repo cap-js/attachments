@@ -37,7 +37,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -225,7 +225,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -378,7 +378,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.before("*", (req) => {
       if (
         req.event === "CREATE" &&
-        req.target?.name === "cds.outbox.Messages"
+        req.target?.name === "cds.outbox.Messages" &&
+        req.query?.INSERT?.entries?.[0]?.msg
       ) {
         const msg = JSON.parse(req.query.INSERT.entries[0].msg)
         attachmentIDs.push(msg.data.url)

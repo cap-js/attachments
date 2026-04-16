@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Wrong file name being shown when rejecting an attachment due to file size.
+- Fix a server crash when uploading extensions due to wrongfully assuming each request has a query attached.
 
 ## Version 3.11.0
 
