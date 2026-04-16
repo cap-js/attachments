@@ -42,6 +42,10 @@ context sap.attachments {
     note : String  @title: '{i18n>Note}'  @UI.MultiLineText;
   }
 
+  annotate Attachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties : [
+    content
+  ];
+
 
   // -- Fiori Annotations ----------------------------------------------------------
 
@@ -58,25 +62,20 @@ context sap.attachments {
     },
     LineItem  : [
       {
-        Value             : content,
-        @HTML5.CssDefaults: {width: '30%'}
+        Value             : content
       },
       {
         Value             : status,
-        Criticality       : statusNav.criticality,
-        @HTML5.CssDefaults: {width: '10%'}
+        Criticality       : statusNav.criticality
       },
       {
-        Value             : createdAt,
-        @HTML5.CssDefaults: {width: '20%'}
+        Value             : createdAt
       },
       {
-        Value             : createdBy,
-        @HTML5.CssDefaults: {width: '15%'}
+        Value             : createdBy
       },
       {
-        Value             : note,
-        @HTML5.CssDefaults: {width: '25%'}
+        Value             : note
       }
     ],
   }  @Capabilities: {SortRestrictions: {NonSortableProperties: [content]}}  {

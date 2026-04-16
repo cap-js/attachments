@@ -3,15 +3,18 @@ const { RequestSend } = require("../utils/api")
 const {
   waitForScanStatus,
   newIncident,
-  delay,
   waitForMalwareDeletion,
+  waitForDeletion,
+  runWithUser,
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
+const { Readable } = require("stream")
 
 const app = join(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
+const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 
 let utils = null
 
@@ -34,7 +37,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -145,6 +148,71 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
   })
 
+  isNotLocal(
+    "Uploading attachment that exceeds 5MB limit should fail when Content-Length header is not provided",
+    async () => {
+      const incidentID = await newIncident(POST, "processor")
+
+      const attachmentResult = await POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/maximumSizeAttachments`,
+        {
+          up__ID: incidentID,
+          filename: "large-stream.pdf",
+          mimeType: "application/pdf",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          ),
+          createdBy: "alice",
+        },
+      )
+
+      // Create a readable stream that generates 6MB of data
+      const chunkSize = 64 * 1024 // 64KB chunks
+      const totalSize = 6 * 1024 * 1024 // 6MB total
+      let bytesGenerated = 0
+      const largeStream = new Readable({
+        read() {
+          if (bytesGenerated >= totalSize) {
+            this.push(null)
+            return
+          }
+          const remainingBytes = totalSize - bytesGenerated
+          const size = Math.min(chunkSize, remainingBytes)
+          const chunk = Buffer.alloc(size, "x")
+          bytesGenerated += size
+          this.push(chunk)
+        },
+      })
+
+      let expectedError
+      await axios
+        .put(
+          `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
+          largeStream,
+          {
+            headers: {
+              "Content-Type": "application/pdf",
+              // No Content-Length header - server must track size during streaming
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+          },
+        )
+        .catch((e) => {
+          expectedError = e
+        })
+
+      expect(expectedError).toBeDefined()
+      expect(expectedError.response?.status || expectedError.status).toEqual(
+        413,
+      )
+      expect(expectedError.response.data.error.message).toMatch(
+        'The size of "large-stream.pdf" exceeds the maximum allowed limit of 5MB',
+      )
+    },
+    5 * 60 * 1000, // 5 minute timeout for cloud storage abort operations
+  )
+
   // Draft mode uploading attachment
   it("Uploading attachment in draft mode with scanning enabled and re-scanning on expiry", async () => {
     const incidentID = await newIncident(POST, "processor")
@@ -157,7 +225,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -195,9 +263,12 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     expect(contentResponse.status).toEqual(200)
     expect(contentResponse.data).toBeTruthy()
-
-    // Wait for 45 seconds to let the scan status expire
-    await delay(45 * 1000)
+    const Incidents_attachments = cds.entities("sap.capire.incidents")[
+      "Incidents.attachments"
+    ]
+    await UPDATE.entity(Incidents_attachments)
+      .where({ ID: sampleDocID })
+      .set({ lastScan: "2020-01-01T00:00:00" })
 
     await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
@@ -307,7 +378,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.before("*", (req) => {
       if (
         req.event === "CREATE" &&
-        req.target?.name === "cds.outbox.Messages"
+        req.target?.name === "cds.outbox.Messages" &&
+        req.query?.INSERT?.entries?.[0]?.msg
       ) {
         const msg = JSON.parse(req.query.INSERT.entries[0].msg)
         attachmentIDs.push(msg.data.url)
@@ -501,27 +573,29 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
     const attachmentsID = cds.utils.uuid()
     const user = new cds.User({ id: "alice", roles: { support: 1 } })
-    user._is_privileged = true
-    const req = new cds.Request({
-      query: INSERT.into(
-        Catalog.entities["Incidents.attachments"].drafts,
-      ).entries({
-        ID: attachmentsID,
-        up__ID: incidentID,
-        IsActiveEntity: false,
-        DraftAdministrativeData_DraftUUID:
-          incident.DraftAdministrativeData_DraftUUID,
-        filename: "sample.pdf",
-        content: fileContent,
-        mimeType: "application/pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
-      }),
-      user: user,
+    const ctx = cds.EventContext.for({
+      id: cds.utils.uuid(),
+      http: { req: null, res: null },
     })
-    await Catalog.dispatch(req)
+    ctx.user = user
+    await cds._with(ctx, () =>
+      Catalog.run(
+        INSERT.into(Catalog.entities["Incidents.attachments"].drafts).entries({
+          ID: attachmentsID,
+          up__ID: incidentID,
+          IsActiveEntity: false,
+          DraftAdministrativeData_DraftUUID:
+            incident.DraftAdministrativeData_DraftUUID,
+          filename: "sample.pdf",
+          content: fileContent,
+          mimeType: "application/pdf",
+          createdAt: new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          ),
+          createdBy: "alice",
+        }),
+      ),
+    )
 
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
@@ -559,7 +633,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         mimeType: "text/plain",
         content,
       },
-    ).catch((e) => { expectedError = e })
+    ).catch((e) => {
+      expectedError = e
+    })
 
     el["@Validation.Maximum"] = origMax
 
@@ -605,9 +681,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    let sampleDocID
     // Upload attachment using helper function
-    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
@@ -896,6 +971,278 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(["Scanning", "Clean", "Unscanned"]).toContain(
       getRes.data.value[0].status,
     )
+  })
+
+  it("Attachment content on TestDetails is downloadable after draft activation (depth-2 named back-assoc)", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Test`, {
+      ID: testID,
+      name: "Test Entity for nested draft save",
+    })
+
+    const detailsID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details`,
+      {
+        ID: detailsID,
+        description: "Details for nested draft save test",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: detailsID,
+        filename: "nested-draft.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Test(ID=${testID},IsActiveEntity=false)/details(ID=${detailsID},IsActiveEntity=false)/attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+    expect(draftContent.data).toBeTruthy()
+
+    await utils.draftModeSave("processor", "Test", testID, "ProcessorService")
+
+    const activeContent = await GET(
+      `/odata/v4/processor/TestDetails_attachments(up__ID=${detailsID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  it("Attachment content on deeply nested comment is downloadable after draft activation with depth 3", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    // Create Post
+    const postRes = await POST("odata/v4/processor/Posts", {
+      content: "Top-level post",
+    })
+    const postID = postRes.data.ID
+
+    // Create Comment
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "First-level comment" },
+    )
+    const commentID = commentRes.data.ID
+
+    // Create Reply
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies`,
+      { content: "Second-level reply" },
+    )
+    const replyID = replyRes.data.ID
+
+    // Add attachment to the deeply nested reply
+    const filepath = join(__dirname, "content/sample.pdf")
+    const filename = basename(filepath)
+    const fileContent = readFileSync(filepath)
+
+    const attachRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies(ID=${replyID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyID,
+        filename: filename,
+        mimeType: "application/pdf",
+      },
+    )
+    const attachmentID = attachRes.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: { "Content-Type": "application/pdf" },
+      },
+    )
+    await scanCleanWaiter
+
+    await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=false)/content`,
+    )
+
+    // Save the draft
+    await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Attempt to GET the file from the deeply nested attachment
+    const contentResponse = await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
+  it("Attachment content at depth 3 (Level0 -> Level1 -> Level2 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-3 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level2ID,
+        filename: "depth3.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level2_attachments(up__ID=${level2ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
+  })
+
+  it("Attachment content at depth 4 (Level0 -> Level1 -> Level2 -> Level3 -> attachments) is downloadable after draft activation", async () => {
+    const level0ID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Level0`, {
+      ID: level0ID,
+      name: "Depth-4 test root",
+    })
+
+    const level1ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children`,
+      {
+        ID: level1ID,
+        name: "Level1 child",
+      },
+    )
+
+    const level2ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children`,
+      {
+        ID: level2ID,
+        name: "Level2 grandchild",
+      },
+    )
+
+    const level3ID = cds.utils.uuid()
+    await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items`,
+      {
+        ID: level3ID,
+        name: "Level3 great-grandchild",
+      },
+    )
+
+    // Upload attachment to Level3 (depth 4)
+    const attachRes = await POST(
+      `odata/v4/processor/Level0(ID=${level0ID},IsActiveEntity=false)/children(ID=${level1ID},IsActiveEntity=false)/children(ID=${level2ID},IsActiveEntity=false)/items(ID=${level3ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: level3ID,
+        filename: "depth4.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.ID).toBeTruthy()
+
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+
+    const draftContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=false)/content`,
+    )
+    expect(draftContent.status).toEqual(200)
+
+    await utils.draftModeSave(
+      "processor",
+      "Level0",
+      level0ID,
+      "ProcessorService",
+    )
+
+    const activeContent = await GET(
+      `/odata/v4/processor/Level3_attachments(up__ID=${level3ID},ID=${attachRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(activeContent.status).toEqual(200)
+    expect(activeContent.data).toBeTruthy()
   })
 
   it("Should reflect all attachment compositions on parent entity", async () => {
@@ -1266,7 +1613,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
   })
 
   // prettier-ignore
-  isNotLocal("Should detect infected files and automatically delete them after scan", async () => {
+  isNotLocal("Should detect and automatically delete infected files after scan", async () => {
     const incidentID = await newIncident(POST, "processor")
     const testMal =
       "WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo="
@@ -1318,6 +1665,243 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Wait for deletion to complete
     await deletionWaiter
   })
+
+  it("Must delete discarded files from the object store when active entity exists", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    const attachmentData = {
+      up__ID: incidentID,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+    }
+
+    const createResponse = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      attachmentData,
+    )
+    const attachmentID = createResponse.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    const putResponse = await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.byteLength,
+        },
+      },
+    )
+    expect(putResponse.status).toBe(204)
+
+    // Need the URL of the attachment to confirm its deletion later
+    const getResponse = await GET(
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
+    )
+    const attachmentUrl = getResponse.data.url
+    expect(attachmentUrl).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentUrl)
+
+    const discardResponse = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`,
+    )
+    expect(discardResponse.status).toBe(204)
+
+    await deletionWaiter
+  })
+
+  it("Must delete discarded files from the object store when no active entity exists", async () => {
+    // Create a new draft incident directly without saving it first
+    const incidentID = cds.utils.uuid()
+    await POST(`odata/v4/processor/Incidents`, {
+      ID: incidentID,
+      title: "New Draft Incident",
+    })
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    const attachmentData = {
+      up__ID: incidentID,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+    }
+
+    const createResponse = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      attachmentData,
+    )
+    const attachmentID = createResponse.data.ID
+    expect(attachmentID).toBeTruthy()
+
+    const putResponse = await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.byteLength,
+        },
+      },
+    )
+    expect(putResponse.status).toBe(204)
+
+    // Need the URL of the attachment to confirm its deletion later
+    const getResponse = await GET(
+      `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)`,
+    )
+    const attachmentUrl = getResponse.data.url
+    expect(attachmentUrl).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentUrl)
+
+    const discardResponse = await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`,
+    )
+    expect(discardResponse.status).toBe(204)
+
+    await deletionWaiter
+  })
+
+  it("Should not delete a new attachment when saving a draft of an existing entity", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // Upload an attachment
+    const attachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
+    )
+    expect(attachmentID).toBeTruthy()
+    await scanCleanWaiter
+
+    // Verify the attachment is downloadable after saving
+    const contentResponse1 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse1.status).toEqual(200)
+
+    // Edit the draft again
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // Ensure the attachment is downloadable when re-entering draft mode
+    const contentResponse2 = await GET(
+      `/odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse2.data.value[0].ID).toEqual(attachmentID)
+  })
+
+  it("Creating attachment with content in POST returns the posted metadata", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filename = "sample.pdf"
+    const mimeType = "application/pdf"
+
+    const response = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename,
+        mimeType,
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
+      },
+    )
+
+    expect(response.status).toEqual(201)
+    expect(response.data).toMatchObject({
+      up__ID: incidentID,
+      filename,
+      mimeType,
+    })
+    expect(response.data.ID).toBeTruthy()
+    expect(response.data.status).toBeDefined()
+  })
+
+  it("Updating parent should not cause attachment deletes", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    let sampleDocID
+    const scanCleanWaiter = waitForScanStatus("Clean")
+    // Upload attachment using helper function
+    sampleDocID = await uploadDraftAttachment(utils, POST, GET, incidentID)
+    expect(sampleDocID).toBeTruthy()
+
+    //read attachments list for Incident
+    const attachmentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+    //the data should have only one attachment
+    expect(attachmentResponse.status).toEqual(200)
+    expect(attachmentResponse.data.value.length).toEqual(1)
+    sampleDocID = attachmentResponse.data.value[0].ID
+
+    await scanCleanWaiter
+
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+
+    const resultResponse = await PATCH(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`,
+      {
+        status_code: "N",
+      },
+    )
+    expect(resultResponse.status).toEqual(200)
+
+    try {
+      await waitForDeletion(attachmentResponse.data.value[0].url)
+      // Should throw due to timeout
+      expect(true).toEqual(false)
+    } catch (error) {
+      expect(error.message.startsWith("Timeout waiting for deletion")).toEqual(
+        true,
+      )
+    }
+
+    const contentAfterActiveUpdate = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    expect(contentAfterActiveUpdate.status).toEqual(200)
+    expect(contentAfterActiveUpdate.data).toBeTruthy()
+  })
 })
 
 describe("Tests for single attachment entity", () => {
@@ -1327,7 +1911,9 @@ describe("Tests for single attachment entity", () => {
     const Incidents_attachments = Catalog.entities["Incidents.attachments"]
 
     // SingleAttachment has `myAttachment : Attachment` — an inline single field
-    expect(SingleAttachment._attachments.inlineAttachmentPrefixes).toEqual(["myAttachment"])
+    expect(SingleAttachment._attachments.inlineAttachmentPrefixes).toEqual([
+      "myAttachment",
+    ])
     expect(SingleAttachment._attachments.hasInlineAttachments).toBe(true)
 
     // It is NOT itself a media entity, and has no composition to one
@@ -1335,11 +1921,13 @@ describe("Tests for single attachment entity", () => {
     expect(SingleAttachment._attachments.hasAttachmentsComposition).toBe(false)
 
     // A composition-based attachment entity must NOT be detected as inline
-    expect(Incidents_attachments._attachments.inlineAttachmentPrefixes).toEqual([])
+    expect(Incidents_attachments._attachments.inlineAttachmentPrefixes).toEqual(
+      [],
+    )
     expect(Incidents_attachments._attachments.hasInlineAttachments).toBe(false)
     expect(Incidents_attachments._attachments.isAttachmentsEntity).toBe(true)
   })
-  
+
   it("Should create a SingleAttachment with an attachment", async () => {
     const { data: singleAttachment } = await POST(
       "/odata/v4/processor/SingleAttachment",
@@ -1404,15 +1992,19 @@ describe("Tests for single attachment entity", () => {
     await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
-    
+
     expect(singleAttachment.myAttachment_url).toBeDefined()
 
     const deleteRes = await DELETE(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
     expect(deleteRes.status).toEqual(204)
-    
-    await expect(GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`)).rejects.toThrow('404')
+
+    await expect(
+      GET(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+      ),
+    ).rejects.toThrow("404")
 
     const db = await cds.connect.to("db")
     const record = await db.run(
@@ -1448,11 +2040,11 @@ describe("Tests for single attachment entity", () => {
     const db = await cds.connect.to("db")
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
-        .set({ 
+        .set({
           myAttachment_status: "Clean",
           myAttachment_lastScan: new Date().toISOString(),
         })
-        .where({ ID: singleAttachment.ID })
+        .where({ ID: singleAttachment.ID }),
     )
 
     const getContentRes = await GET(
@@ -1463,10 +2055,13 @@ describe("Tests for single attachment entity", () => {
   })
 
   it("Should fail to upload content that exceeds the size limit", async () => {
-    const { data: singleAttachment } = await POST("/odata/v4/processor/SingleAttachment", {
-      name: "Attachment too large",
-      myAttachment_filename: "large.txt",
-    })
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Attachment too large",
+        myAttachment_filename: "large.txt",
+      },
+    )
 
     let expectedError
     await PUT(
@@ -1477,8 +2072,10 @@ describe("Tests for single attachment entity", () => {
           "Content-Type": "text/plain",
           "Content-Length": 6 * 1024 * 1024,
         },
-      }
-    ).catch((e) => { expectedError = e })
+      },
+    ).catch((e) => {
+      expectedError = e
+    })
 
     expect(expectedError.response.status).toEqual(413)
     expect(expectedError.response.data.error.message).toMatch(
@@ -1499,7 +2096,9 @@ describe("Tests for single attachment entity", () => {
       name: "Oversized inline attachment",
       myAttachment_filename: "large.txt",
       myAttachment_content: content,
-    }).catch((e) => { expectedError = e })
+    }).catch((e) => {
+      expectedError = e
+    })
 
     el["@Validation.Maximum"] = origMax
 
@@ -1510,22 +2109,30 @@ describe("Tests for single attachment entity", () => {
   })
 
   it("Should trigger a re-scan when getting content with an expired scan date", async () => {
-    const { data: singleAttachment } = await POST("/odata/v4/processor/SingleAttachment", {
-      name: "My Attachment for Rescan",
-      myAttachment_filename: "rescan.txt",
-    })
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "My Attachment for Rescan",
+        myAttachment_filename: "rescan.txt",
+      },
+    )
 
     const fileContent = "this content needs to be rescanned"
     const putContentRes = await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       fileContent,
-      { headers: { "Content-Type": "text/plain" } }
+      { headers: { "Content-Type": "text/plain" } },
     )
     expect(putContentRes.status).toEqual(204)
 
-    await POST(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`, {})
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
 
-    const { data: active } = await GET(`/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`)
+    const { data: active } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
 
     // Manually update the scan status to simulate an old scan
     const db = await cds.connect.to("db")
@@ -1535,15 +2142,17 @@ describe("Tests for single attachment entity", () => {
           myAttachment_status: "Clean",
           myAttachment_lastScan: new Date(2000, 1, 1).toISOString(), // A very old date
         })
-        .where({ ID: singleAttachment.ID })
+        .where({ ID: singleAttachment.ID }),
     )
 
     const getRes = await GET(
-      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
     )
-    
+
     expect(getRes.status).toEqual(202)
-    expect(getRes.data?.error?.message).toBe('The last scan is older than 3 days. Please wait while the attachment is being rescanned.')
+    expect(getRes.data?.error?.message).toBe(
+      "The last scan is older than 3 days. Please wait while the attachment is being rescanned.",
+    )
   })
 })
 
@@ -2452,6 +3061,828 @@ describe("Row-level security on attachments composition", () => {
       restrictionID,
       "RestrictionService",
     )
+  })
+})
+
+describe("Tests for renaming duplicate attachments", () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it("should rename duplicate attachments when both are added to same draft", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1.pdf",
+      "sample-2.pdf",
+      "sample.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample-2.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when first one has been saved", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    // Upload first attachment
+    await uploadDraftAttachment(utils, POST, GET, incidentID)
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(2)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual(["sample-1.pdf", "sample.pdf"])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(2)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
+  })
+
+  it("should rename duplicate attachments when they already end with -1", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const initialFilename = "sample-1.pdf"
+    // Upload first attachment
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload second attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    // Upload third attachment with the same name
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: initialFilename,
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const draftResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftResponse.status).toEqual(200)
+    expect(draftResponse.data.value.length).toEqual(3)
+    const draftFilenames = draftResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(draftFilenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
+
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const finalResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(finalResponse.status).toEqual(200)
+    expect(finalResponse.data.value.length).toEqual(3)
+
+    const filenames = finalResponse.data.value
+      .map((attachment) => attachment.filename)
+      .sort()
+    expect(filenames).toEqual([
+      "sample-1-1.pdf",
+      "sample-1-2.pdf",
+      "sample-1.pdf",
+    ])
+  })
+
+  it("Should rename duplicate attachments on a parent with a composite key", async () => {
+    const key = { sampleID: `COMPKEY-${cds.utils.uuid()}`, gjahr: 2026 }
+    const { data: parent } = await POST(
+      "/odata/v4/processor/SampleRootWithComposedEntity",
+      key,
+    )
+    expect(parent.IsActiveEntity).toBe(false)
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    const { data: attachment1 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/attachments`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key.sampleID}',up__gjahr=${key.gjahr},ID=${attachment1.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Start a new draft session to add another file
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=true)/ProcessorService.draftEdit`,
+    )
+
+    const { data: attachment2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/attachments`,
+      {
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key.sampleID}',up__gjahr=${key.gjahr},ID=${attachment2.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    const { data: allAttachments } = await GET(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key.sampleID}',gjahr=${key.gjahr},IsActiveEntity=true)/attachments`,
+    )
+
+    expect(allAttachments.value).toHaveLength(2)
+    const filenames = allAttachments.value.map((a) => a.filename).sort()
+    expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
+  })
+
+  it("Should NOT rename attachments on different parents that share a partial composite key", async () => {
+    // Two parents sharing the same sampleID but different gjahr - these are distinct records
+    const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
+    const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
+    const key2 = { sampleID: sharedSampleID, gjahr: 2026 }
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key1)
+    const { data: att1 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key1.sampleID}',up__gjahr=${key1.gjahr},ID=${att1.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Create second parent (same sampleID, different gjahr) and upload sample.pdf
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key2)
+    const { data: att2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+    await PUT(
+      `/odata/v4/processor/SampleRootWithComposedEntity_attachments(up__sampleID='${key2.sampleID}',up__gjahr=${key2.gjahr},ID=${att2.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    // Verify parent 2's attachment was NOT renamed - it's a different parent record
+    const { data: result } = await GET(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=true)/attachments`,
+    )
+    expect(result.value).toHaveLength(1)
+    expect(result.value[0].filename).toEqual("sample.pdf") // Should NOT be "sample-1.pdf"
+  })
+
+  it("Should NOT rename attachment when two parents with same partial key are both in draft", async () => {
+    const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
+    const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
+    const key2 = { sampleID: sharedSampleID, gjahr: 2026 }
+    const filepath = join(__dirname, "content/sample.pdf")
+
+    // Create parent 1 and upload - but do NOT activate
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key1)
+    await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key1.sampleID}',gjahr=${key1.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+
+    // Create parent 2 while parent 1 is still in draft
+    await POST("/odata/v4/processor/SampleRootWithComposedEntity", key2)
+    const { data: att2 } = await POST(
+      `/odata/v4/processor/SampleRootWithComposedEntity(sampleID='${key2.sampleID}',gjahr=${key2.gjahr},IsActiveEntity=false)/attachments`,
+      { filename: basename(filepath), mimeType: "application/pdf" },
+    )
+
+    // Should be "sample.pdf" - but with the bug it will be "sample-1.pdf"
+    expect(att2.filename).toEqual("sample.pdf")
+  })
+})
+
+describe("Testing to prevent crash due to recursive overflow", () => {
+  it("Should not crash and allow attachment upload with recursive compositions", async () => {
+    const postData = await POST(
+      "/odata/v4/processor/Posts",
+      {
+        content: "New Post",
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    )
+    expect(postData.data.ID).toBeDefined()
+
+    const postID = postData.data.ID
+    const attachmentData = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: postID,
+        filename: "test.txt",
+        mimeType: "text/plain",
+      },
+    )
+    expect(attachmentData.data.ID).toBeDefined()
+
+    const attachmentID = attachmentData.data.ID
+    await PUT(
+      `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${attachmentID},IsActiveEntity=false)/content`,
+      "This is a test attachment.",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const attachments = await GET(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
+    )
+    expect(attachments.data.value).toHaveLength(1)
+    expect(attachments.data.value[0].filename).toBe("test.txt")
+  })
+
+  it("Should not crash when activating a draft with deeply nested recursive compositions", async () => {
+    // This test verifies that the attachment discovery mechanism can handle
+    // deeply nested, recursive compositions without causing a stack overflow.
+    // The structure is Post -> comments(Comment) -> replies(Comment) -> ...
+
+    // Create a draft Post
+    const postRes = await POST("/odata/v4/processor/Posts", {
+      content: "Post with nested comments",
+    })
+    const postID = postRes.data.ID
+    expect(postID).toBeDefined()
+
+    // Create a nested Comment
+    const commentRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Level 1 Comment" },
+    )
+    const commentID = commentRes.data.ID
+    expect(commentID).toBeDefined()
+
+    // Create a deeply nested Reply (a Comment on a Comment)
+    const replyRes = await POST(
+      `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentID},IsActiveEntity=false)/replies`,
+      { content: "Level 2 Reply" },
+    )
+    const replyID = replyRes.data.ID
+    expect(replyID).toBeDefined()
+
+    let activationResponse
+    let responseError
+    try {
+      activationResponse = await POST(
+        `/odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+      )
+    } catch (e) {
+      // Fail the test explicitly if an error is thrown
+      responseError = e
+    }
+    expect(responseError).not.toBeTruthy()
+    expect(activationResponse.status).toEqual(201)
+    expect(activationResponse.data.ID).toEqual(postID)
+  })
+
+  it("Attachments at multiple nesting levels are all saved on draft activation", async () => {
+    const postRes = await POST("odata/v4/processor/Posts", { content: "Post" })
+    const postID = postRes.data.ID
+
+    // Attachment on the root Post itself
+    const postAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/attachments`,
+      { up__ID: postID, filename: "post.pdf", mimeType: "application/pdf" },
+    )
+    const postScanWaiter = waitForScanStatus("Clean", postAttRes.data.ID)
+    const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
+    await PUT(
+      `/odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    // Attachment on a nested reply
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Comment" },
+    )
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
+      { content: "Reply" },
+    )
+    const replyAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    const replyScanWaiter = waitForScanStatus("Clean", replyAttRes.data.ID)
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/ProcessorService.draftActivate`,
+    )
+
+    await Promise.all([postScanWaiter, replyScanWaiter])
+
+    // Both should be accessible on the active entity
+    const postContent = await GET(
+      `odata/v4/processor/Posts_attachments(up__ID=${postID},ID=${postAttRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(postContent.status).toEqual(200)
+
+    const replyContent = await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
+    )
+    expect(replyContent.status).toEqual(200)
+  })
+
+  it("Canceling a draft removes unsaved reply attachments", async () => {
+    const postRes = await POST("odata/v4/processor/Posts", { content: "Post" })
+    const postID = postRes.data.ID
+
+    const commentRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments`,
+      { content: "Comment" },
+    )
+    const replyRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies`,
+      { content: "Reply" },
+    )
+    const replyAttRes = await POST(
+      `odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)/comments(ID=${commentRes.data.ID},IsActiveEntity=false)/replies(ID=${replyRes.data.ID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: replyRes.data.ID,
+        filename: "reply.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    const fileContent = readFileSync(join(__dirname, "content/sample.pdf"))
+    await PUT(
+      `/odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=false)/content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    // Discard the draft
+    await DELETE(`odata/v4/processor/Posts(ID=${postID},IsActiveEntity=false)`)
+
+    // The active entity should have no attachment content
+    let errorThrown
+    await GET(
+      `odata/v4/processor/Comments_attachments(up__ID=${replyRes.data.ID},ID=${replyAttRes.data.ID},IsActiveEntity=true)/content`,
+    ).catch((e) => {
+      errorThrown = e
+    })
+    expect(errorThrown.response.status).toEqual(404)
+  })
+})
+
+describe("Tests for copy() on AttachmentsService", () => {
+  beforeAll(async () => {
+    utils = new RequestSend(POST)
+  })
+
+  it("Copies a clean attachment to a different incident", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor")
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        { up__ID: targetIncidentID },
+      ),
+    )
+    expect(newAtt.ID).not.toEqual(sourceAttachmentID)
+    expect(newAtt.url).toBeTruthy()
+    expect(newAtt.filename).toEqual("sample.pdf")
+    expect(newAtt.mimeType).toBeTruthy()
+    expect(newAtt.hash).toBeTruthy()
+    // Scan status is inherited from source — no re-scan needed
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify the copied record is in the DB under the target incident
+    const copied = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments`,
+    )
+    expect(copied.status).toEqual(200)
+    expect(copied.data.value.length).toEqual(1)
+    expect(copied.data.value[0].ID).toEqual(newAtt.ID)
+    expect(copied.data.value[0].filename).toEqual("sample.pdf")
+
+    // Verify content is downloadable
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments(up__ID=${targetIncidentID},ID=${newAtt.ID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
+  it("Copies an active attachment into a draft incident (active -> draft)", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor") // starts as draft
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Look up the DraftUUID of the target incident's draft session
+    const targetDraft = await SELECT.one
+      .from(ProcessorService.entities.Incidents.drafts, {
+        ID: targetIncidentID,
+      })
+      .columns("DraftAdministrativeData_DraftUUID")
+    expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
+
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
+    expect(newAtt.ID).toBeTruthy()
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify the record exists in the draft table (IsActiveEntity=false)
+    const draftAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftAttachments.status).toEqual(200)
+    expect(draftAttachments.data.value.length).toEqual(1)
+    expect(draftAttachments.data.value[0].ID).toEqual(newAtt.ID)
+
+    // After saving the draft, the attachment should appear in the active entity
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    const activeAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments`,
+    )
+    expect(activeAttachments.status).toEqual(200)
+    expect(activeAttachments.data.value.length).toEqual(1)
+    expect(activeAttachments.data.value[0].ID).toEqual(newAtt.ID)
+
+    // Content should be downloadable from the active entity
+    const contentResponse = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=true)/attachments(up__ID=${targetIncidentID},ID=${newAtt.ID},IsActiveEntity=true)/content`,
+    )
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
+  })
+
+  it("Copies a draft attachment into another draft incident (draft -> draft)", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor") // draft
+    const targetIncidentID = await newIncident(POST, "processor") // draft
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    // Upload to source as draft, then save it to active so it gets scanned
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Look up DraftUUID for target draft session
+    const targetDraft = await SELECT.one
+      .from(ProcessorService.entities.Incidents.drafts, {
+        ID: targetIncidentID,
+      })
+      .columns("DraftAdministrativeData_DraftUUID")
+    expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
+
+    // Source is the active Attachments entity (uploaded via draft, now active after save)
+    const newAtt = await await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments.drafts,
+        {
+          up__ID: targetIncidentID,
+          DraftAdministrativeData_DraftUUID:
+            targetDraft.DraftAdministrativeData_DraftUUID,
+        },
+      ),
+    )
+    expect(newAtt.ID).toBeTruthy()
+    expect(newAtt.status).toEqual("Clean")
+
+    // Verify it is visible in draft context
+    const draftAttachments = await GET(
+      `odata/v4/processor/Incidents(ID=${targetIncidentID},IsActiveEntity=false)/attachments`,
+    )
+    expect(draftAttachments.status).toEqual(200)
+    expect(draftAttachments.data.value.length).toEqual(1)
+    expect(draftAttachments.data.value[0].ID).toEqual(newAtt.ID)
+  })
+
+  it("Copy rejects attachment with Infected status", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Directly insert a fake infected attachment record
+    const infectedID = cds.utils.uuid()
+    await cds.run(
+      INSERT({
+        ID: infectedID,
+        url: cds.utils.uuid(),
+        filename: "infected.pdf",
+        mimeType: "application/pdf",
+        status: "Infected",
+        up__ID: incidentID,
+      }).into(Attachments),
+    )
+
+    await expect(
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(Attachments, { ID: infectedID }, Attachments, {
+          up__ID: incidentID,
+        }),
+      ),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it("Copy rejects non-existent source attachment", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    await expect(
+      runWithUser(alice, () =>
+        AttachmentsSrv.copy(
+          Attachments,
+          { ID: cds.utils.uuid() },
+          Attachments,
+          {
+            up__ID: incidentID,
+          },
+        ),
+      ),
+    ).rejects.toMatchObject({ status: 404 })
+  })
+
+  it("Copy strips protected fields from targetKeys", async () => {
+    const sourceIncidentID = await newIncident(POST, "processor")
+    const targetIncidentID = await newIncident(POST, "processor")
+    const sourceCleanWaiter = waitForScanStatus("Clean")
+
+    const sourceAttachmentID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      sourceIncidentID,
+    )
+    expect(sourceAttachmentID).toBeTruthy()
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      targetIncidentID,
+      "ProcessorService",
+    )
+    await sourceCleanWaiter
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const { ProcessorService } = cds.services
+    const Attachments = ProcessorService.entities["Incidents.attachments"]
+
+    // Attempt to override protected fields via targetKeys
+    const newAtt = await runWithUser(alice, () =>
+      AttachmentsSrv.copy(
+        Attachments,
+        { ID: sourceAttachmentID },
+        Attachments,
+        {
+          up__ID: targetIncidentID,
+          status: "Unscanned",
+          hash: "tampered-hash",
+          filename: "evil.exe",
+          mimeType: "application/x-evil",
+        },
+      ),
+    )
+
+    // Protected fields must reflect the source, not the attacker's values
+    expect(newAtt.status).toEqual("Clean")
+    expect(newAtt.hash).not.toEqual("tampered-hash")
+    expect(newAtt.filename).toEqual("sample.pdf")
+    expect(newAtt.mimeType).not.toEqual("application/x-evil")
   })
 })
 

@@ -1,6 +1,11 @@
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const { computeHash, traverseEntity } = require("../lib/helper")
+const DEBUG = cds.debug("attachments")
+const {
+  computeHash,
+  traverseEntity,
+  buildBackAssocChain,
+} = require("../../lib/helper")
 
 class AttachmentsService extends cds.Service {
   init() {
@@ -42,7 +47,49 @@ class AttachmentsService extends cds.Service {
         )
       }
     })
+
+    if (cds.env.requires["audit-log"]) {
+      DEBUG && DEBUG(`Register audit logging handlers for security events.`)
+      this.on(
+        [
+          "AttachmentDownloadRejected",
+          "AttachmentSizeExceeded",
+          "AttachmentUploadRejected",
+        ],
+        async (msg) => {
+          const audit = await cds.connect.to("audit-log")
+          const { ipAddress, ...eventData } = msg.data
+          await audit.log("SecurityEvent", {
+            data: { event: msg.event, ...eventData },
+            ip: ipAddress || undefined,
+          })
+        },
+      )
+    }
+
     return super.init()
+  }
+
+  /**
+   * Checks whether content updates are restricted for the given attachment entity.
+   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdateableProperties,
+   * meaning overwriting existing content is NOT allowed.
+   * Returns false if the annotation is missing, is an empty array, or does not include `content`.
+   * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
+   * @returns {boolean}
+   */
+  _isContentUpdateRestricted(attachments) {
+    const nonUpdateable =
+      attachments["@Capabilities.UpdateRestrictions.NonUpdateableProperties"]
+    // If annotation is not set, allow content overwrite by default
+    if (!nonUpdateable) return false
+    // If it's an array, check if 'content' is listed
+    if (Array.isArray(nonUpdateable)) {
+      return nonUpdateable.some(
+        (prop) => prop === "content" || prop?.["="] === "content",
+      )
+    }
+    return false
   }
 
   /**
@@ -56,14 +103,16 @@ class AttachmentsService extends cds.Service {
       data = [data]
     }
 
-    // Check if an attachment with this ID already has content
-    const existing = await SELECT.one
-      .from(attachments)
-      .where({ ID: { in: data.map((d) => d.ID) }, content: { "!=": null } })
-    if (existing) {
-      const error = new Error("Attachment already exists")
-      error.status = 409
-      throw error
+    // Check if an attachment with this ID already has content (only if content is non-updateable)
+    if (this._isContentUpdateRestricted(attachments)) {
+      const existing = await SELECT.one
+        .from(attachments)
+        .where({ ID: { in: data.map((d) => d.ID) }, content: { "!=": null } })
+      if (existing) {
+        const error = new Error("Attachment already exists")
+        error.status = 409
+        throw error
+      }
     }
 
     LOG.debug("Starting database attachment upload", {
@@ -78,11 +127,16 @@ class AttachmentsService extends cds.Service {
       res = await Promise.all(
         data.map(async (d) => {
           const res = await UPSERT(d).into(attachments)
-          const attachmentForHash = await this.get(attachments, { ID: d.ID })
-          // If this is just the PUT for metadata, there is not yet any file to retrieve
-          if (attachmentForHash) {
-            const hash = await computeHash(attachmentForHash)
-            await this.update(attachments, { ID: d.ID }, { hash })
+          // When scanning is enabled, skip hash computation here — the malware
+          // scanner returns SHA-256 in its response and writes the hash itself.
+          // This avoids a redundant file read (expensive for object store backends).
+          const scanEnabled = cds.env.requires?.attachments?.scan !== false
+          if (!scanEnabled || !this._skipInlineHash) {
+            const attachmentForHash = await this.get(attachments, { ID: d.ID })
+            if (attachmentForHash) {
+              const hash = await computeHash(attachmentForHash)
+              await this.update(attachments, { ID: d.ID }, { hash })
+            }
           }
           return res
         }),
@@ -138,7 +192,7 @@ class AttachmentsService extends cds.Service {
       attachmentKeys: keys,
     })
     let result = await SELECT.from(attachments, keys).columns("content")
-    if (!result && attachments.isDraft) {
+    if ((!result || !result.content) && attachments.isDraft) {
       attachments = attachments.actives
       result = await SELECT.from(attachments, keys).columns("content")
     }
@@ -147,10 +201,13 @@ class AttachmentsService extends cds.Service {
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
+   * @param {string[]} compositionPath - Composition path from root to attachment entity
+   * @param {import('@sap/cds').Entity} rootEntity - The draft-leading root entity definition
    * @returns {Function} - The draft save handler function
    */
-  draftSaveHandler(attachments) {
+  draftSaveHandler(attachments, compositionPath, rootEntity) {
     const queryFields = this.getFields(attachments)
+    const backAssocChain = buildBackAssocChain(rootEntity, compositionPath)
 
     return async (_, req) => {
       // The below query loads the attachments into streams
@@ -158,7 +215,7 @@ class AttachmentsService extends cds.Service {
         .from(attachments.drafts)
         .where([
           ...req.subject.ref[0].where.map((x) =>
-            x.ref ? { ref: ["up_", ...x.ref] } : x,
+            x.ref ? { ref: [...backAssocChain, ...x.ref] } : x,
           ),
           // NOTE: needs skip LargeBinary fix to Lean Draft
         ])
@@ -212,7 +269,11 @@ class AttachmentsService extends cds.Service {
                   )
                   return
                 }
-                return this.draftSaveHandler(target)(res, req)
+                return this.draftSaveHandler(
+                  target,
+                  attachmentsEle,
+                  req.target,
+                )(res, req)
               },
             ),
           )
@@ -265,12 +326,12 @@ class AttachmentsService extends cds.Service {
     for (const attachment of req.attachmentsToDelete) {
       if (attachment.url) {
         const attachmentsSrv = await cds.connect.to("attachments")
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitting DeleteAttachment for:",
           attachment.url,
         )
         await attachmentsSrv.emit("DeleteAttachment", attachment)
-        LOG.info(
+        LOG.debug(
           "[deleteAttachmentsWithKeys] Emitted DeleteAttachment for:",
           attachment.url,
         )
@@ -281,7 +342,7 @@ class AttachmentsService extends cds.Service {
         )
       }
     }
-    LOG.info("[deleteAttachmentsWithKeys] Finished")
+    LOG.debug("[deleteAttachmentsWithKeys] Finished")
   }
 
   /**
@@ -358,6 +419,15 @@ class AttachmentsService extends cds.Service {
         SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
         SELECT.one.from(req.target).where(whereCond).columns(columns),
       ])
+      // If no draft exists at all, this means it is the bypass draft option where
+      // active entities can be modified
+      if (!draft) {
+        DEBUG?.(
+          `Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `,
+          whereCond,
+        )
+        return
+      }
 
       if (!active) return
 
@@ -368,16 +438,31 @@ class AttachmentsService extends cds.Service {
           this.traverseDataByPath(active, attachmentsComp) || []
         const draftAttachments =
           this.traverseDataByPath(draft, attachmentsComp) || []
-        const draftAttachmentIDs = new Set(
-          draftAttachments.filter((a) => a.ID).map((a) => a.ID),
-        )
+        const draftAttachmentIDs = new Set(draftAttachments.map((a) => a.ID))
+        const entityTarget = traverseEntity(req.target, attachmentsComp)
+
+        // Find attachments present in the draft entity but not in the active using HasActiveEntity flag when deleting
+        if (
+          req.event === "DELETE" &&
+          req.subject?.ref?.[0]?.id === req.target.drafts?.name
+        ) {
+          const newAndDiscarded = draftAttachments.filter(
+            (att) => att.url && !att.HasActiveEntity,
+          )
+          if (newAndDiscarded.length > 0) {
+            attachmentsToDelete.push(
+              ...newAndDiscarded.map((attachment) => ({
+                url: attachment.url,
+                target: entityTarget.name,
+              })),
+            )
+          }
+        }
 
         // Find attachments present in the active entity but not in the draft
         const deletedAttachments = activeAttachments.filter(
           (att) => att.url && att.ID && !draftAttachmentIDs.has(att.ID),
         )
-
-        const entityTarget = traverseEntity(req.target, attachmentsComp)
 
         if (deletedAttachments.length) {
           attachmentsToDelete.push(
@@ -436,6 +521,132 @@ class AttachmentsService extends cds.Service {
     if (attachmentsToDelete.length) {
       req.attachmentsToDelete = attachmentsToDelete
     }
+  }
+
+  /**
+   * Strips protected fields from targetKeys so callers cannot override
+   * security-sensitive metadata (status, hash, url, etc.).
+   * @param {object} targetKeys - Raw target keys from the caller
+   * @returns {object} - Sanitized target keys containing only FK fields
+   */
+  _sanitizeTargetKeys(targetKeys) {
+    const sanitized = {}
+    for (const [key, value] of Object.entries(targetKeys)) {
+      if (key.startsWith("up_") || key.startsWith("DraftAdministrativeData")) {
+        sanitized[key] = value
+      } else {
+        LOG.warn(`Ignoring protected field in targetKeys: ${key}`)
+      }
+    }
+    return sanitized
+  }
+
+  /**
+   *
+   * @param {*} data
+   * @returns
+   */
+  createUrlForAttachment() {
+    const isMultiTenancyEnabled = !!cds.env.requires.multitenancy
+    const objectStoreKind = cds.env.requires?.attachments?.objectStore?.kind
+    return isMultiTenancyEnabled && objectStoreKind === "shared"
+      ? `${cds.context.tenant}_${cds.utils.uuid()}`
+      : cds.utils.uuid()
+  }
+
+  /**
+   * Prepares a copy operation by validating the source and generating new identifiers.
+   * Shared by all storage backends.
+   * @param {import('@sap/cds').Entity} sourceAttachmentsEntity - Source attachment entity definition
+   * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
+   * @returns {Promise<{ source: object, newID: string, newUrl: string }>}
+   */
+  async _prepareCopy(sourceAttachmentsEntity, sourceKeys) {
+    // srv.run so auth is enforced
+    const srv = await cds.connect.to(
+      sourceAttachmentsEntity._service?.name ?? "db",
+    )
+    const source = await srv.run(
+      SELECT.one
+        .from(sourceAttachmentsEntity, sourceKeys)
+        .columns(
+          "url",
+          "filename",
+          "mimeType",
+          "note",
+          "hash",
+          "status",
+          "lastScan",
+        ),
+    )
+    if (!source) {
+      const err = new Error("Source attachment not found")
+      err.status = 404
+      throw err
+    }
+    if (source.status !== "Clean") {
+      const err = new Error(
+        `Cannot copy attachment with status: ${source.status}. Only a Clean Status is allowed`,
+      )
+      err.status = 400
+      throw err
+    }
+    const newUrl = this.createUrlForAttachment(source)
+
+    return { source, newID: cds.utils.uuid(), newUrl }
+  }
+
+  /**
+   * Copies an attachment to a new record, reusing the binary content from storage.
+   * For DB storage, reads content and inserts a new record.
+   * Cloud backends override this to use native server-side copy.
+   * Scan status, lastScan, and hash are inherited from the source — no re-scan needed.
+   *
+   * Tenant note: only copies within the same tenant are supported. Cross-tenant
+   * copies are not allowed because the storage backends resolve credentials for
+   * the current tenant only.
+   *
+   * @param {import('@sap/cds').Entity} sourceAttachmentsEntity - Source attachment entity definition.
+   *   Pass `sourceAttachmentsEntity.drafts` to copy from a draft-only source.
+   * @param {object} sourceKeys - Keys identifying the source attachment (e.g. { ID: '...' })
+   * @param {import('@sap/cds').Entity} targetAttachmentsEntity - Target attachment entity definition.
+   *   Pass `targetAttachmentsEntity.drafts` to insert into the draft shadow table (i.e. when the target
+   *   parent entity is currently in a draft editing session). In that case targetKeys must include
+   *   DraftAdministrativeData_DraftUUID.
+   * @param {object} [targetKeys={}] - Parent FK fields for the new record (e.g. { up__ID: '...' }).
+   *   When targeting a draft table, must also include DraftAdministrativeData_DraftUUID.
+   *   Protected fields (status, hash, url, etc.) are stripped automatically.
+   * @returns {Promise<object>} - New attachment metadata (without content)
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (DB)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const content = await this.get(sourceAttachmentsEntity, sourceKeys)
+    const newRecord = {
+      ...source,
+      // Must be spread into afterwards else source up_ overrides target keys
+      ...safeTargetKeys,
+      ID: newID,
+      url: newUrl,
+    }
+    await INSERT.into(targetAttachmentsEntity).entries({
+      ...newRecord,
+      content,
+    })
+    return newRecord
   }
 
   /**

@@ -16,15 +16,22 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Changes in the CDS Models](#changes-in-the-cds-models)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
+      - [Rate Limit Handling (Auto-Retry)](#rate-limit-handling-auto-retry)
+      - [Scan Concurrency Limiting](#scan-concurrency-limiting)
       - [Automatic file rescanning](#automatic-file-rescanning)
+    - [Audit logging](#audit-logging)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
+    - [Copying Attachments](#copying-attachments)
+      - [Examples](#examples)
+    - [Querying Attachments Programmatically](#querying-attachments-programmatically)
     - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
       - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
       - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
+    - [Allow Overwriting Attachment Content](#allow-overwriting-attachment-content)
   - [Releases](#releases)
   - [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
   - [Architecture Overview](#architecture-overview)
@@ -155,6 +162,8 @@ Both methods directly add the respective UI Facet. To use the plugin with an SAP
 annotate service.Incidents with @odata.draft.enabled;
 ```
 
+If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
 ### Storage Targets
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
@@ -224,6 +233,60 @@ Scan status codes:
 > [!Note]
 > If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
 
+#### Rate Limit Handling (Auto-Retry)
+
+The SAP Malware Scanning Service enforces a rate limit of 30 concurrent requests per subaccount. When this limit is exceeded, the service responds with HTTP `429 Too Many Requests`. By default, the plugin automatically retries scan requests that receive a 429 response using exponential backoff with jitter.
+
+You can configure the retry behavior in `package.json` or `.cdsrc.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "retry": {
+          "maxAttempts": 5,
+          "initialDelay": 1000,
+          "maxDelay": 30000
+        }
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                            |
+| -------------------- | ------- | ------------------------------------------------------ |
+| `retry.maxAttempts`  | `5`     | Total number of attempts including the initial request |
+| `retry.initialDelay` | `1000`  | Base delay in milliseconds before the first retry      |
+| `retry.maxDelay`     | `30000` | Maximum delay in milliseconds between retries          |
+
+When a 429 response includes a `Retry-After` header, the plugin respects that value (capped at `maxDelay`). Only 429 responses trigger retries — other errors fail immediately.
+
+To disable retry and restore the previous behavior (immediate failure on 429), set `retry` to `false`.
+
+#### Scan Concurrency Limiting
+
+To reduce pressure on the shared rate limit, the plugin limits how many scan requests run concurrently within a single process. Excess scans are queued and processed as slots become available.
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "maxConcurrentScans": 10
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                                                                            |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `maxConcurrentScans` | `30`    | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
+
+A scan that is retrying due to a 429 response holds its concurrency slot during the backoff wait, preventing retry storms from competing with new scans.
+
 #### Automatic file rescanning
 
 According to the recommendation of the [Malware Scanning Service](http://help.sap.com/docs/malware-scanning-service/sap-malware-scanning-service/developing-applications-with-sap-malware-scanning-service), attachments should be rescanned automatically if the last scan is older than 3 days. This behavior can be configured in the attachments settings by specifying the `scanExpiryMs` property:
@@ -241,6 +304,23 @@ According to the recommendation of the [Malware Scanning Service](http://help.sa
 ```
 
 By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
+
+### Audit logging
+
+The attachment service emits the following three events:
+
+- AttachmentDownloadRejected,
+- AttachmentSizeExceeded,
+- AttachmentUploadRejected
+
+When `@cap-js/audit-logging` is a dependency of your app, the three events will be automatically logged as security events in the audit log service.
+
+You can register custom handlers for the three events by writing:
+
+```js
+const attachments = await cds.connect.to("attachments")
+attachments.on("AttachmentDownloadRejected", (msg) => {})
+```
 
 ### Visibility Control for Attachments UI Facet Generation
 
@@ -271,6 +351,99 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
+
+### Copying Attachments
+
+The `AttachmentsService` exposes a programmatic `copy()` method that copies an attachment to a new record. On cloud storage backends (AWS S3, Azure Blob Storage, GCP Cloud Storage) this uses a backend-native server-side copy — no binary data is transferred through your application. On database storage it reads and inserts the content directly.
+
+**Signature:**
+
+```js
+const AttachmentsSrv = await cds.connect.to("attachments")
+await AttachmentsSrv.copy(
+  sourceAttachmentsEntity,
+  sourceKeys,
+  targetAttachmentsEntity,
+  (targetKeys = {}),
+)
+```
+
+| Parameter                 | Description                                                                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceAttachmentsEntity` | CDS entity definition of the source attachment composition.                                                                                                             |
+| `sourceKeys`              | Keys of the attachment (e.g. `{ ID: '...' }`)                                                                                                                           |
+| `targetAttachmentsEntity` | CDS entity definition of the target attachment composition.                                                                                                             |
+| `targetKeys`              | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachmentsEntity` is a draft table, must also include `DraftAdministrativeData_DraftUUID`. |
+
+The scan `status`, `lastScan`, and `hash` are inherited from the source — no re-scan is triggered since the binary content is identical. Copying an attachment when the status is not `Clean` is rejected with a `400` error.
+
+> [!NOTE]
+> Only copies within the same tenant are supported. Cross-tenant copies are not possible.
+
+#### Examples
+
+<details>
+
+<summary>copy between two active records:</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments,
+  { up__ID: targetIncidentID },
+)
+```
+
+</details>
+
+<details>
+
+<summary>copy into a new draft record (e.g. creating an incident from a template)</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+// Look up the draft session UUID for the target incident's open draft
+const targetDraft = await SELECT.one
+  .from(Incidents.drafts, { ID: targetIncidentID })
+  .columns("DraftAdministrativeData_DraftUUID")
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments.drafts,
+  {
+    up__ID: targetIncidentID,
+    DraftAdministrativeData_DraftUUID:
+      targetDraft.DraftAdministrativeData_DraftUUID,
+  },
+)
+```
+
+</details>
+
+### Querying Attachments Programmatically
+
+Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using [cds.ql](https://cap.cloud.sap/docs/node.js/cds-ql) in the same way as querying any other entity in a CAP service.
+
+The entity is accessible by its fully-qualified name `"<Entity>.attachments"` via `service.entities`, for example:
+
+```js
+const Attachments = ProcessorService.entities["Incidents.attachments"]
+```
+
+Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
+
+```js
+const attachmentsMeta = await SELECT.from(Attachments).where({
+  up__ID: incidentID,
+})
+```
+
+The `up__ID` column is the auto-generated foreign key back to the parent record. The suffix after `up__` is the parent entity's key field name (e.g. `ID`).
 
 ### Non-Draft Upload
 
@@ -354,6 +527,30 @@ entity Incidents {
   attachments: Composition of many Attachments;
 }
 ```
+
+### Allow Overwriting Attachment Content
+
+By default, the `Attachments` aspect annotates the entity with `@Capabilities.UpdateRestrictions.NonUpdateableProperties: [content]`, which prevents overwriting the content of an existing attachment. Any attempt to upload new content to an attachment that already has content will be rejected with a `409 Conflict` error.
+
+To allow overwriting attachment content, override the annotation with an empty array on the specific attachment composition:
+
+```cds
+using { Attachments } from '@cap-js/attachments';
+
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+// Allow content to be overwritten
+annotate Incidents.attachments with
+  @Capabilities.UpdateRestrictions.NonUpdateableProperties: [] {};
+```
+
+With this annotation in place, uploading new content via `PUT` to an attachment that already has content will overwrite the existing content instead of returning a `409` error.
+
+> [!NOTE]
+> This annotation is evaluated at runtime by all storage backends. When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
 
 ## Releases
 
@@ -449,6 +646,8 @@ resources:
 ### Tests
 
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the command `rm -rf node_modules` should be used before installation.
+
+For testing locally with a Postgres database, create a Podman (or Docker) container and run the command `podman compose -f tests/pg.yml up -d`. This should be run every time the container is stopped. On the initial setup, the database must be deployed with `npm run deploy:postgres`. From then on, running the tests with Postgres is simply `npm run test:postgres`. For more information on Postgres setup, see the official [Capire documentation](https://cap.cloud.sap/docs/guides/databases/postgres).
 
 The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, please see the section [Storage Targets](#storage-targets).

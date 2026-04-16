@@ -3,11 +3,17 @@ const {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  CopyObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { Upload } = require("@aws-sdk/lib-storage")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const utils = require("../lib/helper")
+const utils = require("../../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../../lib/helper")
 
 module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
@@ -165,31 +171,67 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      if (await this.exists(Key)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(Key))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
       }
 
-      const input = {
-        Bucket: bucket,
-        Key,
-        Body: content,
-      }
+      const attachmentRef = await SELECT.one("filename")
+        .from(attachments)
+        .where({ ID: { "=": data.ID } })
+
+      const maxFileSize =
+        attachments.elements.content["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              attachments.elements.content["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
 
       LOG.info("Uploading file to S3", {
         bucket: bucket,
         key: Key,
-        contentSize: content.length || content.size || "unknown",
+        maxFileSize,
       })
 
       const multipartUpload = new Upload({
         client: client,
-        params: input,
+        params: {
+          Bucket: bucket,
+          Key,
+          Body: content,
+        },
       })
 
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => {
+          multipartUpload.abort()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+        },
+      })
+
+      content.on("data", handler)
+
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await multipartUpload.done()
+      try {
+        await multipartUpload.done()
+      } catch (err) {
+        if (getSizeExceeded()) {
+          throw createError()
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
@@ -288,6 +330,43 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
       throw error
     }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (S3)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { client, bucket } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    await client.send(
+      new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${bucket}/${source.url}`,
+        Key: newUrl,
+      }),
+    )
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
   }
 
   /**

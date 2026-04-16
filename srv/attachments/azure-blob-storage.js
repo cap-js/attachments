@@ -1,7 +1,13 @@
 const { BlobServiceClient } = require("@azure/storage-blob")
+const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
-const utils = require("../lib/helper")
+const utils = require("../../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../../lib/helper")
 
 module.exports = class AzureAttachmentsService extends (
   require("./object-store")
@@ -125,7 +131,7 @@ module.exports = class AzureAttachmentsService extends (
     })
     const { containerClient } = await this.retrieveClient()
     try {
-      let { content: _content, ...metadata } = data
+      let { content, ...metadata } = data
       const blobName = metadata.url
 
       if (!blobName) {
@@ -133,56 +139,79 @@ module.exports = class AzureAttachmentsService extends (
           "File key/URL is required for Azure Blob Storage upload",
           null,
           "Ensure attachment data includes a valid URL/key",
-          { metadata: { ...metadata, content: !!_content } },
+          { metadata: { ...metadata, content: !!content } },
         )
         throw new Error("File key is required for upload")
       }
 
-      if (!_content) {
+      if (!content) {
         LOG.error(
           "File content is required for Azure Blob Storage upload",
           null,
           "Ensure attachment data includes file content",
-          { key: blobName, hasContent: !!_content },
+          { key: blobName, hasContent: !!content },
         )
         throw new Error("File content is required for upload")
       }
 
       const blobClient = containerClient.getBlockBlobClient(blobName)
 
-      if (await this.exists(blobName)) {
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(blobName))
+      ) {
         const error = new Error("Attachment already exists")
         error.status = 409
         throw error
       }
 
+      const attachmentRef = await SELECT.one("filename")
+        .from(attachments)
+        .where({ ID: { "=": data.ID } })
+
+      const maxFileSize =
+        attachments.elements.content["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              attachments.elements.content["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
+
       LOG.debug("Uploading file to Azure Blob Storage", {
         containerName: containerClient.containerName,
         blobName,
-        contentSize: _content.length || _content.size || "unknown",
+        maxFileSize,
       })
 
-      // Handle different content types for update
-      let contentLength
-      const content = _content
-      if (Buffer.isBuffer(content)) {
-        contentLength = content.length
-      } else if (content && typeof content.length === "number") {
-        contentLength = content.length
-      } else if (content && typeof content.size === "number") {
-        contentLength = content.size
-      } else {
-        // Convert to buffer if needed
-        const chunks = []
-        for await (const chunk of content) {
-          chunks.push(chunk)
-        }
-        _content = Buffer.concat(chunks)
-        contentLength = _content.length
-      }
+      const sizeLimit =
+        attachments.elements.content["@Validation.Maximum"] || "400MB"
+
+      const abortController = new AbortController()
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename: attachmentRef?.filename,
+        sizeLimit,
+        onSizeExceeded: () => {
+          abortController.abort()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+        },
+      })
+
+      content.on("data", handler)
 
       // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
-      await blobClient.upload(_content, contentLength)
+      try {
+        await blobClient.uploadStream(content, undefined, undefined, {
+          abortSignal: abortController.signal,
+        })
+      } catch (err) {
+        if (getSizeExceeded()) {
+          throw createError()
+        }
+        throw err
+      }
+
       await super.put(attachments, metadata)
 
       const duration = Date.now() - startTime
@@ -280,6 +309,39 @@ module.exports = class AzureAttachmentsService extends (
   }
 
   /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (Azure)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { containerClient } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    const sourceBlobClient = containerClient.getBlockBlobClient(source.url)
+    const targetBlobClient = containerClient.getBlockBlobClient(newUrl)
+    await targetBlobClient.syncCopyFromURL(sourceBlobClient.url)
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
+  }
+
+  /**
    * Deletes a file from Azure Blob Storage
    * @param {string} Key - The key of the file to delete
    * @returns {Promise} - Promise resolving when deletion is complete
@@ -291,9 +353,18 @@ module.exports = class AzureAttachmentsService extends (
     )
 
     const blobClient = containerClient.getBlockBlobClient(blobName)
-    const response = await blobClient.delete()
+    let response
+    try {
+      response = await blobClient.delete()
+    } catch (error) {
+      if (error.statusCode === 404) {
+        response = error
+      } else {
+        throw error
+      }
+    }
 
-    if (response._response.status !== 202) {
+    if (response._response?.status !== 202) {
       LOG.warn("File has not been deleted from Azure Blob Storage", {
         blobName,
         containerName: containerClient.containerName,

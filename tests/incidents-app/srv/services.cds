@@ -6,7 +6,9 @@ using from '../db/attachments';
  */
 service ProcessorService {
   @cds.redirection.target
-  entity Incidents                    as projection on my.Incidents;
+  entity Incidents                    as projection on my.Incidents actions {
+    action copyIncident() returns Incidents;
+  };
 
   entity Customers @readonly          as projection on my.Customers;
 
@@ -24,6 +26,19 @@ service ProcessorService {
 
   @odata.draft.enabled
   entity SingleAttachment             as projection on my.SingleAttachment;
+  
+  entity Posts as projection on my.Posts;
+
+  entity Comments as projection on my.Comments;
+
+  @odata.draft.enabled
+  entity Level0 as projection on my.Level0;
+
+  entity Level0Notes as projection on my.Level0Notes;
+  entity Level1 as projection on my.Level1;
+  entity Level1Tags as projection on my.Level1Tags;
+  entity Level2 as projection on my.Level2;
+  entity Level3 as projection on my.Level3;
 
   action insertTestData() returns String;
 }
