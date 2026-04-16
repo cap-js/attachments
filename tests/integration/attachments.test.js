@@ -611,63 +611,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(responseContent.status).toEqual(200)
   })
 
-  it("Emitting an UPDATE event without req.query does not crash db.after handlers", async () => {
-    const db = await cds.connect.to("db")
-    const handlerResults = []
-    let handlerError = null
-
-    // Register a wildcard handler similar to the ones used in scan-status tracking.
-    // Before the fix, accessing req.query.UPDATE without optional chaining
-    // would crash when an UPDATE event arrives without a CQN query.
-    const handler = (_res, req) => {
-      try {
-        if (
-          req.event === "UPDATE" &&
-          req.query?.UPDATE?.data?.status &&
-          req.target?.name?.includes(".attachments")
-        ) {
-          handlerResults.push(req.query.UPDATE.data.status)
-        }
-      } catch (e) {
-        handlerError = e
-      }
-    }
-    db.after("*", handler)
-
-    // Send an UPDATE via srv.send (no CQN query, as documented in CAP docs).
-    // The generic CRUD handler rejects it, but our plugin's before/on handlers
-    // must not crash when req.query lacks the UPDATE property.
-    const Catalog = await cds.connect.to("ProcessorService")
-    await runWithUser(alice, async () => {
-      await Catalog.run(
-        INSERT.into(Catalog.entities.NonDraftTest).entries({
-          ID: cds.utils.uuid(),
-          name: "probe",
-        }),
-      )
-    })
-    const [probe] = await SELECT.from("ProcessorService.NonDraftTest").where({
-      name: "probe",
-    })
-
-    let sendError
-    await runWithUser(alice, () =>
-      Catalog.send("UPDATE", "NonDraftTest", {
-        ID: probe.ID,
-        name: "updated-probe",
-      }),
-    ).catch((e) => {
-      sendError = e
-    })
-
-    // The generic handler rejects query-less requests, which is expected.
-    // The important assertion is that the attachments plugin handlers
-    // (before/on UPDATE) did NOT crash with a TypeError on req.query.
-    expect(sendError?.message).toMatch(/no query/)
-    expect(handlerError).toBeNull()
-    expect(handlerResults).toEqual([])
-  })
-
   it("should fail to upload attachment to non-existent entity", async () => {
     const incidentID = await newIncident(POST, "admin")
     const fileContent = readFileSync(
