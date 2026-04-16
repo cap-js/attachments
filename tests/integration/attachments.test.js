@@ -2130,7 +2130,7 @@ describe("Tests for single attachment entity", () => {
       {},
     )
 
-    const { data: active } = await GET(
+    await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
 
