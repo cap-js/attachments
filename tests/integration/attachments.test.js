@@ -1438,23 +1438,21 @@ describe("Tests for single attachment entity", () => {
       myAttachment_filename: "large.txt",
     })
 
-    const largeContent = "a".repeat(6 * 1024 * 1024) // 6MB string
-
-    const promise = PUT(
+    let expectedError
+    await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
-      largeContent,
+      createReadStream(join(__dirname, "content/sample.pdf")),
       {
         headers: {
           "Content-Type": "text/plain",
-          "Content-Length": Buffer.byteLength(largeContent),
+          "Content-Length": 6 * 1024 * 1024,
         },
       }
-    )
+    ).catch((e) => { expectedError = e })
 
-    await expect(promise).rejects.toThrow("413")
-    const err = await promise.catch((e) => e)
-    expect(err.response.data.error.message).toMatch(
-      'The size of "large.txt" exceeds the maximum allowed limit of 400MB',
+    expect(expectedError.response.status).toEqual(413)
+    expect(expectedError.response.data.error.message).toMatch(
+      'The size of "large.txt" exceeds the maximum allowed limit of 5MB',
     )
   })
 

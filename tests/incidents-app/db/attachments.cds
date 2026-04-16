@@ -58,3 +58,9 @@ extend my.SingleTestDetails with {
 extend my.SingleAttachment with {
   myAttachment : Attachment;
 }
+
+annotate my.SingleAttachment with {
+  myAttachment {
+    content @Validation.Maximum: '5MB';
+  }
+}
