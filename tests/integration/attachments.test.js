@@ -2016,7 +2016,7 @@ describe("Tests for single attachment entity", () => {
   })
 
   it("Should create a SingleAttachment with content in a single POST", async () => {
-    const fileContent = "inline attachment content via single POST"
+    const fileContent = "inline attachment content via single POST!!"
     const fileContentB64 = Buffer.from(fileContent).toString("base64")
 
     const { data: singleAttachment } = await POST(
