@@ -255,7 +255,7 @@ class AttachmentsService extends cds.Service {
             return
           }
           await Promise.all(
-            req.target?._attachments?.attachmentCompositions.map(
+            req.target._attachments.attachmentCompositions.map(
               (attachmentsEle) => {
                 const target = traverseEntity(req.target, attachmentsEle)
                 if (!target) {
@@ -353,7 +353,7 @@ class AttachmentsService extends cds.Service {
     if (attachments.length) {
       req.attachmentsToDelete = attachments.map((a) => ({
         ...a,
-        target: req.target?.name,
+        target: req.target.name,
       }))
     }
   }
@@ -386,7 +386,7 @@ class AttachmentsService extends cds.Service {
   async attachDeletionData(req) {
     if (!req.target?.drafts) return
     const attachmentCompositions =
-      req?.target?._attachments.attachmentCompositions
+      req.target._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
@@ -411,7 +411,7 @@ class AttachmentsService extends cds.Service {
       }
 
       const [draft, active] = await Promise.all([
-        SELECT.one.from(req.target?.drafts).where(whereCond).columns(columns),
+        SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
         SELECT.one.from(req.target).where(whereCond).columns(columns),
       ])
       // If no draft exists at all, this means it is the bypass draft option where
@@ -439,7 +439,7 @@ class AttachmentsService extends cds.Service {
         // Find attachments present in the draft entity but not in the active using HasActiveEntity flag when deleting
         if (
           req.event === "DELETE" &&
-          req.subject?.ref?.[0]?.id === req.target?.drafts?.name
+          req.subject?.ref?.[0]?.id === req.target.drafts.name
         ) {
           const newAndDiscarded = draftAttachments.filter(
             (att) => att.url && !att.HasActiveEntity,
