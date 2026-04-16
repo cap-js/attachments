@@ -47,6 +47,12 @@
   "cds": {
     "requires": {
       "malwareScanner": {
+        "retry": {
+          "maxAttempts": 5,
+          "initialDelay": 1000,
+          "maxDelay": 30000,
+          "maxConcurrentScans": 30
+        },
         "vcap": {
           "label": "malware-scanner"
         }

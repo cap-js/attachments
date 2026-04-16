@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 3.12.0 - Upcoming
 
+### Added
+
+- A maximum concurrent amount of scans can now be configured for the malware scanner.
+
+### Changed
+
+- The retry logic for the malware scanner was improved to be more robust under high loads.
+
 ### Fixed
 
 - Wrong file name being shown when rejecting an attachment due to file size.

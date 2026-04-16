@@ -127,11 +127,16 @@ class AttachmentsService extends cds.Service {
       res = await Promise.all(
         data.map(async (d) => {
           const res = await UPSERT(d).into(attachments)
-          const attachmentForHash = await this.get(attachments, { ID: d.ID })
-          // If this is just the PUT for metadata, there is not yet any file to retrieve
-          if (attachmentForHash) {
-            const hash = await computeHash(attachmentForHash)
-            await this.update(attachments, { ID: d.ID }, { hash })
+          // When scanning is enabled, skip hash computation here — the malware
+          // scanner returns SHA-256 in its response and writes the hash itself.
+          // This avoids a redundant file read (expensive for object store backends).
+          const scanEnabled = cds.env.requires?.attachments?.scan !== false
+          if (!scanEnabled || !this._skipInlineHash) {
+            const attachmentForHash = await this.get(attachments, { ID: d.ID })
+            if (attachmentForHash) {
+              const hash = await computeHash(attachmentForHash)
+              await this.update(attachments, { ID: d.ID }, { hash })
+            }
           }
           return res
         }),
