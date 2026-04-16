@@ -38,7 +38,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -226,7 +226,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.after("*", (res, req) => {
       if (
         req.event === "UPDATE" &&
-        req.query.UPDATE.data.status &&
+        req.query?.UPDATE?.data?.status &&
         req.target.name.includes(".attachments")
       ) {
         ScanStates.push(req.query.UPDATE.data.status)
@@ -376,7 +376,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     db.before("*", (req) => {
       if (
         req.event === "CREATE" &&
-        req.target?.name === "cds.outbox.Messages"
+        req.target?.name === "cds.outbox.Messages" &&
+        req.query?.INSERT?.entries?.[0]?.msg
       ) {
         const msg = JSON.parse(req.query.INSERT.entries[0].msg)
         attachmentIDs.push(msg.data.url)
@@ -608,6 +609,18 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments(up__ID=${incidentID},ID=${attachmentsID},IsActiveEntity=true)/content`,
     )
     expect(responseContent.status).toEqual(200)
+  })
+
+  it("Calling a CAP action via srv.send does not crash handlers", async () => {
+    const srv = await cds.connect.to("ProcessorService")
+
+    // srv.send dispatches a request with no CQN query — the pattern
+    // CAP docs show for calling custom actions programmatically.
+    const result = await runWithUser(alice, () =>
+      srv.send({ method: 'POST', path: "ProcessorService.insertTestData", data: {} }),
+    )
+
+    expect(result).toBe("Test data inserted")
   })
 
   it("should fail to upload attachment to non-existent entity", async () => {
