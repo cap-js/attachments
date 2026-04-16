@@ -275,7 +275,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).catch((e) => {
       expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain(
-        "The last scan is older than 3 days. Please wait while the attachment is being re-scanned.",
+        "The previous scan was more than 3 days ago, please wait for the attachment to be rescanned.",
       )
     })
   })
@@ -2151,7 +2151,7 @@ describe("Tests for single attachment entity", () => {
 
     expect(getRes.status).toEqual(202)
     expect(getRes.data?.error?.message).toBe(
-      "The last scan is older than 3 days. Please wait while the attachment is being rescanned.",
+      "The previous scan was more than 3 days ago, please wait for the attachment to be rescanned.",
     )
   })
 })

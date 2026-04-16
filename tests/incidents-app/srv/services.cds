@@ -26,7 +26,8 @@ service ProcessorService {
 
   @odata.draft.enabled
   entity SingleAttachment             as projection on my.SingleAttachment;
-  
+
+  @odata.draft.enabled
   entity Posts as projection on my.Posts;
 
   entity Comments as projection on my.Comments;
