@@ -150,7 +150,7 @@ module.exports = class GoogleAttachmentsService extends (
         throw new Error("File key is required for upload")
       }
 
-      if (!content) {
+      if (!content || !content.on) {
         LOG.error(
           "File content is required for Google Cloud Platform upload",
           null,

@@ -161,7 +161,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         return
       }
 
-      if (!content) {
+      if (!content || !content.on) {
         LOG.error(
           "File content is required for S3 upload",
           null,
