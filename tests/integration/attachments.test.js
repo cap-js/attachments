@@ -1945,6 +1945,7 @@ describe("Tests for single attachment entity", () => {
   })
 
   it("Should create a SingleAttachment with an attachment", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
     const { data: singleAttachment } = await POST(
       "/odata/v4/processor/SingleAttachment",
       {
@@ -1973,6 +1974,8 @@ describe("Tests for single attachment entity", () => {
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
       {},
     )
+
+    await scanCleanWaiter
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
