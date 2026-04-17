@@ -661,7 +661,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(result).toBe("Test data inserted")
   })
 
-  it("should fail to upload attachment to non-existent entity", async () => {
+  it("Should fail to upload attachment to non-existent entity", async () => {
     const incidentID = await newIncident(POST, "admin")
     const fileContent = readFileSync(
       join(__dirname, "..", "integration", "content/sample.pdf"),
@@ -681,7 +681,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
   })
 
-  it("should fail to update note for non-existent attachment", async () => {
+  it("Should fail to update note for non-existent attachment", async () => {
     const incidentID = await newIncident(POST, "admin")
     await PATCH(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${cds.utils.uuid()})`,
@@ -2032,7 +2032,7 @@ describe("Tests for single attachment entity", () => {
   })
 
   it("Should create a SingleAttachment with content in a single POST", async () => {
-    const fileContent = "inline attachment content via single POST!!"
+    const fileContent = "inline attachment content via single POST!"
     const fileContentB64 = Buffer.from(fileContent).toString("base64")
 
     const { data: singleAttachment } = await POST(
@@ -2965,7 +2965,7 @@ describe("Row-level security on attachments composition", () => {
     )
   })
 
-  it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
+  it("Should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
     // Now, try to GET the attachment content as alice
     const getRes = await GET(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`,
@@ -2977,7 +2977,7 @@ describe("Row-level security on attachments composition", () => {
     expect(getRes.data).toBeTruthy()
   })
 
-  it("should reject CREATE attachment for unauthorized user", async () => {
+  it("Should reject CREATE attachment for unauthorized user", async () => {
     await POST(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=false)/attachments`,
       {
@@ -2991,7 +2991,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject UPDATE attachment for unauthorized user", async () => {
+  it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
     await utils.draftModeEdit(
       "restriction",
@@ -3016,7 +3016,7 @@ describe("Row-level security on attachments composition", () => {
     )
   })
 
-  it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
+  it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
     await GET(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)/content`,
       {
@@ -3027,7 +3027,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject DELETE attachment for unauthorized user", async () => {
+  it("Should reject DELETE attachment for unauthorized user", async () => {
     await DELETE(
       `/odata/v4/restriction/DraftIcidents(ID=${restrictionID},IsActiveEntity=true)/attachments(up__ID=${restrictionID},ID=${attachmentID},IsActiveEntity=true)`,
       {
@@ -3038,7 +3038,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should not allow bob to PUT into file alice has POSTed", async () => {
+  it("Should not allow bob to PUT into file alice has POSTed", async () => {
     await utils.draftModeEdit(
       "restriction",
       "DraftIcidents",
@@ -3085,7 +3085,7 @@ describe("Tests for renaming duplicate attachments", () => {
     utils = new RequestSend(POST)
   })
 
-  it("should rename duplicate attachments when both are added to same draft", async () => {
+  it("Should rename duplicate attachments when both are added to same draft", async () => {
     const incidentID = await newIncident(POST, "processor")
 
     await utils.draftModeEdit(
@@ -3166,7 +3166,7 @@ describe("Tests for renaming duplicate attachments", () => {
     expect(filenames).toEqual(["sample-1.pdf", "sample-2.pdf", "sample.pdf"])
   })
 
-  it("should rename duplicate attachments when first one has been saved", async () => {
+  it("Should rename duplicate attachments when first one has been saved", async () => {
     const incidentID = await newIncident(POST, "processor")
 
     // Upload first attachment
@@ -3222,7 +3222,7 @@ describe("Tests for renaming duplicate attachments", () => {
     expect(filenames).toEqual(["sample-1.pdf", "sample.pdf"])
   })
 
-  it("should rename duplicate attachments when they already end with -1", async () => {
+  it("Should rename duplicate attachments when they already end with -1", async () => {
     const incidentID = await newIncident(POST, "processor")
 
     await utils.draftModeEdit(
