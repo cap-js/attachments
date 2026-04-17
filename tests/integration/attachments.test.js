@@ -644,6 +644,22 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       'The size of "toobig.txt" exceeds the maximum allowed limit of 1KB',
     )
   })
+  
+  it("Calling a CAP action via srv.send does not crash handlers", async () => {
+    const srv = await cds.connect.to("ProcessorService")
+
+    // srv.send dispatches a request with no CQN query — the pattern
+    // CAP docs show for calling custom actions programmatically.
+    const result = await runWithUser(alice, () =>
+      srv.send({
+        method: "POST",
+        path: "ProcessorService.insertTestData",
+        data: {},
+      }),
+    )
+
+    expect(result).toBe("Test data inserted")
+  })
 
   it("should fail to upload attachment to non-existent entity", async () => {
     const incidentID = await newIncident(POST, "admin")
