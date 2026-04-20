@@ -489,18 +489,14 @@ describe("Rescan triggered for Unscanned attachment", () => {
 
     cds.env.requires.attachments = { scan: true }
 
-    // rescan() is fire-and-forget (not awaited) inside validateAttachment.
-    // It awaits cds.connect.to("malwareScanner"), then calls cds.tx, cds.spawn,
-    // and throws a 202 error. To avoid unhandled rejection crashing Jest,
-    // return a never-resolving promise for "malwareScanner" — rescan will hang
-    // at the first await, proving it was triggered without producing a rejection.
-    cds.connect.to = jest.fn().mockImplementation((name) => {
-      if (name === "attachments") return Promise.resolve(attachmentsSvc)
-      if (name === "malwareScanner") return new Promise(() => {}) // never resolves
-      return originalConnectTo.call(cds.connect, name)
+    // rescan() is now awaited inside validateAttachment, so it will throw
+    // a 202 error. Verify it connects to malwareScanner and throws.
+    await expect(
+      require("../../lib/generic-handlers").validateAttachment(req),
+    ).rejects.toMatchObject({
+      status: 202,
+      code: "UnableToDownloadAttachmentScanStatusExpired",
     })
-
-    await require("../../lib/generic-handlers").validateAttachment(req)
 
     // Verify rescan was triggered: it connected to malwareScanner
     expect(cds.connect.to).toHaveBeenCalledWith("malwareScanner")
