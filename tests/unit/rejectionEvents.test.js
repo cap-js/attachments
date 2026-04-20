@@ -10,9 +10,11 @@ const {
 } = require("../../lib/generic-handlers")
 
 let attachmentsSvc
+let malwareScannerSvc
 let originalConnectTo
 let spawnCallback
 let originalSpawn
+let originalTx
 
 beforeEach(() => {
   jest.restoreAllMocks()
@@ -21,9 +23,14 @@ beforeEach(() => {
     emit: jest.fn().mockResolvedValue(undefined),
     getStatus: jest.fn(),
   }
+  malwareScannerSvc = {
+    updateStatus: jest.fn().mockResolvedValue(undefined),
+    emit: jest.fn().mockResolvedValue(undefined),
+  }
   originalConnectTo = cds.connect.to
   cds.connect.to = jest.fn().mockImplementation((name) => {
     if (name === "attachments") return Promise.resolve(attachmentsSvc)
+    if (name === "malwareScanner") return Promise.resolve(malwareScannerSvc)
     return originalConnectTo.call(cds.connect, name)
   })
 
@@ -33,11 +40,15 @@ beforeEach(() => {
     spawnCallback = fn
     return { on: jest.fn() }
   })
+
+  originalTx = cds.tx
+  cds.tx = jest.fn().mockImplementation(async (fn) => await fn())
 })
 
 afterEach(() => {
   cds.connect.to = originalConnectTo
   cds.spawn = originalSpawn
+  cds.tx = originalTx
 })
 
 describe("AttachmentUploadRejected event", () => {
@@ -454,5 +465,71 @@ describe("AttachmentDownloadRejected event", () => {
       "AttachmentDownloadRejected",
       expect.anything(),
     )
+  })
+})
+
+describe("Rescan triggered for Unscanned attachment", () => {
+  it("should trigger rescan when status is Unscanned", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    // rescan() is fire-and-forget (not awaited) inside validateAttachment.
+    // It awaits cds.connect.to("malwareScanner"), then calls cds.tx, cds.spawn,
+    // and throws a 202 error. To avoid unhandled rejection crashing Jest,
+    // return a never-resolving promise for "malwareScanner" — rescan will hang
+    // at the first await, proving it was triggered without producing a rejection.
+    cds.connect.to = jest.fn().mockImplementation((name) => {
+      if (name === "attachments") return Promise.resolve(attachmentsSvc)
+      if (name === "malwareScanner") return new Promise(() => {}) // never resolves
+      return originalConnectTo.call(cds.connect, name)
+    })
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    // Verify rescan was triggered: it connected to malwareScanner
+    expect(cds.connect.to).toHaveBeenCalledWith("malwareScanner")
+  })
+
+  it("should not trigger rescan when scan is disabled", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: false }
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    expect(malwareScannerSvc.updateStatus).not.toHaveBeenCalled()
+    expect(cds.spawn).not.toHaveBeenCalled()
+    expect(req.reject).not.toHaveBeenCalled()
   })
 })
