@@ -10,6 +10,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Security audit events (`AttachmentSizeExceeded`, `AttachmentUploadRejected`, `AttachmentDownloadRejected`) now log the real client IP on reverse-proxy deployments (e.g. BTP Cloud Foundry) by reading `X-Forwarded-For` with fallback to `socket.remoteAddress`.
 
+## Version 3.12.0
+
+### Added
+
+- A maximum concurrent amount of scans can now be configured for the malware scanner.
+
+### Changed
+
+- The retry logic for the malware scanner was improved to be more robust under high loads.
+
+### Fixed
+
+- Wrong file name being shown when rejecting an attachment due to file size.
+- Fix a server crash when uploading extensions due to wrongfully assuming each request has a query attached.
+
 ## Version 3.11.0
 
 ### Added

@@ -16,12 +16,15 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Changes in the CDS Models](#changes-in-the-cds-models)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
+      - [Rate Limit Handling (Auto-Retry)](#rate-limit-handling-auto-retry)
+      - [Scan Concurrency Limiting](#scan-concurrency-limiting)
       - [Automatic file rescanning](#automatic-file-rescanning)
     - [Audit logging](#audit-logging)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
     - [Copying Attachments](#copying-attachments)
       - [Examples](#examples)
+    - [Querying Attachments Programmatically](#querying-attachments-programmatically)
     - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
@@ -159,6 +162,8 @@ Both methods directly add the respective UI Facet. To use the plugin with an SAP
 annotate service.Incidents with @odata.draft.enabled;
 ```
 
+If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
 ### Storage Targets
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
@@ -227,6 +232,60 @@ Scan status codes:
 
 > [!Note]
 > If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
+
+#### Rate Limit Handling (Auto-Retry)
+
+The SAP Malware Scanning Service enforces a rate limit of 30 concurrent requests per subaccount. When this limit is exceeded, the service responds with HTTP `429 Too Many Requests`. By default, the plugin automatically retries scan requests that receive a 429 response using exponential backoff with jitter.
+
+You can configure the retry behavior in `package.json` or `.cdsrc.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "retry": {
+          "maxAttempts": 5,
+          "initialDelay": 1000,
+          "maxDelay": 30000
+        }
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                            |
+| -------------------- | ------- | ------------------------------------------------------ |
+| `retry.maxAttempts`  | `5`     | Total number of attempts including the initial request |
+| `retry.initialDelay` | `1000`  | Base delay in milliseconds before the first retry      |
+| `retry.maxDelay`     | `30000` | Maximum delay in milliseconds between retries          |
+
+When a 429 response includes a `Retry-After` header, the plugin respects that value (capped at `maxDelay`). Only 429 responses trigger retries — other errors fail immediately.
+
+To disable retry and restore the previous behavior (immediate failure on 429), set `retry` to `false`.
+
+#### Scan Concurrency Limiting
+
+To reduce pressure on the shared rate limit, the plugin limits how many scan requests run concurrently within a single process. Excess scans are queued and processed as slots become available.
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "maxConcurrentScans": 10
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                                                                            |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `maxConcurrentScans` | `30`    | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
+
+A scan that is retrying due to a 429 response holds its concurrency slot during the backoff wait, preventing retry storms from competing with new scans.
 
 #### Automatic file rescanning
 
@@ -365,6 +424,26 @@ await AttachmentsSrv.copy(
 ```
 
 </details>
+
+### Querying Attachments Programmatically
+
+Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using [cds.ql](https://cap.cloud.sap/docs/node.js/cds-ql) in the same way as querying any other entity in a CAP service.
+
+The entity is accessible by its fully-qualified name `"<Entity>.attachments"` via `service.entities`, for example:
+
+```js
+const Attachments = ProcessorService.entities["Incidents.attachments"]
+```
+
+Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
+
+```js
+const attachmentsMeta = await SELECT.from(Attachments).where({
+  up__ID: incidentID,
+})
+```
+
+The `up__ID` column is the auto-generated foreign key back to the parent record. The suffix after `up__` is the parent entity's key field name (e.g. `ID`).
 
 ### Non-Draft Upload
 

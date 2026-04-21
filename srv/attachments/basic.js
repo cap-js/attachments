@@ -5,7 +5,7 @@ const {
   computeHash,
   traverseEntity,
   buildBackAssocChain,
-} = require("../lib/helper")
+} = require("../../lib/helper")
 
 class AttachmentsService extends cds.Service {
   init() {
@@ -127,11 +127,16 @@ class AttachmentsService extends cds.Service {
       res = await Promise.all(
         data.map(async (d) => {
           const res = await UPSERT(d).into(attachments)
-          const attachmentForHash = await this.get(attachments, { ID: d.ID })
-          // If this is just the PUT for metadata, there is not yet any file to retrieve
-          if (attachmentForHash) {
-            const hash = await computeHash(attachmentForHash)
-            await this.update(attachments, { ID: d.ID }, { hash })
+          // When scanning is enabled, skip hash computation here — the malware
+          // scanner returns SHA-256 in its response and writes the hash itself.
+          // This avoids a redundant file read (expensive for object store backends).
+          const scanEnabled = cds.env.requires?.attachments?.scan !== false
+          if (!scanEnabled || !this._skipInlineHash) {
+            const attachmentForHash = await this.get(attachments, { ID: d.ID })
+            if (attachmentForHash) {
+              const hash = await computeHash(attachmentForHash)
+              await this.update(attachments, { ID: d.ID }, { hash })
+            }
           }
           return res
         }),
@@ -247,10 +252,10 @@ class AttachmentsService extends cds.Service {
         "SAVE",
         async function saveDraftAttachments(res, req) {
           if (
-            req.target.isDraft ||
-            !req.target.drafts ||
-            !req.target._attachments.hasAttachmentsComposition ||
-            !req.target._attachments.attachmentCompositions
+            req.target?.isDraft ||
+            !req.target?.drafts ||
+            !req.target?._attachments?.hasAttachmentsComposition ||
+            !req.target?._attachments?.attachmentCompositions
           ) {
             return
           }
@@ -386,7 +391,7 @@ class AttachmentsService extends cds.Service {
   async attachDeletionData(req) {
     if (!req.target?.drafts) return
     const attachmentCompositions =
-      req?.target?._attachments.attachmentCompositions
+      req.target._attachments.attachmentCompositions
     if (attachmentCompositions.length > 0) {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
@@ -439,7 +444,7 @@ class AttachmentsService extends cds.Service {
         // Find attachments present in the draft entity but not in the active using HasActiveEntity flag when deleting
         if (
           req.event === "DELETE" &&
-          req.subject?.ref?.[0]?.id === req.target.drafts?.name
+          req.subject?.ref?.[0]?.id === req.target.drafts.name
         ) {
           const newAndDiscarded = draftAttachments.filter(
             (att) => att.url && !att.HasActiveEntity,
