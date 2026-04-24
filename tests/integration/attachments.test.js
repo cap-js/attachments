@@ -3176,7 +3176,12 @@ describe("Tests for renaming duplicate attachments", () => {
         "ProcessorService",
       )
 
-      const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+      const filepath = join(
+        __dirname,
+        "..",
+        "integration",
+        `content/sample.pdf`,
+      )
       // Upload first attachment
       await POST(
         `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
