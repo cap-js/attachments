@@ -127,6 +127,7 @@
         "attachments": {
           "kind": "standard",
           "scan": true,
+          "deduplicateFileNames": true,
           "objectStore": {
             "kind": "separate"
           }
