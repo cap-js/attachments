@@ -96,6 +96,7 @@
       "attachments": {
         "outbox": true,
         "scan": true,
+        "deduplicateFileNames": true,
         "scanExpiryMs": 259200000,
         "objectStore": {
           "kind": "separate"
@@ -127,7 +128,6 @@
         "attachments": {
           "kind": "standard",
           "scan": true,
-          "deduplicateFileNames": true,
           "objectStore": {
             "kind": "separate"
           }
