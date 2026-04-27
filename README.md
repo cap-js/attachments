@@ -32,6 +32,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
       - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
       - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
     - [Allow Overwriting Attachment Content](#allow-overwriting-attachment-content)
+    - [Deduplicate File Names](#deduplicate-file-names)
   - [Releases](#releases)
   - [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
   - [Architecture Overview](#architecture-overview)
@@ -551,6 +552,24 @@ With this annotation in place, uploading new content via `PUT` to an attachment 
 
 > [!NOTE]
 > This annotation is evaluated at runtime by all storage backends. When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
+
+### Deduplicate File Names
+
+When multiple attachments with the same file name are uploaded to the same parent entity, the plugin can automatically rename duplicates by appending a numerical suffix (e.g. `report.pdf`, `report-1.pdf`, `report-2.pdf`). This applies to both single uploads and deep inserts.
+
+The behavior is enabled by default. To disable it, set `deduplicateFileNames` to `false` in the attachments configuration:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "attachments": {
+        "deduplicateFileNames": false
+      }
+    }
+  }
+}
+```
 
 ## Releases
 
