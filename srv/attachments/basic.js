@@ -58,10 +58,15 @@ class AttachmentsService extends cds.Service {
         ],
         async (msg) => {
           const audit = await cds.connect.to("audit-log")
-          const { ipAddress, ...eventData } = msg.data
+          const { ipAddress, forwardedIp, ...eventData } = msg.data
+          const attributes = []
+          if (forwardedIp) {
+            attributes.push({ name: "x-forwarded-for", value: forwardedIp })
+          }
           await audit.log("SecurityEvent", {
             data: { event: msg.event, ...eventData },
             ip: ipAddress || undefined,
+            attributes,
           })
         },
       )
