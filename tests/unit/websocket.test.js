@@ -82,9 +82,7 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
     const emitCall = processorSrv.emit.mock.calls[0]
     const source = emitCall[1].sideEffectSource
     expect(source).toMatch(
-      new RegExp(
-        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=false\\)$`,
-      ),
+      new RegExp(`^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=false\\)$`),
     )
   })
 
@@ -114,9 +112,7 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
     const emitCall = processorSrv.emit.mock.calls[0]
     const source = emitCall[1].sideEffectSource
     expect(source).toMatch(
-      new RegExp(
-        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=true\\)$`,
-      ),
+      new RegExp(`^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=true\\)$`),
     )
   })
 
@@ -236,9 +232,9 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
   })
 
   it("adds @Common.SideEffects annotation to parent entities targeting attachment compositions", () => {
-    const incidents =
-      cds.model.definitions["ProcessorService.Incidents"]
-    const sideEffects = incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    const incidents = cds.model.definitions["ProcessorService.Incidents"]
+    const sideEffects =
+      incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
     expect(sideEffects).toBeDefined()
     expect(sideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
     expect(sideEffects.TargetEntities).toEqual([{ "=": "attachments" }])
@@ -249,10 +245,7 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
   it("adds SideEffects to parent entities for all attachment compositions", () => {
     // Parent entities should have SideEffects with qualifier per composition
     const incidents = cds.model.definitions["ProcessorService.Incidents"]
-    const compositionNames = [
-      "attachments",
-      "hiddenAttachments",
-    ]
+    const compositionNames = ["attachments", "hiddenAttachments"]
     for (const compName of compositionNames) {
       const qualifier = `attachmentStatusChanged_${compName}`
       const sideEffects = incidents[`@Common.SideEffects#${qualifier}`]
@@ -262,7 +255,8 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
     }
 
     const customers = cds.model.definitions["ProcessorService.Customers"]
-    const custSideEffects = customers["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    const custSideEffects =
+      customers["@Common.SideEffects#attachmentStatusChanged_attachments"]
     expect(custSideEffects).toBeDefined()
     expect(custSideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
     expect(custSideEffects.TargetEntities).toEqual([{ "=": "attachments" }])
@@ -270,9 +264,9 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
 
   it("does not add duplicate SideEffects if already present", async () => {
     // The model is already loaded and enhanced; verify no duplication
-    const incidents =
-      cds.model.definitions["ProcessorService.Incidents"]
-    const sideEffects = incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    const incidents = cds.model.definitions["ProcessorService.Incidents"]
+    const sideEffects =
+      incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
     expect(sideEffects).toBeDefined()
     expect(sideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
     expect(sideEffects.SourceEvents).toHaveLength(1)

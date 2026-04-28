@@ -3690,9 +3690,7 @@ describe("Tests for copy() on AttachmentsService", () => {
 
 describe("$metadata includes SideEffects for attachment compositions", () => {
   it("ProcessorService $metadata contains attachmentStatusChanged SideEffects on parent entities", async () => {
-    const { data } = await GET(
-      `odata/v4/processor/$metadata?$format=json`,
-    )
+    const { data } = await GET(`odata/v4/processor/$metadata?$format=json`)
     const jsonStr = JSON.stringify(data)
 
     // SideEffects annotation with our qualifier must be present on parent entity
