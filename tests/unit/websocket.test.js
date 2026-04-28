@@ -48,8 +48,8 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("updateStatus - attachmentStatusChanged event emission", () => {
-  const _target =
-    () => cds.model.definitions["ProcessorService.Incidents.attachments"]
+  const _target = () =>
+    cds.model.definitions["ProcessorService.Incidents.attachments"]
 
   it("emits attachmentStatusChanged with draft path when draft exists", async () => {
     const target = _target()
@@ -229,8 +229,7 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
       "RestrictionService",
     ]
     for (const srv of services) {
-      const eventDef =
-        cds.model.definitions[`${srv}.attachmentStatusChanged`]
+      const eventDef = cds.model.definitions[`${srv}.attachmentStatusChanged`]
       expect(eventDef).toBeDefined()
       expect(eventDef.kind).toBe("event")
     }
@@ -243,7 +242,9 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
       attachments["@Common.SideEffects#attachmentStatusChanged.SourceEvents"],
     ).toEqual(["attachmentStatusChanged"])
     expect(
-      attachments["@Common.SideEffects#attachmentStatusChanged.TargetProperties"],
+      attachments[
+        "@Common.SideEffects#attachmentStatusChanged.TargetProperties"
+      ],
     ).toEqual(["status"])
     expect(
       attachments["@Common.SideEffects#attachmentStatusChanged.TargetEntities"],
