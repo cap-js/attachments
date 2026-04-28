@@ -83,7 +83,7 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
     const source = emitCall[1].sideEffectSource
     expect(source).toMatch(
       new RegExp(
-        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=false\\)/attachments\\(ID=${keys.ID},IsActiveEntity=false\\)$`,
+        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=false\\)$`,
       ),
     )
   })
@@ -115,7 +115,7 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
     const source = emitCall[1].sideEffectSource
     expect(source).toMatch(
       new RegExp(
-        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=true\\)/attachments\\(ID=${keys.ID},IsActiveEntity=true\\)$`,
+        `^/Incidents\\(ID=${keys.up__ID},IsActiveEntity=true\\)$`,
       ),
     )
   })
@@ -157,7 +157,7 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
     expect(processorSrv.emit).not.toHaveBeenCalled()
   })
 
-  it("constructs correct sideEffectSource path with parent entity and composition name", async () => {
+  it("constructs correct sideEffectSource path targeting parent entity", async () => {
     const target = _target()
     const keys = { up__ID: cds.utils.uuid(), ID: cds.utils.uuid() }
 
@@ -178,12 +178,12 @@ describe("updateStatus - attachmentStatusChanged event emission", () => {
 
     // Should start with /Incidents (parent entity short name)
     expect(source).toMatch(/^\/Incidents\(/)
-    // Should contain /attachments( (composition name)
-    expect(source).toContain("/attachments(")
+    // Should NOT contain attachment child path
+    expect(source).not.toContain("/attachments(")
     // Should contain parent key
     expect(source).toContain(`ID=${keys.up__ID}`)
-    // Should contain attachment ID
-    expect(source).toContain(`ID=${keys.ID}`)
+    // Should NOT contain attachment ID in path
+    expect(source).not.toContain(`ID=${keys.ID}`)
   })
 
   it("connects to correct service derived from parent entity", async () => {
@@ -235,45 +235,46 @@ describe("unfoldModel - attachmentStatusChanged event and SideEffects", () => {
     }
   })
 
-  it("adds @Common.SideEffects annotation to attachment entities", () => {
-    const attachments =
-      cds.model.definitions["ProcessorService.Incidents.attachments"]
-    expect(
-      attachments["@Common.SideEffects#attachmentStatusChanged.SourceEvents"],
-    ).toEqual(["attachmentStatusChanged"])
-    expect(
-      attachments[
-        "@Common.SideEffects#attachmentStatusChanged.TargetProperties"
-      ],
-    ).toEqual(["status"])
-    expect(
-      attachments["@Common.SideEffects#attachmentStatusChanged.TargetEntities"],
-    ).toEqual([{ "=": "statusNav" }])
+  it("adds @Common.SideEffects annotation to parent entities targeting attachment compositions", () => {
+    const incidents =
+      cds.model.definitions["ProcessorService.Incidents"]
+    const sideEffects = incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    expect(sideEffects).toBeDefined()
+    expect(sideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
+    expect(sideEffects.TargetEntities).toEqual([{ "=": "attachments" }])
+    // TargetProperties should not be set
+    expect(sideEffects.TargetProperties).toBeUndefined()
   })
 
-  it("adds SideEffects to all attachment composition targets", () => {
-    const entities = [
-      "ProcessorService.Incidents.attachments",
-      "ProcessorService.Incidents.hiddenAttachments",
-      "ProcessorService.Customers.attachments",
-      "ProcessorService.SampleRootWithComposedEntity.attachments",
-      "ProcessorService.Test.attachments",
+  it("adds SideEffects to parent entities for all attachment compositions", () => {
+    // Parent entities should have SideEffects with qualifier per composition
+    const incidents = cds.model.definitions["ProcessorService.Incidents"]
+    const compositionNames = [
+      "attachments",
+      "hiddenAttachments",
     ]
-    for (const name of entities) {
-      const def = cds.model.definitions[name]
-      expect(
-        def["@Common.SideEffects#attachmentStatusChanged.SourceEvents"],
-      ).toEqual(["attachmentStatusChanged"])
+    for (const compName of compositionNames) {
+      const qualifier = `attachmentStatusChanged_${compName}`
+      const sideEffects = incidents[`@Common.SideEffects#${qualifier}`]
+      expect(sideEffects).toBeDefined()
+      expect(sideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
+      expect(sideEffects.TargetEntities).toEqual([{ "=": compName }])
     }
+
+    const customers = cds.model.definitions["ProcessorService.Customers"]
+    const custSideEffects = customers["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    expect(custSideEffects).toBeDefined()
+    expect(custSideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
+    expect(custSideEffects.TargetEntities).toEqual([{ "=": "attachments" }])
   })
 
   it("does not add duplicate SideEffects if already present", async () => {
     // The model is already loaded and enhanced; verify no duplication
-    const attachments =
-      cds.model.definitions["ProcessorService.Incidents.attachments"]
-    const sourceEvents =
-      attachments["@Common.SideEffects#attachmentStatusChanged.SourceEvents"]
-    expect(sourceEvents).toEqual(["attachmentStatusChanged"])
-    expect(sourceEvents).toHaveLength(1)
+    const incidents =
+      cds.model.definitions["ProcessorService.Incidents"]
+    const sideEffects = incidents["@Common.SideEffects#attachmentStatusChanged_attachments"]
+    expect(sideEffects).toBeDefined()
+    expect(sideEffects.SourceEvents).toEqual(["attachmentStatusChanged"])
+    expect(sideEffects.SourceEvents).toHaveLength(1)
   })
 })
