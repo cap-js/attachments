@@ -4,6 +4,12 @@ using from '../db/attachments';
 /**
  * Service used by support personell, i.e. the incidents' 'processors'.
  */
+@ws
+@odata
+@Common: {
+  WebSocketBaseURL: 'ws/processor',
+  WebSocketChannel #sideEffects: 'sideeffects',
+}
 service ProcessorService {
   @cds.redirection.target
   entity Incidents                    as projection on my.Incidents actions {

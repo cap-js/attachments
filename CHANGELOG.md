@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Send out `attachmentStatusChanged` websocket event when the malware scanner finishes scanning. This requires websockets and draft being enabled.
+
 ### Fixed
 
 - Security audit events (`AttachmentSizeExceeded`, `AttachmentUploadRejected`, `AttachmentDownloadRejected`) now log the real client IP on reverse-proxy deployments (e.g. BTP Cloud Foundry) as well by setting `X-Forwarded-For` as an attribute on the audit log.
