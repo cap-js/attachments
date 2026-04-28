@@ -171,15 +171,18 @@ module.exports = class GoogleAttachmentsService extends (
         throw error
       }
 
-      const filename = data.filename ?? (
-        attachments.elements?.filename
-          ? (await SELECT.one("filename")
-            .from(attachments)
-            .where({ ID: data.ID }))?.filename
-          : null
-      )
+      const filename =
+        data.filename ??
+        (attachments.elements?.filename
+          ? (
+              await SELECT.one("filename")
+                .from(attachments)
+                .where({ ID: data.ID })
+            )?.filename
+          : null)
 
-      const contentElement = data._contentElement ?? attachments.elements?.content
+      const contentElement =
+        data._contentElement ?? attachments.elements?.content
       const maxFileSize =
         contentElement?.["@Validation.Maximum"] != null
           ? (sizeInBytes(
@@ -194,8 +197,7 @@ module.exports = class GoogleAttachmentsService extends (
         maxFileSize,
       })
 
-      const sizeLimit =
-        contentElement?.["@Validation.Maximum"] || "400MB"
+      const sizeLimit = contentElement?.["@Validation.Maximum"] || "400MB"
       const writeStream = file.createWriteStream()
 
       let resolveUpload
@@ -300,7 +302,9 @@ module.exports = class GoogleAttachmentsService extends (
 
     try {
       LOG.debug("Fetching attachment metadata", { keys })
-      const response = url ? { url } : await SELECT.from(attachments, keys).columns("url")
+      const response = url
+        ? { url }
+        : await SELECT.from(attachments, keys).columns("url")
 
       if (!response?.url) {
         LOG.warn(
