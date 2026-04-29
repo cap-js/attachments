@@ -50,6 +50,7 @@ service ProcessorService {
 service AdminService {
   entity Customers as projection on my.Customers;
   entity Incidents as projection on my.Incidents;
+  entity SingleAttachment  as projection on my.SingleAttachment;
 }
 
 service ValidationTestService {

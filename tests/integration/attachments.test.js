@@ -2297,7 +2297,7 @@ describe("Tests for single attachment entity", () => {
       },
     )
 
-    const v1Content = "version 1 content"
+    const v1Content = "version 1 content!"
     await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       v1Content,
@@ -2432,7 +2432,6 @@ describe("Tests for single attachment entity", () => {
       {},
     )
 
-    // Simulate an expired scan
     const db = await cds.connect.to("db")
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
@@ -2443,10 +2442,8 @@ describe("Tests for single attachment entity", () => {
         .where({ ID: singleAttachment.ID }),
     )
 
-    // Wait for the scan to actually complete and update the status
     const scanCleanWaiter = waitForScanStatus("Clean")
 
-    // First GET triggers re-scan → 202
     const rescanRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
     ).catch((e) => e.response)
@@ -2454,13 +2451,236 @@ describe("Tests for single attachment entity", () => {
 
     await scanCleanWaiter
 
-    // Second GET should now succeed — this is where the bug manifests:
-    // without prefix the scanner never updated myAttachment_status, so this returns 202 again
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
     )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).toEqual(fileContent)
+  })
+
+  it("Should not delete blob when discarding a re-edit with no new upload", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Re-edit discard no-upload test",
+        myAttachment_filename: "keep-me.pdf",
+      },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    const { data: active } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    const originalUrl = active.myAttachment_url
+    expect(originalUrl).toBeTruthy()
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/draftEdit`,
+      {},
+    )
+
+    const discardRes = await DELETE(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)`,
+    )
+    expect(discardRes.status).toEqual(204)
+
+    const db = await cds.connect.to("db")
+    const record = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
+    )
+    expect(record.myAttachment_url).toEqual(originalUrl)
+
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: singleAttachment.ID }),
+    )
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getRes.status).toEqual(200)
+  })
+
+  it("Should return 403 when content is in Scanning status", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Scanning status test",
+        myAttachment_filename: "scanning.txt",
+      },
+    )
+
+    const fileContent = "content under scan"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    // Force status to Scanning
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Scanning",
+          myAttachment_url: "some-url",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: singleAttachment.ID }),
+    )
+
+    let expectedError
+    await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    ).catch((e) => {
+      expectedError = e.response ?? e
+    })
+
+    expect(expectedError?.status ?? expectedError?.response?.status).toEqual(
+      403,
+    )
+  })
+
+  it("Should return 403 when content has Infected status", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Infected status test",
+        myAttachment_filename: "infected.txt",
+      },
+    )
+
+    const fileContent = "definitely not malware"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    // Force status to Infected with a url so validateAttachment doesn't 404
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Infected",
+          myAttachment_url: "some-url",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: singleAttachment.ID }),
+    )
+
+    let expectedError
+    await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    ).catch((e) => {
+      expectedError = e.response ?? e
+    })
+
+    expect(expectedError?.status ?? expectedError?.response?.status).toEqual(
+      403,
+    )
+  })
+
+  it("Should serve content from draft before activation", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Draft content readable test",
+        myAttachment_filename: "draft-content.txt",
+      },
+    )
+
+    const fileContent = "content readable in draft mode"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toEqual(fileContent)
+  })
+
+  it("Should clear inline attachment fields when DeleteInfectedAttachment is triggered with the correct hash", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "DeleteInfectedAttachment bug test",
+        myAttachment_filename: "infected.txt",
+      },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      "some file content",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    await scanCleanWaiter
+
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+    expect(before.myAttachment_hash).toBeTruthy()
+
+    const malwareDeletionWaiter = waitForMalwareDeletion(singleAttachment.ID)
+
+    // Emit DeleteInfectedAttachment exactly as the scanner would
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    await AttachmentsSrv.emit("DeleteInfectedAttachment", {
+      target: "sap.capire.incidents.SingleAttachment",
+      keys: { ID: singleAttachment.ID },
+      hash: before.myAttachment_hash,
+      prefix: "myAttachment",
+    })
+
+    await malwareDeletionWaiter
+
+    const after = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
+    )
+
+    expect(after.myAttachment_url).toBeNull()
+    expect(after.myAttachment_hash).toBeNull()
   })
 })
 

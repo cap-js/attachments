@@ -10,34 +10,42 @@ const {
 class AttachmentsService extends cds.Service {
   init() {
     this.on("DeleteAttachment", async (msg) => {
-      await this.delete(msg.data.url, msg.data.target)
+      await this.delete(msg.data.url, msg.data.target, msg.data.prefix)
     })
 
     this.on("DeleteInfectedAttachment", async (msg) => {
-      const { target, hash, keys } = msg.data
+      const { target, hash, keys, prefix } = msg.data
+      const hashField = prefix ? `${prefix}_hash` : "hash"
+      const urlField = prefix ? `${prefix}_url` : "url"
+      const contentField = prefix ? `${prefix}_content` : "content"
+
       const attachment = await SELECT.one
         .from(target)
-        .where(Object.assign({ hash }, keys))
-        .columns("url")
-      if (attachment && attachment.url) {
+        .where(Object.assign({ [hashField]: hash }, keys))
+        .columns(urlField)
+      if (attachment && attachment[urlField]) {
         //Might happen that a draft object is the target
         try {
-          const url = attachment.url
+          const url = attachment[urlField]
           const activeEntity = cds.model.definitions[target]
           const draftEntity = target
             ? cds.model.definitions?.[target + ".draft"]
             : undefined
 
           await UPDATE(activeEntity)
-            .where({ url: url })
-            .set({ content: null, url: null, hash: null })
+            .where({ [urlField]: url })
+            .set({ [contentField]: null, [urlField]: null, [hashField]: null })
           if (draftEntity) {
             await UPDATE(draftEntity)
-              .where({ url: url })
-              .set({ content: null, url: null, hash: null })
+              .where({ [urlField]: url })
+              .set({
+                [contentField]: null,
+                [urlField]: null,
+                [hashField]: null,
+              })
           }
 
-          await this.delete(url, target)
+          await this.delete(url, target, prefix)
         } catch (error) {
           LOG.error(`Failed to delete infected file from object store`, error)
         }
@@ -517,7 +525,11 @@ class AttachmentsService extends cds.Service {
       }
 
       const toDelete = prefixes
-        .map((p) => ({ url: draft[`${p}_url`], target: req.target.name }))
+        .map((p) => ({
+          url: draft[`${p}_url`],
+          target: req.target.name,
+          prefix: p,
+        }))
         .filter(({ url }) => url && !activeUrls.has(url))
       if (toDelete.length)
         req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(
@@ -699,10 +711,16 @@ class AttachmentsService extends cds.Service {
   /**
    * Deletes a file from the database. Does not delete metadata
    * @param {string} url - The url of the file to delete
+   * @param {string} target - The entity name of the attachment to delete
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Promise} - Promise resolving when deletion is complete
    */
-  async delete(url, target) {
-    return await UPDATE(target).where({ url }).with({ content: null })
+  async delete(url, target, prefix) {
+    const urlField = prefix ? `${prefix}_url` : "url"
+    const contentField = prefix ? `${prefix}_content` : "content"
+    return await UPDATE(target)
+      .where({ [urlField]: url })
+      .with({ [contentField]: null })
   }
 }
 
