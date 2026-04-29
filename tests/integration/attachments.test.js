@@ -275,7 +275,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).catch((e) => {
       expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain(
-        "The previous scan was more than 3 days ago, please try to download again in a moment, after the attachment was rescanned.",
+        "The previous scan was more than 3 days ago, please try to download again in a moment, after the attachment is rescanned.",
       )
     })
   })
@@ -3383,7 +3383,7 @@ describe("Tests for renaming duplicate attachments", () => {
 
   it("Should NOT rename attachments on different parents that share a partial composite key", async () => {
     // Two parents sharing the same sampleID but different gjahr - these are distinct records
-    const sharedSampleID = `SHARED-${Math.round(Math.random() * 1000)}`
+    const sharedSampleID = `SHARED-${cds.utils.uuid().substring(0, 8)}`
     const key1 = { sampleID: sharedSampleID, gjahr: 2025 }
     const key2 = { sampleID: sharedSampleID, gjahr: 2026 }
     const filepath = join(__dirname, "content/sample.pdf")
