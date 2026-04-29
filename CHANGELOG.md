@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 3.12.0 - Upcoming
+## Version 3.12.1
+
+### Added
+
+- File deduplication can now be disabled via `cds.requires.attachments.deduplicateFileNames=false`
+
+### Fixed
+
+- Security audit events (`AttachmentSizeExceeded`, `AttachmentUploadRejected`, `AttachmentDownloadRejected`) now log the real client IP on reverse-proxy deployments (e.g. BTP Cloud Foundry) as well by setting `X-Forwarded-For` as an attribute on the audit log.
+
+## Version 3.12.0
 
 ### Added
 

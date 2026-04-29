@@ -24,11 +24,14 @@ describe("Audit logging for security events (audit-logging dependency present)",
       keys: { ID: "att-001" },
       status: "Infected",
       ipAddress: "10.0.0.1",
+      forwardedIp: "203.0.113.50",
     })
 
     expect(log.output).toContain("[audit-log] - SecurityEvent:")
     expect(log.output).toContain("AttachmentDownloadRejected")
     expect(log.output).toContain("Infected")
+    expect(log.output).toContain("x-forwarded-for")
+    expect(log.output).toContain("203.0.113.50")
   })
 
   it("should log AttachmentSizeExceeded as SecurityEvent", async () => {
@@ -39,6 +42,7 @@ describe("Audit logging for security events (audit-logging dependency present)",
       fileSize: 999999999,
       maxFileSize: 5242880,
       ipAddress: "192.168.1.10",
+      forwardedIp: "198.51.100.22",
     })
 
     expect(log.output).toContain("[audit-log] - SecurityEvent:")
@@ -46,6 +50,8 @@ describe("Audit logging for security events (audit-logging dependency present)",
     expect(log.output).toContain("large-file.pdf")
     expect(log.output).toContain("999999999")
     expect(log.output).toContain("5242880")
+    expect(log.output).toContain("x-forwarded-for")
+    expect(log.output).toContain("198.51.100.22")
   })
 
   it("should log AttachmentUploadRejected as SecurityEvent", async () => {
@@ -58,12 +64,15 @@ describe("Audit logging for security events (audit-logging dependency present)",
       reason:
         "MIME type 'application/x-msdownload' is not in @Core.AcceptableMediaTypes",
       ipAddress: "172.16.0.5",
+      forwardedIp: "192.0.2.100",
     })
 
     expect(log.output).toContain("[audit-log] - SecurityEvent:")
     expect(log.output).toContain("AttachmentUploadRejected")
     expect(log.output).toContain("script.exe")
     expect(log.output).toContain("application/x-msdownload")
+    expect(log.output).toContain("x-forwarded-for")
+    expect(log.output).toContain("192.0.2.100")
   })
 })
 

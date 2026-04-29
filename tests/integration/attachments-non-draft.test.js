@@ -14,6 +14,18 @@ const { axios, GET, POST, PATCH, DELETE, PUT } =
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
+  let originalDeduplicateFileNames
+
+  beforeAll(() => {
+    originalDeduplicateFileNames =
+      cds.env.requires.attachments.deduplicateFileNames
+    cds.env.requires.attachments.deduplicateFileNames = true
+  })
+
+  afterAll(() => {
+    cds.env.requires.attachments.deduplicateFileNames =
+      originalDeduplicateFileNames
+  })
 
   axios.defaults.auth = { username: "alice" }
   let log = test.log()

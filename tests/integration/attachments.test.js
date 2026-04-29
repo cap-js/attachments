@@ -275,7 +275,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).catch((e) => {
       expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain(
-        "The previous scan was more than 3 days ago, please wait for the attachment to be rescanned.",
+        "The previous scan was more than 3 days ago, please try to download again in a moment, after the attachment was rescanned.",
       )
     })
   })
@@ -3084,8 +3084,18 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Tests for renaming duplicate attachments", () => {
+  let originalDeduplicateFileNames
+
   beforeAll(async () => {
     utils = new RequestSend(POST)
+    originalDeduplicateFileNames =
+      cds.env.requires.attachments.deduplicateFileNames
+    cds.env.requires.attachments.deduplicateFileNames = true
+  })
+
+  afterAll(() => {
+    cds.env.requires.attachments.deduplicateFileNames =
+      originalDeduplicateFileNames
   })
 
   it("Should rename duplicate attachments when both are added to same draft", async () => {
@@ -3438,6 +3448,66 @@ describe("Tests for renaming duplicate attachments", () => {
 
     // Should be "sample.pdf" - but with the bug it will be "sample-1.pdf"
     expect(att2.filename).toEqual("sample.pdf")
+  })
+
+  it("should NOT rename duplicates when deduplicateFileNames option is disabled", async () => {
+    cds.env.requires.attachments.deduplicateFileNames = false
+
+    try {
+      const incidentID = await newIncident(POST, "processor")
+
+      await utils.draftModeEdit(
+        "processor",
+        "Incidents",
+        incidentID,
+        "ProcessorService",
+      )
+
+      const filepath = join(
+        __dirname,
+        "..",
+        "integration",
+        `content/sample.pdf`,
+      )
+      // Upload first attachment
+      await POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+        {
+          up__ID: incidentID,
+          filename: basename(filepath),
+          mimeType: "application/pdf",
+          createdAt: new Date(),
+          createdBy: "alice",
+        },
+      )
+
+      // Upload second attachment with the same name
+      const { data: secondAttachment } = await POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+        {
+          up__ID: incidentID,
+          filename: basename(filepath),
+          mimeType: "application/pdf",
+          createdAt: new Date(),
+          createdBy: "alice",
+        },
+      )
+
+      // With deduplicateFileNames disabled, filename should remain unchanged
+      expect(secondAttachment.filename).toEqual("sample.pdf")
+
+      const draftResponse = await GET(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      )
+      expect(draftResponse.data.value.length).toEqual(2)
+      const filenames = draftResponse.data.value
+        .map((attachment) => attachment.filename)
+        .sort()
+      // Both should keep the original name since dedup is off
+      expect(filenames).toEqual(["sample.pdf", "sample.pdf"])
+    } finally {
+      cds.env.requires.attachments.deduplicateFileNames = true
+    }
   })
 })
 
