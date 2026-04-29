@@ -228,6 +228,9 @@ Scan status codes:
 - `Infected`: The attachment is infected.
 - `Failed`: Scanning failed.
 
+> [!Tip]
+> When a service is [enabled for WebSockets](https://cap.cloud.sap/docs/plugins/#websocket) and the entity with attachments is draft-enabled, the plugin automatically emits an `attachmentStatusChanged` WebSocket event once malware scanning completes. This means the SAP Fiori Elements UI will automatically refresh once scanning is complete.
+
 > [!Note]
 > The malware scanner supports mTLS authentication which requires an annual renewal of the certificate. Previously, basic authentication was used which has now been deprecated.
 
