@@ -2673,11 +2673,16 @@ describe("Tests for single attachment entity", () => {
 
     await malwareDeletionWaiter
 
-    const after = await db.run(
-      SELECT.one
-        .from("sap.capire.incidents.SingleAttachment")
-        .where({ ID: singleAttachment.ID }),
-    )
+    let after
+    for (let i = 0; i < 20; i++) {
+      after = await db.run(
+        SELECT.one
+          .from("sap.capire.incidents.SingleAttachment")
+          .where({ ID: singleAttachment.ID }),
+      )
+      if (after.myAttachment_url === null) break
+      await new Promise((r) => setTimeout(r, 500))
+    }
 
     expect(after.myAttachment_url).toBeNull()
     expect(after.myAttachment_hash).toBeNull()
