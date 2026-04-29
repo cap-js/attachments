@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.0
+
+### Added
+
+- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field look something like `myAttachment : Attachment;`, without the composition.
+
+### Fixed
+
+- Removed hard-coded attributes from nested attachment handling.
+
 ## Version 3.12.1
 
 ### Added

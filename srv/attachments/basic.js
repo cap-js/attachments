@@ -188,21 +188,24 @@ class AttachmentsService extends cds.Service {
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Entity} attachments - The attachment service instance
    * @param {string} keys - The keys to identify the attachment
-   * @param {import('@sap/cds').Request} req - The request object
+   * @param {string} url - The URL of the attachment content
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
    */
-  async get(attachments, keys) {
+  async get(attachments, keys, url, prefix) {
     LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys,
     })
-    let result = await SELECT.from(attachments, keys).columns("content")
-    if ((!result || !result.content) && attachments.isDraft) {
+    const contentField = prefix ? `${prefix}_content` : "content"
+    let result = await SELECT.from(attachments, keys).columns(contentField)
+    if ((!result || !result[contentField]) && attachments.isDraft) {
       attachments = attachments.actives
-      result = await SELECT.from(attachments, keys).columns("content")
+      result = await SELECT.from(attachments, keys).columns(contentField)
     }
-    return result?.content ? result.content : null
+    return result?.[contentField] ? result[contentField] : null
   }
+
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
@@ -230,6 +233,7 @@ class AttachmentsService extends cds.Service {
       if (draftAttachments.length) await this.put(attachments, draftAttachments)
     }
   }
+
   /**
    * Returns the fields to be selected from Attachments entity definition
    * including the association keys if Attachments entity definition is associated to another entity
@@ -481,6 +485,44 @@ class AttachmentsService extends cds.Service {
       if (attachmentsToDelete.length > 0) {
         req.attachmentsToDelete = attachmentsToDelete
       }
+    }
+
+    if (
+      req.event === "DELETE" &&
+      req.target._attachments?.hasInlineAttachments
+    ) {
+      const prefixes = req.target._attachments.inlineAttachmentPrefixes
+      const whereCond = req.subject?.ref?.[0]?.where
+      if (!whereCond) return
+      const urlColumns = prefixes.map((p) => `${p}_url`)
+
+      const draft = await SELECT.one
+        .from(req.target.drafts)
+        .where(whereCond)
+        .columns([...urlColumns, "HasActiveEntity"])
+      if (!draft) return
+
+      let activeUrls = new Set()
+      if (draft.HasActiveEntity) {
+        const keys = Object.fromEntries(
+          Object.entries(req.params?.at(-1) || {}).filter(
+            ([k]) => k !== "IsActiveEntity",
+          ),
+        )
+        const active = await SELECT.one
+          .from(req.target)
+          .where(keys)
+          .columns(urlColumns)
+        activeUrls = new Set(Object.values(active || {}).filter(Boolean))
+      }
+
+      const toDelete = prefixes
+        .map((p) => ({ url: draft[`${p}_url`], target: req.target.name }))
+        .filter(({ url }) => url && !activeUrls.has(url))
+      if (toDelete.length)
+        req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(
+          toDelete,
+        )
     }
   }
 

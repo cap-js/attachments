@@ -275,7 +275,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     ).catch((e) => {
       expect(e.status).toEqual(202)
       expect(e.response.data.error.message).toContain(
-        "The previous scan was more than 3 days ago, please try to download again in a moment, after the attachment is rescanned.",
+        "The previous scan was more than 3 days ago. Please try to download again in a moment, after the attachment is rescanned.",
       )
     })
   })
@@ -1921,6 +1921,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 })
 
 describe("Tests for single attachment entity", () => {
+  let log = cds.test.log()
+
   it("Should correctly detect inline attachment fields on SingleAttachment", async () => {
     const Catalog = await cds.connect.to("ProcessorService")
     const SingleAttachment = Catalog.entities.SingleAttachment
@@ -2008,11 +2010,11 @@ describe("Tests for single attachment entity", () => {
       {},
     )
 
-    await GET(
+    const updatedRecord = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
     )
 
-    expect(singleAttachment.myAttachment_url).toBeDefined()
+    expect(updatedRecord.data.myAttachment_url).toBeDefined()
 
     const deleteRes = await DELETE(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
@@ -2170,8 +2172,295 @@ describe("Tests for single attachment entity", () => {
 
     expect(getRes.status).toEqual(202)
     expect(getRes.data?.error?.message).toBe(
-      "The previous scan was more than 3 days ago, please wait for the attachment to be rescanned.",
+      "The previous scan was more than 3 days ago. Please try to download again in a moment, after the attachment is rescanned.",
     )
+  })
+
+  it("Should not allow end user to set or change myAttachment_url from api", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "URL protection test",
+        myAttachment_filename: "sample.pdf",
+        myAttachment_url: "malicious-url",
+      },
+    )
+    expect(singleAttachment.ID).toBeDefined()
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    const { data: draft } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)`,
+    )
+    expect(draft.myAttachment_url).toBeTruthy()
+    expect(draft.myAttachment_url).not.toBe("malicious-url")
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    const { data: active } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    const originalUrl = active.myAttachment_url
+    expect(originalUrl).toBeTruthy()
+    expect(originalUrl).not.toBe("malicious-url")
+
+    // Try to PATCH the url on the active entity
+    await PATCH(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+      { myAttachment_url: "patched-malicious-url" },
+    )
+
+    const { data: afterPatch } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    expect(afterPatch.myAttachment_url).toBe(originalUrl)
+    expect(afterPatch.myAttachment_url).not.toBe("patched-malicious-url")
+  })
+
+  it("Should return 404 when getting content with no file uploaded", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "No content entity",
+        myAttachment_filename: "missing.pdf",
+      },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    let expectedError
+    await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    ).catch((e) => {
+      expectedError = e
+    })
+
+    expect(expectedError?.response?.status || expectedError?.status).toEqual(
+      404,
+    )
+  })
+
+  it("Should discard draft and delete blob from object store", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Discard test",
+        myAttachment_filename: "sample.pdf",
+      },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    // Read the draft entity to get the url before discarding
+    const { data: draft } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)`,
+    )
+    const attachmentUrl = draft.myAttachment_url
+    expect(attachmentUrl).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentUrl)
+
+    const discardRes = await DELETE(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)`,
+    )
+    expect(discardRes.status).toEqual(204)
+
+    await deletionWaiter
+  })
+
+  it("Should serve new content after re-edit and re-upload", async () => {
+    const scanCleanWaiter1 = waitForScanStatus("Clean")
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Re-edit test",
+        myAttachment_filename: "v1.txt",
+      },
+    )
+
+    const v1Content = "version 1 content"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      v1Content,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+    await scanCleanWaiter1
+
+    // Verify v1 content is readable
+    const getV1 = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getV1.status).toEqual(200)
+    expect(getV1.data).toEqual(v1Content)
+
+    // Re-edit: create a new draft from the active entity
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/draftEdit`,
+      {},
+    )
+
+    const scanCleanWaiter2 = waitForScanStatus("Clean")
+    const v2Content = "version 2 content - updated"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      v2Content,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+    await scanCleanWaiter2
+
+    // Verify v2 content is now returned
+    const getV2 = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getV2.status).toEqual(200)
+    expect(getV2.data).toEqual(v2Content)
+  })
+
+  it("Should populate myAttachment_url on the active entity after draft activation", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "URL population test",
+        myAttachment_filename: "sample.pdf",
+      },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    const { data: active } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    expect(active.myAttachment_url).toBeTruthy()
+    expect(typeof active.myAttachment_url).toBe("string")
+    expect(active.myAttachment_url.length).toBeGreaterThan(0)
+  })
+
+  it("Malware scanning does not happen for SingleAttachment when scan is disabled", async () => {
+    cds.env.requires.attachments.scan = false
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "No-scan test",
+        myAttachment_filename: "sample.pdf",
+      },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    // Content should be immediately readable without waiting
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toBeTruthy()
+
+    expect(log.output).not.toContain("Initiating malware scan request")
+
+    cds.env.requires.attachments.scan = true
+  })
+
+  it("Should successfully serve content after a re-scan is triggered for an expired inline attachment", async () => {
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Rescan completion test",
+        myAttachment_filename: "rescan.txt",
+      },
+    )
+
+    const fileContent = "content that will be rescanned"
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    // Simulate an expired scan
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date(2000, 1, 1).toISOString(),
+        })
+        .where({ ID: singleAttachment.ID }),
+    )
+
+    // Wait for the scan to actually complete and update the status
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    // First GET triggers re-scan → 202
+    const rescanRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    ).catch((e) => e.response)
+    expect(rescanRes.status).toEqual(202)
+
+    await scanCleanWaiter
+
+    // Second GET should now succeed — this is where the bug manifests:
+    // without prefix the scanner never updated myAttachment_status, so this returns 202 again
+    const getRes = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toEqual(fileContent)
   })
 })
 
