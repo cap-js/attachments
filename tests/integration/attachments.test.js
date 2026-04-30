@@ -2687,6 +2687,58 @@ describe("Tests for single attachment entity", () => {
     expect(after.myAttachment_url).toBeNull()
     expect(after.myAttachment_hash).toBeNull()
   })
+
+  it("Should clear inline attachment fields after deleting the file and saving", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      { name: "Delete-file test", myAttachment_filename: "delete-me.txt" },
+    )
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      "content to be deleted",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+    await scanCleanWaiter
+
+    // Confirm attachment fields are set on the active entity
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one.from("sap.capire.incidents.SingleAttachment").where({ ID: singleAttachment.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+    expect(before.myAttachment_filename).toBe("delete-me.txt")
+    expect(before.myAttachment_status).toBe("Clean")
+
+    // Re-edit
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/draftEdit`,
+      {},
+    )
+
+    await PATCH(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)`,
+      { myAttachment_content: null },
+    )
+
+    // Save
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+
+    const after = await db.run(
+      SELECT.one.from("sap.capire.incidents.SingleAttachment").where({ ID: singleAttachment.ID }),
+    )
+    expect(after.myAttachment_filename).toBeNull()
+    expect(after.myAttachment_status).toBeNull()
+    expect(after.myAttachment_url).toBeNull()
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
