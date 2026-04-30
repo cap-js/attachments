@@ -25,6 +25,9 @@ service ProcessorService {
   entity SingleTestDetails            as projection on my.SingleTestDetails;
 
   @odata.draft.enabled
+  entity SingleAttachment             as projection on my.SingleAttachment;
+
+  @odata.draft.enabled
   entity Posts as projection on my.Posts;
 
   entity Comments as projection on my.Comments;
@@ -47,6 +50,7 @@ service ProcessorService {
 service AdminService {
   entity Customers as projection on my.Customers;
   entity Incidents as projection on my.Incidents;
+  entity SingleAttachment  as projection on my.SingleAttachment;
 }
 
 service ValidationTestService {

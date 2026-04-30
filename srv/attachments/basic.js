@@ -10,34 +10,42 @@ const {
 class AttachmentsService extends cds.Service {
   init() {
     this.on("DeleteAttachment", async (msg) => {
-      await this.delete(msg.data.url, msg.data.target)
+      await this.delete(msg.data.url, msg.data.target, msg.data.prefix)
     })
 
     this.on("DeleteInfectedAttachment", async (msg) => {
-      const { target, hash, keys } = msg.data
+      const { target, hash, keys, prefix } = msg.data
+      const hashField = prefix ? `${prefix}_hash` : "hash"
+      const urlField = prefix ? `${prefix}_url` : "url"
+      const contentField = prefix ? `${prefix}_content` : "content"
+
       const attachment = await SELECT.one
         .from(target)
-        .where(Object.assign({ hash }, keys))
-        .columns("url")
-      if (attachment && attachment.url) {
+        .where(Object.assign({ [hashField]: hash }, keys))
+        .columns(urlField)
+      if (attachment && attachment[urlField]) {
         //Might happen that a draft object is the target
         try {
-          const url = attachment.url
+          const url = attachment[urlField]
           const activeEntity = cds.model.definitions[target]
           const draftEntity = target
             ? cds.model.definitions?.[target + ".draft"]
             : undefined
 
           await UPDATE(activeEntity)
-            .where({ url: url })
-            .set({ content: null, url: null, hash: null })
+            .where({ [urlField]: url })
+            .set({ [contentField]: null, [urlField]: null, [hashField]: null })
           if (draftEntity) {
             await UPDATE(draftEntity)
-              .where({ url: url })
-              .set({ content: null, url: null, hash: null })
+              .where({ [urlField]: url })
+              .set({
+                [contentField]: null,
+                [urlField]: null,
+                [hashField]: null,
+              })
           }
 
-          await this.delete(url, target)
+          await this.delete(url, target, prefix)
         } catch (error) {
           LOG.error(`Failed to delete infected file from object store`, error)
         }
@@ -188,21 +196,24 @@ class AttachmentsService extends cds.Service {
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Entity} attachments - The attachment service instance
    * @param {string} keys - The keys to identify the attachment
-   * @param {import('@sap/cds').Request} req - The request object
+   * @param {string} url - The URL of the attachment content
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
    */
-  async get(attachments, keys) {
+  async get(attachments, keys, url, prefix) {
     LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys,
     })
-    let result = await SELECT.from(attachments, keys).columns("content")
-    if ((!result || !result.content) && attachments.isDraft) {
+    const contentField = prefix ? `${prefix}_content` : "content"
+    let result = await SELECT.from(attachments, keys).columns(contentField)
+    if ((!result || !result[contentField]) && attachments.isDraft) {
       attachments = attachments.actives
-      result = await SELECT.from(attachments, keys).columns("content")
+      result = await SELECT.from(attachments, keys).columns(contentField)
     }
-    return result?.content ? result.content : null
+    return result?.[contentField] ? result[contentField] : null
   }
+
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
@@ -230,6 +241,7 @@ class AttachmentsService extends cds.Service {
       if (draftAttachments.length) await this.put(attachments, draftAttachments)
     }
   }
+
   /**
    * Returns the fields to be selected from Attachments entity definition
    * including the association keys if Attachments entity definition is associated to another entity
@@ -466,7 +478,7 @@ class AttachmentsService extends cds.Service {
 
         // Find attachments present in the active entity but not in the draft
         const deletedAttachments = activeAttachments.filter(
-          (att) => att.url && !draftAttachmentIDs.has(att.ID),
+          (att) => att.url && att.ID && !draftAttachmentIDs.has(att.ID),
         )
 
         if (deletedAttachments.length) {
@@ -481,6 +493,48 @@ class AttachmentsService extends cds.Service {
       if (attachmentsToDelete.length > 0) {
         req.attachmentsToDelete = attachmentsToDelete
       }
+    }
+
+    if (
+      req.event === "DELETE" &&
+      req.target._attachments?.hasInlineAttachments
+    ) {
+      const prefixes = req.target._attachments.inlineAttachmentPrefixes
+      const whereCond = req.subject?.ref?.[0]?.where
+      if (!whereCond) return
+      const urlColumns = prefixes.map((p) => `${p}_url`)
+
+      const draft = await SELECT.one
+        .from(req.target.drafts)
+        .where(whereCond)
+        .columns([...urlColumns, "HasActiveEntity"])
+      if (!draft) return
+
+      let activeUrls = new Set()
+      if (draft.HasActiveEntity) {
+        const keys = Object.fromEntries(
+          Object.entries(req.params?.at(-1) || {}).filter(
+            ([k]) => k !== "IsActiveEntity",
+          ),
+        )
+        const active = await SELECT.one
+          .from(req.target)
+          .where(keys)
+          .columns(urlColumns)
+        activeUrls = new Set(Object.values(active || {}).filter(Boolean))
+      }
+
+      const toDelete = prefixes
+        .map((p) => ({
+          url: draft[`${p}_url`],
+          target: req.target.name,
+          prefix: p,
+        }))
+        .filter(({ url }) => url && !activeUrls.has(url))
+      if (toDelete.length)
+        req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(
+          toDelete,
+        )
     }
   }
 
@@ -657,10 +711,16 @@ class AttachmentsService extends cds.Service {
   /**
    * Deletes a file from the database. Does not delete metadata
    * @param {string} url - The url of the file to delete
+   * @param {string} target - The entity name of the attachment to delete
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Promise} - Promise resolving when deletion is complete
    */
-  async delete(url, target) {
-    return await UPDATE(target).where({ url }).with({ content: null })
+  async delete(url, target, prefix) {
+    const urlField = prefix ? `${prefix}_url` : "url"
+    const contentField = prefix ? `${prefix}_content` : "content"
+    return await UPDATE(target)
+      .where({ [urlField]: url })
+      .with({ [contentField]: null })
   }
 }
 

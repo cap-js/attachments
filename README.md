@@ -31,6 +31,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
       - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
       - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
+    - [Single Attachments](#single-attachments)
     - [Allow Overwriting Attachment Content](#allow-overwriting-attachment-content)
     - [Deduplicate File Names](#deduplicate-file-names)
   - [Releases](#releases)
@@ -526,6 +527,17 @@ entity Incidents {
   ...
   @Validation.MinItems: 2
   attachments: Composition of many Attachments;
+}
+```
+
+### Single Attachments
+
+It is also possible to allow for only 1 attachment by defining the attachments field as a single attachment. This displays a different UI that more clearly shows the single attachment rather than in a list.
+
+```cds
+entity Incidents {
+  ...
+  attachment: Attachment;
 }
 ```
 
