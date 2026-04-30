@@ -2709,7 +2709,9 @@ describe("Tests for single attachment entity", () => {
     // Confirm attachment fields are set on the active entity
     const db = await cds.connect.to("db")
     const before = await db.run(
-      SELECT.one.from("sap.capire.incidents.SingleAttachment").where({ ID: singleAttachment.ID }),
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
     )
     expect(before.myAttachment_url).toBeTruthy()
     expect(before.myAttachment_filename).toBe("delete-me.txt")
@@ -2733,7 +2735,9 @@ describe("Tests for single attachment entity", () => {
     )
 
     const after = await db.run(
-      SELECT.one.from("sap.capire.incidents.SingleAttachment").where({ ID: singleAttachment.ID }),
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: singleAttachment.ID }),
     )
     expect(after.myAttachment_filename).toBeNull()
     expect(after.myAttachment_status).toBeNull()
