@@ -18,6 +18,10 @@ jobs:
     if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.owner.login != 'cap-js'
     environment: pr-approval
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
       - name: Approval Step
         run: echo "This job has been approved!"
   test:
@@ -29,6 +33,10 @@ jobs:
       matrix:
         node-version: [20.x, 22.x]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -53,6 +61,10 @@ jobs:
         hyperscaler: [AWS, AZURE, GCP]
         scanner-auth: [basic, mtls]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
@@ -92,6 +104,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
