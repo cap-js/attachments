@@ -1035,7 +1035,7 @@ describe("Tests for inline single attachment in non-draft mode", () => {
     )
     expect(putRes.status).toEqual(204)
 
-    // Bypass scan so we can read immediately
+    // Bypass scan to can read immediately
     const db = await cds.connect.to("db")
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
