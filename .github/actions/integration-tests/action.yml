@@ -48,7 +48,6 @@ runs:
         CF_ORG: ${{ inputs.CF_ORG }}
         CF_SPACE: ${{ inputs.CF_SPACE }}
       run: |
-        echo "::debug::CF_API=${{ inputs.CF_API }}"
         for i in {1..5}; do
           cf api "$CF_API" && \
           cf auth && \
