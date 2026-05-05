@@ -28,6 +28,7 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - run: echo "Hello World"
     - name: Install dependencies and Cloud Foundry CLI (v8.9.0)
       shell: bash
       run: |
