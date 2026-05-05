@@ -62,11 +62,11 @@ jobs:
         with:
           egress-policy: audit
       - name: Checkout repository
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Integration tests (HANA)
-        uses: ./.github/actions/integration-tests
+        uses: ./.github/actions/integration-tests@main
         with:
           CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
           CF_USERNAME: ${{ secrets['CF_USERNAME'] }}
