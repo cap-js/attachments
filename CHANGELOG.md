@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.0
+
+### Fixed
+
+- Await function setting status to scanning to avoid race conditions.
+
 ## Version 3.12.1
 
 ### Added
