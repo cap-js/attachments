@@ -29,11 +29,11 @@ jobs:
       matrix:
         node-version: [20.x, 22.x]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm i -g @sap/cds-dk
@@ -53,12 +53,8 @@ jobs:
         hyperscaler: [AWS, AZURE, GCP]
         scanner-auth: [basic, mtls]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Integration tests (HANA)
-        uses: ./.github/actions/integration-tests
+        uses: cap-js/attachments/.github/actions/integration-tests@main
         with:
           CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
           CF_USERNAME: ${{ secrets['CF_USERNAME'] }}
@@ -92,11 +88,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix['node-version'] }}
       - run: npm i -g @sap/cds-dk
