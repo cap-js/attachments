@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Await function setting status to scanning to avoid race conditions.
+- Remove extra function setting status to scanning to avoid race conditions.
 
 ## Version 3.12.1
 
