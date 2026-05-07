@@ -101,6 +101,10 @@ entity SingleTestDetails : cuid {
   abc : String;
 }
 
+entity SingleAttachment : cuid {
+  name : String;
+}
+
 entity Posts : cuid, managed {
     content : String;
     comments  : Composition of many Comments on comments.post = $self;

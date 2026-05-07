@@ -19,11 +19,29 @@ async function waitForScanStatus(status, attachmentID) {
         // Skip if already resolved to prevent memory buildup
         if (resolved) return
 
+        if (req.event !== "UPDATE") return
+
+        const data = req.query?.UPDATE?.data
+        if (!data) return
+
+        // Find the status field: either 'status' (composition attachments)
+        // or '<prefix>_status' (inline single attachments)
+        const statusKey = Object.keys(data).find(
+          (k) => k === "status" || k.endsWith("_status"),
+        )
+        if (!statusKey) return
+
+        // Match target: either a composition attachment entity or any entity
+        // with inline attachment fields (identified by having a prefixed _status field)
+        const isAttachmentsTarget =
+          req.target.name.includes(".attachments") ||
+          statusKey.includes("_status")
+        if (!isAttachmentsTarget) return
+
+        // Filter by attachmentID if provided
         if (
-          req.event === "UPDATE" &&
-          req.query?.UPDATE?.data?.status &&
-          req.target.name.includes(".attachments") &&
-          (!attachmentID ||
+          attachmentID &&
+          !(
             (req.query.UPDATE.entity?.ref?.at(-1)?.where &&
               req.query.UPDATE.entity.ref
                 .at(-1)
@@ -33,15 +51,16 @@ async function waitForScanStatus(status, attachmentID) {
                 (e) =>
                   (e.val && e.val === attachmentID) ||
                   (e.xpr && e.xpr.some((e) => e.val && e.val === attachmentID)),
-              )))
-        ) {
-          // Store the latest status for timeout reporting
-          latestStatus = req.query.UPDATE.data.status
+              ))
+          )
+        )
+          return
 
-          if (req.query.UPDATE.data.status === status) {
-            resolved = true
-            resolve(req.query.UPDATE.where || req.query.UPDATE.entity?.ref)
-          }
+        latestStatus = data[statusKey]
+
+        if (data[statusKey] === status) {
+          resolved = true
+          resolve(req.query.UPDATE.where || req.query.UPDATE.entity?.ref)
         }
       }
       db.after("*", handler)
