@@ -172,14 +172,16 @@ class AttachmentsService extends cds.Service {
     })
 
     const MalwareScanner = await cds.connect.to("malwareScanner")
-    await Promise.all(
-      data.map(async (d) => {
-        await MalwareScanner.emit("ScanAttachmentsFile", {
-          target: attachments.name,
-          keys: { ID: d.ID },
-        })
-      }),
-    )
+    cds.spawn({}, async () => {
+      await Promise.all(
+        data.map(async (d) => {
+          await MalwareScanner.emit("ScanAttachmentsFile", {
+            target: attachments.name,
+            keys: { ID: d.ID },
+          })
+        }),
+      )
+    })
 
     return res
   }
