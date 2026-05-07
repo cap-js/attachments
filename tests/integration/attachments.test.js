@@ -2421,6 +2421,7 @@ describe("Tests for single attachment entity", () => {
     )
 
     const fileContent = "content that will be rescanned"
+    const initialScanWaiter = waitForScanStatus("Clean")
     await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       fileContent,
@@ -2432,10 +2433,13 @@ describe("Tests for single attachment entity", () => {
       {},
     )
 
+    await initialScanWaiter
+
     const db = await cds.connect.to("db")
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
         .set({
+          myAttachment_status: "Clean",
           myAttachment_lastScan: new Date(2000, 1, 1).toISOString(),
         })
         .where({ ID: singleAttachment.ID }),
