@@ -1922,6 +1922,36 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
 describe("Tests for single attachment entity", () => {
   let log = cds.test.log()
+  const baselineIDs = new Set()
+  const baselineDraftIDs = new Set()
+
+  beforeAll(async () => {
+    const db = await cds.connect.to("db")
+    const svc = await cds.connect.to("ProcessorService")
+    for (const { ID } of await db.run(SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID")))
+      baselineIDs.add(ID)
+    for (const { ID } of await db.run(SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID")))
+      baselineDraftIDs.add(ID)
+  })
+
+  afterAll(async () => {
+    const db = await cds.connect.to("db")
+    const svc = await cds.connect.to("ProcessorService")
+    const attachmentsSrv = await cds.connect.to("attachments")
+    const allRecords = await db.run(
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID", "myAttachment_url"),
+    )
+    for (const { ID, myAttachment_url: url } of allRecords) {
+      if (baselineIDs.has(ID)) continue
+      if (url) await attachmentsSrv.emit("DeleteAttachment", { url })
+      await db.run(cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({ ID }))
+    }
+    const allDrafts = await db.run(SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID"))
+    for (const { ID } of allDrafts) {
+      if (!baselineDraftIDs.has(ID))
+        await db.run(cds.ql.DELETE.from(svc.entities.SingleAttachment.drafts).where({ ID }))
+    }
+  })
 
   it("Should correctly detect inline attachment fields on SingleAttachment", async () => {
     const Catalog = await cds.connect.to("ProcessorService")
