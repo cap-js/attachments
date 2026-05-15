@@ -1928,9 +1928,13 @@ describe("Tests for single attachment entity", () => {
   beforeAll(async () => {
     const db = await cds.connect.to("db")
     const svc = await cds.connect.to("ProcessorService")
-    for (const { ID } of await db.run(SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID")))
+    for (const { ID } of await db.run(
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
+    ))
       baselineIDs.add(ID)
-    for (const { ID } of await db.run(SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID")))
+    for (const { ID } of await db.run(
+      SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID"),
+    ))
       baselineDraftIDs.add(ID)
   })
 
@@ -1939,17 +1943,30 @@ describe("Tests for single attachment entity", () => {
     const svc = await cds.connect.to("ProcessorService")
     const attachmentsSrv = await cds.connect.to("attachments")
     const allRecords = await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID", "myAttachment_url"),
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns(
+        "ID",
+        "myAttachment_url",
+      ),
     )
     for (const { ID, myAttachment_url: url } of allRecords) {
       if (baselineIDs.has(ID)) continue
       if (url) await attachmentsSrv.emit("DeleteAttachment", { url })
-      await db.run(cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({ ID }))
+      await db.run(
+        cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({
+          ID,
+        }),
+      )
     }
-    const allDrafts = await db.run(SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID"))
+    const allDrafts = await db.run(
+      SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID"),
+    )
     for (const { ID } of allDrafts) {
       if (!baselineDraftIDs.has(ID))
-        await db.run(cds.ql.DELETE.from(svc.entities.SingleAttachment.drafts).where({ ID }))
+        await db.run(
+          cds.ql.DELETE.from(svc.entities.SingleAttachment.drafts).where({
+            ID,
+          }),
+        )
     }
   })
 

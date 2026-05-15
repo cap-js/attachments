@@ -1023,7 +1023,9 @@ describe("Tests for inline single attachment in non-draft mode", () => {
 
   beforeAll(async () => {
     const db = await cds.connect.to("db")
-    for (const { ID } of await db.run(SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID")))
+    for (const { ID } of await db.run(
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
+    ))
       baselineIDs.add(ID)
   })
 
@@ -1031,12 +1033,19 @@ describe("Tests for inline single attachment in non-draft mode", () => {
     const db = await cds.connect.to("db")
     const attachmentsSrv = await cds.connect.to("attachments")
     const allRecords = await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID", "myAttachment_url"),
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns(
+        "ID",
+        "myAttachment_url",
+      ),
     )
     for (const { ID, myAttachment_url: url } of allRecords) {
       if (baselineIDs.has(ID)) continue
       if (url) await attachmentsSrv.emit("DeleteAttachment", { url })
-      await db.run(cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({ ID }))
+      await db.run(
+        cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({
+          ID,
+        }),
+      )
     }
   })
 
