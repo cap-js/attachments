@@ -2790,7 +2790,7 @@ describe("Tests for single attachment entity", () => {
         .where({ ID: singleAttachment.ID }),
     )
     expect(after.myAttachment_filename).toBeNull()
-    expect(after.myAttachment_status).toBeNull()
+    expect(after.myAttachment_status).toBe("Unscanned")
     expect(after.myAttachment_url).toBeNull()
   })
 })
