@@ -1906,7 +1906,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
 
     expect(result).toBeTruthy()
-    expect(result.content).toBeTruthy()
+    const chunks = []
+    await new Promise((resolve, reject) => {
+      result.content.on("data", (chunk) => chunks.push(chunk))
+      result.content.on("end", resolve)
+      result.content.on("error", reject)
+    })
+    expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
   })
 })
 
