@@ -1949,6 +1949,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 })
 
 describe("Tests for single attachment entity", () => {
+  const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
   let log = cds.test.log()
   const baselineIDs = new Set()
   const baselineDraftIDs = new Set()
@@ -2514,13 +2515,12 @@ describe("Tests for single attachment entity", () => {
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
         .set({
-          myAttachment_status: "Clean",
           myAttachment_lastScan: new Date(2000, 1, 1).toISOString(),
         })
         .where({ ID: singleAttachment.ID }),
     )
 
-    const scanCleanWaiter = waitForScanStatus("Clean")
+    const scanCleanWaiter = waitForScanStatus("Clean", undefined, db)
 
     const rescanRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
@@ -2820,6 +2820,52 @@ describe("Tests for single attachment entity", () => {
     expect(after.myAttachment_filename).toBeNull()
     expect(after.myAttachment_status).toBe("Unscanned")
     expect(after.myAttachment_url).toBeNull()
+  })
+
+  // prettier-ignore
+  isNotLocal("Programmatic SELECT with columns('myAttachment_content') returns bytes from object store", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      {
+        name: "Programmatic content fetch test",
+        myAttachment_filename: "sample.pdf",
+      },
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+      {},
+    )
+    await scanCleanWaiter
+
+    const srv = await cds.connect.to("ProcessorService")
+    const SingleAttachment = srv.entities.SingleAttachment
+
+    const result = await runWithUser(alice, () =>
+      SELECT.one
+        .from(SingleAttachment)
+        .columns("myAttachment_content")
+        .where({ ID: singleAttachment.ID }),
+    )
+
+    expect(result).toBeTruthy()
+    const chunks = []
+    await new Promise((resolve, reject) => {
+      result.myAttachment_content.on("data", (chunk) => chunks.push(chunk))
+      result.myAttachment_content.on("end", resolve)
+      result.myAttachment_content.on("error", reject)
+    })
+    expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
   })
 })
 

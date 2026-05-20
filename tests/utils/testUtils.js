@@ -9,8 +9,8 @@ async function delay(timeout = 1000) {
   return new Promise((resolve) => setTimeout(resolve, timeout))
 }
 
-async function waitForScanStatus(status, attachmentID) {
-  const db = await cds.connect.to("db")
+async function waitForScanStatus(status, attachmentID, preConnectedDb = null) {
+  const db = preConnectedDb ?? (await cds.connect.to("db"))
   let latestStatus = null
   return Promise.race([
     new Promise((resolve) => {
