@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.12.2
+
+### Fixed
+
+- Querying from content column while using object storage now returns expected result.
+
 ## Version 3.12.1
 
 ### Added
