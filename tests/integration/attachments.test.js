@@ -1918,6 +1918,34 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(contentAfterActiveUpdate.status).toEqual(200)
     expect(contentAfterActiveUpdate.data).toBeTruthy()
   })
+
+  // prettier-ignore
+  isNotLocal("Programmatic SELECT with columns('content') returns bytes from object store", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    await uploadDraftAttachment(utils, POST, GET, incidentID)
+    await scanCleanWaiter
+
+    const srv = await cds.connect.to("ProcessorService")
+    const Attachments = srv.entities["Incidents.attachments"]
+
+    const result = await runWithUser(alice, () =>
+      SELECT.one
+        .from(Attachments)
+        .columns("content")
+        .where({ up__ID: incidentID }),
+    )
+
+    expect(result).toBeTruthy()
+    const chunks = []
+    await new Promise((resolve, reject) => {
+      result.content.on("data", (chunk) => chunks.push(chunk))
+      result.content.on("end", resolve)
+      result.content.on("error", reject)
+    })
+    expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
+  })
 })
 
 describe("Tests for single attachment entity", () => {

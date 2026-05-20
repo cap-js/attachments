@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Removed hard-coded attributes from nested attachment handling.
 
+## Version 3.12.2
+
+### Fixed
+
+- Querying from content column while using object storage now returns expected result.
+
 ## Version 3.12.1
 
 ### Added
