@@ -2515,12 +2515,13 @@ describe("Tests for single attachment entity", () => {
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
         .set({
+          myAttachment_status: "Clean",
           myAttachment_lastScan: new Date(2000, 1, 1).toISOString(),
         })
         .where({ ID: singleAttachment.ID }),
     )
 
-    const scanCleanWaiter = waitForScanStatus("Clean", undefined, db)
+    const scanCleanWaiter = waitForScanStatus("Clean")
 
     const rescanRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
