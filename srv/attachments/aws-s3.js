@@ -1,11 +1,15 @@
-const {
-  S3Client,
-  GetObjectCommand,
-  DeleteObjectCommand,
-  HeadObjectCommand,
-  CopyObjectCommand,
-} = require("@aws-sdk/client-s3")
-const { Upload } = require("@aws-sdk/lib-storage")
+let S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand, Upload
+try {
+  ;({ S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand } = require("@aws-sdk/client-s3"))
+  ;({ Upload } = require("@aws-sdk/lib-storage"))
+} catch (e) {
+  if (e.code === "MODULE_NOT_FOUND")
+    throw new Error(
+      'The AWS S3 storage provider requires "@aws-sdk/client-s3" and "@aws-sdk/lib-storage" to be installed.\n' +
+        "Please run: npm install @aws-sdk/client-s3 @aws-sdk/lib-storage",
+    )
+  throw e
+}
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../../lib/helper")
