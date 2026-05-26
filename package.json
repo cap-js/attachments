@@ -46,10 +46,18 @@
     "@sap/cds": ">=8"
   },
   "peerDependenciesMeta": {
-    "@aws-sdk/client-s3": { "optional": true },
-    "@aws-sdk/lib-storage": { "optional": true },
-    "@azure/storage-blob": { "optional": true },
-    "@google-cloud/storage": { "optional": true }
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@aws-sdk/lib-storage": {
+      "optional": true
+    },
+    "@azure/storage-blob": {
+      "optional": true
+    },
+    "@google-cloud/storage": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=18.0.0"
