@@ -6,6 +6,7 @@ try {
     throw new Error(
       'The Google Cloud Platform storage provider requires "@google-cloud/storage" to be installed.\n' +
         "Please run: npm install @google-cloud/storage",
+      { cause: e },
     )
   throw e
 }

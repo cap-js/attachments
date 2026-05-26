@@ -18,6 +18,7 @@ try {
     throw new Error(
       'The AWS S3 storage provider requires "@aws-sdk/client-s3" and "@aws-sdk/lib-storage" to be installed.\n' +
         "Please run: npm install @aws-sdk/client-s3 @aws-sdk/lib-storage",
+      { cause: e },
     )
   throw e
 }

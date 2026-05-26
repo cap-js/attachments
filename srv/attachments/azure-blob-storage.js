@@ -6,6 +6,7 @@ try {
     throw new Error(
       'The Azure Blob Storage provider requires "@azure/storage-blob" to be installed.\n' +
         "Please run: npm install @azure/storage-blob",
+      { cause: e },
     )
   throw e
 }
