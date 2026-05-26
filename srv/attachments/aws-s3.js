@@ -1,6 +1,17 @@
-let S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand, Upload
+let S3Client,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  CopyObjectCommand,
+  Upload
 try {
-  ;({ S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CopyObjectCommand } = require("@aws-sdk/client-s3"))
+  ;({
+    S3Client,
+    GetObjectCommand,
+    DeleteObjectCommand,
+    HeadObjectCommand,
+    CopyObjectCommand,
+  } = require("@aws-sdk/client-s3"))
   ;({ Upload } = require("@aws-sdk/lib-storage"))
 } catch (e) {
   if (e.code === "MODULE_NOT_FOUND")

@@ -32,9 +32,9 @@ describe("optional peer dependency errors", () => {
       jest.doMock("@azure/storage-blob", () => {
         throw makeNotFound("@azure/storage-blob")
       })
-      expect(() =>
-        require("../../srv/attachments/azure-blob-storage"),
-      ).toThrow("npm install @azure/storage-blob")
+      expect(() => require("../../srv/attachments/azure-blob-storage")).toThrow(
+        "npm install @azure/storage-blob",
+      )
     })
   })
 
