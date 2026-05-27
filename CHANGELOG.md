@@ -8,7 +8,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Added
 
-- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field look something like `myAttachment : Attachment;`, without the composition.
+- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field of type Attachment, without the composition value:
+
+```cds
+entity MyEntity {
+  title: String;
+  attachment: Attachment;
+}
+```
 
 ### Fixed
 
