@@ -172,9 +172,19 @@ async function runWithUser(user, fn) {
   return cds._with(ctx, fn)
 }
 
+async function waitUntil(predicate, timeout = 30000) {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    if (await predicate()) return
+    await delay(200)
+  }
+  throw new Error(`Timeout: condition not met within ${timeout}ms`)
+}
+
 module.exports = {
   delay,
   waitForScanStatus,
+  waitUntil,
   newIncident,
   waitForDeletion,
   waitForMalwareDeletion,

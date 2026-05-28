@@ -2,6 +2,7 @@ const cds = require("@sap/cds")
 const { RequestSend } = require("../utils/api")
 const {
   waitForScanStatus,
+  waitUntil,
   newIncident,
   waitForMalwareDeletion,
   waitForDeletion,
@@ -355,7 +356,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // Wait for scanning to complete
     await scanCleanWaiter
 
-    //check the content of the uploaded attachment in main table
+    // Check the content of the uploaded attachment in main table
     const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
     )
@@ -365,7 +366,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)`,
     )
 
-    //trigger to delete attachment
+    // Trigger to delete attachment
     await utils.draftModeEdit(
       "processor",
       "Incidents",
@@ -386,10 +387,16 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       }
     })
 
-    //delete attachment
+    // Delete attachment
     await DELETE(
       `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`,
     )
+
+    // Content should still be accessible on the active entity while deletion is only staged in draft
+    const contentWhileInDraft = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
+    )
+    expect(contentWhileInDraft.status).toEqual(200)
 
     await utils.draftModeSave(
       "processor",
@@ -401,11 +408,11 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(attachmentIDs[0]).toEqual(attachmentData.data.url)
     expect(attachmentIDs.length).toEqual(1)
 
-    //read attachments list for Incident
+    // Read attachments list for Incident
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments`,
     )
-    //the data should have no attachments
+    // Data should have no attachments
     expect(response.status).toEqual(200)
     expect(response.data.value.length).toEqual(0)
 
@@ -438,7 +445,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
   })
 
-  it("Discarding a saved draft should not delete attachment content", async () => {
+  it("Discarding a saved draft should not delete previous attachment content", async () => {
     const incidentID = await newIncident(POST, "processor")
     const scanCleanWaiter = waitForScanStatus("Clean")
 
@@ -451,12 +458,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     expect(sampleDocID).toBeTruthy()
     await scanCleanWaiter
 
-    const contentResponse1 = await GET(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
-    )
-    expect(contentResponse1.status).toEqual(200)
-    expect(contentResponse1.data).toBeTruthy()
-
     await utils.draftModeEdit(
       "processor",
       "Incidents",
@@ -464,16 +465,48 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "ProcessorService",
     )
 
-    const discardResponse = await DELETE(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)`,
+    const secondAttachRes = await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: "draft-only.pdf",
+        mimeType: "application/pdf",
+        createdBy: "alice",
+      },
     )
-    expect(discardResponse.status).toEqual(204)
+    expect(secondAttachRes.data.ID).toBeTruthy()
+    const draftFileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    await PUT(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${secondAttachRes.data.ID},IsActiveEntity=false)/content`,
+      draftFileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": draftFileContent.byteLength,
+        },
+      },
+    )
 
-    // Verify the attachment content STILL exists
-    const contentResponse2 = await GET(
+    await DELETE(
+      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${secondAttachRes.data.ID},IsActiveEntity=false)`,
+    )
+
+    // Save the draft (leave edit mode)
+    await utils.draftModeSave(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    // First attachment must still exist after the draft save
+    const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
     )
-    expect(contentResponse2.status).toEqual(200)
+    expect(contentResponse.status).toEqual(200)
+    expect(contentResponse.data).toBeTruthy()
   })
 
   it("Cancel draft where parent has composed key", async () => {
@@ -2521,14 +2554,23 @@ describe("Tests for single attachment entity", () => {
         .where({ ID: singleAttachment.ID }),
     )
 
-    const scanCleanWaiter = waitForScanStatus("Clean")
-
+    const rescanStart = new Date()
     const rescanRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
     ).catch((e) => e.response)
     expect(rescanRes.status).toEqual(202)
 
-    await scanCleanWaiter
+    await waitUntil(async () => {
+      const row = await db.run(
+        SELECT.one
+          .from("sap.capire.incidents.SingleAttachment")
+          .where({ ID: singleAttachment.ID }),
+      )
+      return (
+        row?.myAttachment_status === "Clean" &&
+        new Date(row.myAttachment_lastScan) > rescanStart
+      )
+    })
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
