@@ -270,22 +270,10 @@ annotate service.SingleAttachment with @(
             Label : 'General Information',
             Target : '@UI.FieldGroup#General',
         },
-        {
-            $Type : 'UI.ReferenceFacet',
-            Label : 'Attachment',
-            Target : '@UI.FieldGroup#MyAttachment'
-        }
     ],
     UI.FieldGroup #General : {
         Data : [
             { Value : name },
-        ]
-    },
-    UI.FieldGroup #MyAttachment : {
-        Data : [
-            { Value : myAttachment_content  },
-            { Value : myAttachment_filename },
-            { Value : myAttachment_status   },
         ]
     }
 );
