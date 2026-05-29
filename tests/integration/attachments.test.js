@@ -379,6 +379,8 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       attachmentIDs.push(req.data?.url)
     })
 
+    const deletionWaiter = waitForDeletion(attachmentData.data.url)
+
     //delete attachment
     await DELETE(
       `odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=false)`,
@@ -392,7 +394,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     )
 
     // Wait for the outbox to dispatch the DeleteAttachment event
-    await waitForDeletion(attachmentData.data.url)
+    await deletionWaiter
 
     expect(attachmentIDs[0]).toEqual(attachmentData.data.url)
     expect(attachmentIDs.length).toEqual(1)
