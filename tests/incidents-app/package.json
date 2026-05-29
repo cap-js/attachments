@@ -7,6 +7,9 @@
     "@cap-js/hana": "2.6.0",
     "@cap-js/postgres": "^2.2.0"
   },
+  "devDependencies": {
+    "@cap-js/sqlite": "*"
+  },
   "cds": {
     "fiori": {
       "bypass_draft": true
