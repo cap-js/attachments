@@ -373,18 +373,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       "ProcessorService",
     )
 
-    const db = await cds.connect.to("db")
+    const attachmentsSrv = await cds.connect.to("attachments")
     const attachmentIDs = []
-    db.before("*", (req) => {
-      if (
-        req.event === "CREATE" &&
-        req.target?.name === "cds.outbox.Messages" &&
-        req.query?.INSERT?.entries?.[0]?.msg
-      ) {
-        const msg = JSON.parse(req.query.INSERT.entries[0].msg)
-        attachmentIDs.push(msg.data.url)
-      }
+    attachmentsSrv.before("DeleteAttachment", (req) => {
+      attachmentIDs.push(req.data?.url)
     })
+
+    const deletionWaiter = waitForDeletion(attachmentData.data.url)
 
     //delete attachment
     await DELETE(
@@ -397,6 +392,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       incidentID,
       "ProcessorService",
     )
+
+    // Wait for the outbox to dispatch the DeleteAttachment event
+    await deletionWaiter
 
     expect(attachmentIDs[0]).toEqual(attachmentData.data.url)
     expect(attachmentIDs.length).toEqual(1)
