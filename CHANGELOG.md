@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.12.3
+
+### Fixed
+
+- Fixed `No service definition found for 'malwareScanner'` error in deployed applications caused by recent `@sap/cds` versions tightening service definition validation when a `model` path is configured. The malware scanner kind config now uses `impl` instead of `model`, and the internal scan call no longer relies on the CDS-generated action dispatch method.
+
 ## Version 3.12.2
 
 ### Fixed
