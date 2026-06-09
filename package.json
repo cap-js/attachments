@@ -39,7 +39,7 @@
     "husky": "^9.1.7"
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
+    "@sap/cds": ">=9"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -94,7 +94,7 @@
         }
       },
       "attachments": {
-        "outbox": true,
+        "queue": true,
         "scan": true,
         "deduplicateFileNames": true,
         "scanExpiryMs": 259200000,
