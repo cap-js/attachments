@@ -3189,7 +3189,116 @@ describe("Tests for renaming duplicate attachments", () => {
     expect(att2.filename).toEqual("sample.pdf")
   })
 
-  it("should NOT rename duplicates when deduplicateFileNames option is disabled", async () => {
+  it("Should rename duplicate attachments in a non-default composition field (overwritableAttachments)", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const response = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+    )
+    expect(response.data.value.map((a) => a.filename).sort()).toEqual([
+      "sample-1.pdf",
+      "sample.pdf",
+    ])
+  })
+
+  it("Should rename duplicates independently across multiple attachment compositions on the same entity", async () => {
+    const incidentID = await newIncident(POST, "processor")
+
+    await utils.draftModeEdit(
+      "processor",
+      "Incidents",
+      incidentID,
+      "ProcessorService",
+    )
+
+    const filepath = join(__dirname, "..", "integration", `content/sample.pdf`)
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    await POST(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+      {
+        up__ID: incidentID,
+        filename: basename(filepath),
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+
+    const attachmentsRes = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+    )
+    const overwritableRes = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/overwritableAttachments`,
+    )
+    expect(attachmentsRes.data.value.map((a) => a.filename).sort()).toEqual([
+      "sample-1.pdf",
+      "sample.pdf",
+    ])
+    expect(overwritableRes.data.value.map((a) => a.filename).sort()).toEqual([
+      "sample-1.pdf",
+      "sample.pdf",
+    ])
+  })
+
+  it("Should NOT rename duplicates when deduplicateFileNames option is disabled", async () => {
     cds.env.requires.attachments.deduplicateFileNames = false
 
     try {
