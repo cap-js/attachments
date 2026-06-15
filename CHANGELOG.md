@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Querying from content column while using object storage now returns expected result.
+- Replaced `axios` with the built-in `fetch` API, removing an external dependency
 
 ## Version 3.12.1
 
