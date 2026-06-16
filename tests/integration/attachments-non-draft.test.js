@@ -39,20 +39,20 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(resCreate.data.title).toBe("New Incident")
   })
 
-  it("should create attachment metadata", async () => {
+  it("Should create attachment metadata", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
   })
 
-  it("should upload attachment content", async () => {
+  it("Should upload attachment content", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).toBe(204)
   })
 
-  it("unknown extension throws warning", async () => {
+  it("Unknown extension throws warning", async () => {
     const incidentID = await newIncident(POST, "admin")
     const response = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
@@ -66,7 +66,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("should list attachments for incident", async () => {
+  it("Should list attachments for incident", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
@@ -110,7 +110,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(Buffer.compare(response.data, originalContent)).toBe(0)
   })
 
-  it("should delete attachment and verify deletion", async () => {
+  it("Should delete attachment and verify deletion", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
@@ -199,7 +199,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(responseContent.status).toBe(200)
   })
 
-  it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
+  it("Should NOT allow overwriting an existing attachment file via /content handler", async () => {
     const incidentID = await newIncident(POST, "admin")
     // Create attachment metadata
     const attachmentID = await createAttachmentMetadata(incidentID)
@@ -236,7 +236,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
     const incidentID = await newIncident(POST, "admin")
 
     // Create attachment metadata on overwritableAttachments
@@ -281,7 +281,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(overwriteRes.status).toBe(204)
   })
 
-  it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -331,7 +331,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -393,7 +393,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   // prettier-ignore
-  isNotLocal("should delete file from object store if data is deleted", async () => {
+  isNotLocal("Should delete file from object store if data is deleted", async () => {
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(
@@ -443,7 +443,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(await deletion).toBe(true)
   })
 
-  it("should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
+  it("Should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
     const firstID = cds.utils.uuid()
     const secondID = cds.utils.uuid()
 
@@ -498,7 +498,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(attachment2.data.filename).toBe("file2.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -553,7 +553,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
   })
 
-  it("should handle duplicate filenames on deep insert", async () => {
+  it("Should handle duplicate filenames on deep insert", async () => {
     const incidentID = cds.utils.uuid()
     const { data: incident } = await POST("/odata/v4/admin/Incidents", {
       ID: incidentID,
@@ -838,7 +838,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified targeting composition property", async () => {
+  it("Custom error message can be specified targeting composition property", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",
@@ -860,7 +860,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified for entity", async () => {
+  it("Custom error message can be specified for entity", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",
@@ -924,7 +924,7 @@ describe("Row-level security on attachments composition", () => {
     await scanCleanWaiter
   })
 
-  it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
+  it("Should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
     // Now, try to GET the attachment content as alice
     const getRes = await GET(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
@@ -936,7 +936,7 @@ describe("Row-level security on attachments composition", () => {
     expect(getRes.data).not.toBeUndefined()
   })
 
-  it("should reject CREATE attachment for unauthorized user", async () => {
+  it("Should reject CREATE attachment for unauthorized user", async () => {
     await POST(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
       {
@@ -950,7 +950,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject UPDATE attachment for unauthorized user", async () => {
+  it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
     await axios
       .patch(
@@ -965,7 +965,7 @@ describe("Row-level security on attachments composition", () => {
       })
   })
 
-  it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
+  it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
     await GET(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
       {
@@ -976,7 +976,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject DELETE attachment for unauthorized user", async () => {
+  it("Should reject DELETE attachment for unauthorized user", async () => {
     await DELETE(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
       {
@@ -987,7 +987,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should not allow bob to PUT into file alice has POSTed", async () => {
+  it("Should not allow bob to PUT into file alice has POSTed", async () => {
     const attachRes = await POST(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
       {
