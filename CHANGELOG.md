@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - **Breaking:** The `outbox` configuration key under `cds.requires.attachments` has been renamed to `queue`. Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `queue`. A deprecation warning is logged at startup when the old key is detected.
 
+## Version 3.12.3
+
+### Fixed
+
+- Removed hard-coded attributes that were being used. Variable attribute names supports multiple compositions of attachments on a single entity.
+
 ## Version 3.12.2
 
 ### Fixed
