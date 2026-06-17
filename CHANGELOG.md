@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 4.0.0
+
+### Changed
+
+- **Breaking:** The `outbox` configuration key under `cds.requires.attachments` has been renamed to `queue`. Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `queue`. A deprecation warning is logged at startup when the old key is detected.
+
 ## Version 3.12.2
 
 ### Fixed
