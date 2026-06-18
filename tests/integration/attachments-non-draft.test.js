@@ -393,7 +393,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   // prettier-ignore
-  isNotLocal("should delete file from object store if data is deleted", async () => {
+  isNotLocal("Should delete file from object store if data is deleted", async () => {
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(
@@ -444,16 +444,31 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   // prettier-ignore
-  isNotLocal("should emit DeleteAttachment when parent entity is deleted in non-draft mode", async () => {
+  isNotLocal("Should emit DeleteAttachment when parent entity is deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
-    await POST(`odata/v4/processor/NonDraftTest`, { ID: testID, name: "Parent delete object store test" })
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Parent delete object store test",
+    })
 
     const attachRes = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
-      { up__ID: testID, filename: "parentfile.pdf", mimeType: "application/pdf", createdAt: new Date(), createdBy: "alice" },
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
     )
     expect(attachRes.data.url).toBeTruthy()
-    await uploadAttachmentContent(testID, attachRes.data.ID, "content/sample.pdf", "processor", "NonDraftTest")
+    await uploadAttachmentContent(
+      testID,
+      attachRes.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
 
     const deletion = waitForDeletion(attachRes.data.url)
 
@@ -1151,7 +1166,9 @@ describe("Tests for inline single attachment in non-draft mode", () => {
 
     const db = await cds.connect.to("db")
     const before = await db.run(
-      SELECT.one.from("sap.capire.incidents.SingleAttachment").where({ ID: entity.ID }),
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
     )
     expect(before.myAttachment_url).toBeTruthy()
 

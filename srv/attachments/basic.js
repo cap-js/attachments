@@ -467,7 +467,8 @@ class AttachmentsService extends cds.Service {
         }
       }
 
-      if (attachmentsToDelete.length > 0) req.attachmentsToDelete = attachmentsToDelete
+      if (attachmentsToDelete.length > 0)
+        req.attachmentsToDelete = attachmentsToDelete
       return
     }
 
