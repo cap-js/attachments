@@ -1066,21 +1066,12 @@ describe("Tests for inline single attachment in non-draft mode", () => {
 
   afterAll(async () => {
     const db = await cds.connect.to("db")
-    const attachmentsSrv = await cds.connect.to("attachments")
     const allRecords = await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns(
-        "ID",
-        "myAttachment_url",
-      ),
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
     )
-    for (const { ID, myAttachment_url: url } of allRecords) {
+    for (const { ID } of allRecords) {
       if (baselineIDs.has(ID)) continue
-      if (url) await attachmentsSrv.emit("DeleteAttachment", { url })
-      await db.run(
-        cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({
-          ID,
-        }),
-      )
+      await DELETE(`/odata/v4/admin/SingleAttachment(ID=${ID})`)
     }
   })
 
