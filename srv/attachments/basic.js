@@ -386,6 +386,26 @@ class AttachmentsService extends cds.Service {
    * @param {Array} path - The array of keys representing the path.
    * @returns {*} - The value found at the path, or [] if not found.
    */
+  buildExpandColumns(compositions) {
+    const columns = []
+    for (const path of compositions) {
+      let current = columns
+      for (let i = 0; i < path.length; i++) {
+        const segment = path[i]
+        let next = current.find(
+          (c) => c.ref?.length === 1 && c.ref[0] === segment,
+        )
+        if (!next) {
+          next = { ref: [segment], expand: [] }
+          current.push(next)
+        }
+        current = next.expand
+        if (i === path.length - 1) current.push("*")
+      }
+    }
+    return columns
+  }
+
   traverseDataByPath(root, path) {
     let current = root
     for (let i = 0; i < path.length; i++) {
@@ -406,31 +426,56 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
-    if (!req.target?.drafts) return
     const attachmentCompositions =
       req.target._attachments.attachmentCompositions
+
+    if (!req.target?.drafts) {
+      if (req.event !== "DELETE") return
+
+      const attachmentsToDelete = []
+
+      if (attachmentCompositions.length > 0) {
+        const columns = this.buildExpandColumns(attachmentCompositions)
+        const active = await SELECT.one.from(req.subject).columns(columns)
+        if (active) {
+          for (const path of attachmentCompositions) {
+            const entityTarget = traverseEntity(req.target, path)
+            const attachments = this.traverseDataByPath(active, path) || []
+            attachmentsToDelete.push(
+              ...attachments
+                .filter((a) => a.url)
+                .map((a) => ({ url: a.url, target: entityTarget.name })),
+            )
+          }
+        }
+      }
+
+      if (req.target._attachments?.hasInlineAttachments) {
+        const prefixes = req.target._attachments.inlineAttachmentPrefixes
+        const urlColumns = prefixes.map((p) => `${p}_url`)
+        const record = await SELECT.one.from(req.subject).columns(urlColumns)
+        if (record) {
+          attachmentsToDelete.push(
+            ...prefixes
+              .map((p) => ({
+                url: record[`${p}_url`],
+                target: req.target.name,
+                prefix: p,
+              }))
+              .filter(({ url }) => url),
+          )
+        }
+      }
+
+      if (attachmentsToDelete.length > 0) req.attachmentsToDelete = attachmentsToDelete
+      return
+    }
+
     if (attachmentCompositions.length > 0) {
       const whereCond = req.subject?.ref?.[0]?.where
       if (!whereCond) return
 
-      const columns = []
-      for (const path of attachmentCompositions) {
-        let current = columns
-        for (let i = 0; i < path.length; i++) {
-          const segment = path[i]
-          let next = current.find(
-            (c) => c.ref?.length === 1 && c.ref[0] === segment,
-          )
-          if (!next) {
-            next = { ref: [segment], expand: [] }
-            current.push(next)
-          }
-          current = next.expand
-          if (i === path.length - 1) {
-            current.push("*")
-          }
-        }
-      }
+      const columns = this.buildExpandColumns(attachmentCompositions)
 
       const [draft, active] = await Promise.all([
         SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),

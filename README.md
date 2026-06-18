@@ -535,11 +535,14 @@ entity Incidents {
 It is also possible to allow for only 1 attachment by defining the attachments field as a single attachment. This displays a different UI that more clearly shows the single attachment rather than in a list.
 
 ```cds
+using { Attachment } from '@cap-js/attachments';
 entity Incidents {
   ...
   attachment: Attachment;
 }
 ```
+
+<img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/comparison.png">
 
 ### Allow Overwriting Attachment Content
 
