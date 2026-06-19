@@ -448,7 +448,8 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDraftCompositionDeletionData(req) {
-    const attachmentCompositions = req.target._attachments.attachmentCompositions
+    const attachmentCompositions =
+      req.target._attachments.attachmentCompositions
     if (!attachmentCompositions.length) return
 
     const whereCond = req.subject?.ref?.[0]?.where
@@ -461,11 +462,22 @@ class AttachmentsService extends cds.Service {
     ])
 
     if (!draft) {
-      if (req.event === "DELETE" && req.subject?.ref?.[0]?.id !== req.target.drafts.name && active) {
-        const toDelete = this.urlsFromCompositions(active, attachmentCompositions, req.target)
+      if (
+        req.event === "DELETE" &&
+        req.subject?.ref?.[0]?.id !== req.target.drafts.name &&
+        active
+      ) {
+        const toDelete = this.urlsFromCompositions(
+          active,
+          attachmentCompositions,
+          req.target,
+        )
         if (toDelete.length) req.attachmentsToDelete = toDelete
       } else {
-        DEBUG?.(`Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `, whereCond)
+        DEBUG?.(
+          `Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `,
+          whereCond,
+        )
       }
       return
     }
@@ -474,12 +486,17 @@ class AttachmentsService extends cds.Service {
 
     const attachmentsToDelete = []
     for (const attachmentsComp of attachmentCompositions) {
-      const activeAttachments = this.traverseDataByPath(active, attachmentsComp) || []
-      const draftAttachments = this.traverseDataByPath(draft, attachmentsComp) || []
+      const activeAttachments =
+        this.traverseDataByPath(active, attachmentsComp) || []
+      const draftAttachments =
+        this.traverseDataByPath(draft, attachmentsComp) || []
       const draftAttachmentIDs = new Set(draftAttachments.map((a) => a.ID))
       const entityTarget = traverseEntity(req.target, attachmentsComp)
 
-      if (req.event === "DELETE" && req.subject?.ref?.[0]?.id === req.target.drafts.name) {
+      if (
+        req.event === "DELETE" &&
+        req.subject?.ref?.[0]?.id === req.target.drafts.name
+      ) {
         attachmentsToDelete.push(
           ...draftAttachments
             .filter((att) => att.url && !att.HasActiveEntity)
@@ -492,7 +509,8 @@ class AttachmentsService extends cds.Service {
           .map((att) => ({ url: att.url, target: entityTarget.name })),
       )
     }
-    if (attachmentsToDelete.length > 0) req.attachmentsToDelete = attachmentsToDelete
+    if (attachmentsToDelete.length > 0)
+      req.attachmentsToDelete = attachmentsToDelete
   }
 
   /**
@@ -501,7 +519,11 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDraftInlineDeletionData(req) {
-    if (req.event !== "DELETE" || !req.target._attachments?.hasInlineAttachments) return
+    if (
+      req.event !== "DELETE" ||
+      !req.target._attachments?.hasInlineAttachments
+    )
+      return
 
     const prefixes = req.target._attachments.inlineAttachmentPrefixes
     const whereCond = req.subject?.ref?.[0]?.where
@@ -516,15 +538,26 @@ class AttachmentsService extends cds.Service {
     if (!draft) {
       if (req.subject?.ref?.[0]?.id !== req.target.drafts.name) {
         const keys = Object.fromEntries(
-          Object.entries(req.params?.at(-1) || {}).filter(([k]) => k !== "IsActiveEntity"),
+          Object.entries(req.params?.at(-1) || {}).filter(
+            ([k]) => k !== "IsActiveEntity",
+          ),
         )
-        const active = await SELECT.one.from(req.target).where(keys).columns(urlColumns)
+        const active = await SELECT.one
+          .from(req.target)
+          .where(keys)
+          .columns(urlColumns)
         if (active) {
           const toDelete = prefixes
-            .map((p) => ({ url: active[`${p}_url`], target: req.target.name, prefix: p }))
+            .map((p) => ({
+              url: active[`${p}_url`],
+              target: req.target.name,
+              prefix: p,
+            }))
             .filter(({ url }) => url)
           if (toDelete.length)
-            req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(toDelete)
+            req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(
+              toDelete,
+            )
         }
       }
       return
@@ -533,14 +566,23 @@ class AttachmentsService extends cds.Service {
     let activeUrls = new Set()
     if (draft.HasActiveEntity) {
       const keys = Object.fromEntries(
-        Object.entries(req.params?.at(-1) || {}).filter(([k]) => k !== "IsActiveEntity"),
+        Object.entries(req.params?.at(-1) || {}).filter(
+          ([k]) => k !== "IsActiveEntity",
+        ),
       )
-      const active = await SELECT.one.from(req.target).where(keys).columns(urlColumns)
+      const active = await SELECT.one
+        .from(req.target)
+        .where(keys)
+        .columns(urlColumns)
       activeUrls = new Set(Object.values(active || {}).filter(Boolean))
     }
 
     const toDelete = prefixes
-      .map((p) => ({ url: draft[`${p}_url`], target: req.target.name, prefix: p }))
+      .map((p) => ({
+        url: draft[`${p}_url`],
+        target: req.target.name,
+        prefix: p,
+      }))
       .filter(({ url }) => url && !activeUrls.has(url))
     if (toDelete.length)
       req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(toDelete)
@@ -552,7 +594,8 @@ class AttachmentsService extends cds.Service {
    * @param {import('@sap/cds').Request} req - The request object
    */
   async attachDeletionData(req) {
-    const attachmentCompositions = req.target._attachments.attachmentCompositions
+    const attachmentCompositions =
+      req.target._attachments.attachmentCompositions
 
     if (req.target?.drafts) {
       await this.attachDraftCompositionDeletionData(req)
@@ -566,7 +609,13 @@ class AttachmentsService extends cds.Service {
         const columns = this.buildExpandColumns(attachmentCompositions)
         const active = await SELECT.one.from(req.subject).columns(columns)
         if (active)
-          attachmentsToDelete.push(...this.urlsFromCompositions(active, attachmentCompositions, req.target))
+          attachmentsToDelete.push(
+            ...this.urlsFromCompositions(
+              active,
+              attachmentCompositions,
+              req.target,
+            ),
+          )
       }
 
       if (req.target._attachments?.hasInlineAttachments) {
@@ -576,12 +625,17 @@ class AttachmentsService extends cds.Service {
         if (record)
           attachmentsToDelete.push(
             ...prefixes
-              .map((p) => ({ url: record[`${p}_url`], target: req.target.name, prefix: p }))
+              .map((p) => ({
+                url: record[`${p}_url`],
+                target: req.target.name,
+                prefix: p,
+              }))
               .filter(({ url }) => url),
           )
       }
 
-      if (attachmentsToDelete.length > 0) req.attachmentsToDelete = attachmentsToDelete
+      if (attachmentsToDelete.length > 0)
+        req.attachmentsToDelete = attachmentsToDelete
     }
   }
 

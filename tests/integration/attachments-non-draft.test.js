@@ -1054,26 +1054,6 @@ describe("Row-level security on attachments composition", () => {
 describe("Tests for inline single attachment in non-draft mode", () => {
   axios.defaults.auth = { username: "alice" }
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
-  const baselineIDs = new Set()
-
-  beforeAll(async () => {
-    const db = await cds.connect.to("db")
-    for (const { ID } of await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
-    ))
-      baselineIDs.add(ID)
-  })
-
-  afterAll(async () => {
-    const db = await cds.connect.to("db")
-    const allRecords = await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
-    )
-    for (const { ID } of allRecords) {
-      if (baselineIDs.has(ID)) continue
-      await DELETE(`/odata/v4/admin/SingleAttachment(ID=${ID})`)
-    }
-  })
 
   it("Should create a SingleAttachment and serve content without draft", async () => {
     const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
