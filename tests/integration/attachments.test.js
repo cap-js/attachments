@@ -1977,6 +1977,32 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     })
     expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
   })
+
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when active Incident entity is deleted without open draft", async () => {
+    const incidentID = await newIncident(POST, "processor")
+    const scanCleanWaiter = waitForScanStatus("Clean")
+    const sampleDocID = await uploadDraftAttachment(
+      utils,
+      POST,
+      GET,
+      incidentID,
+    )
+    await scanCleanWaiter
+
+    const { data: attachmentData } = await GET(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)`,
+    )
+    expect(attachmentData.url).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(attachmentData.url)
+
+    await DELETE(
+      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)`,
+    )
+
+    expect(await deletionWaiter).toBe(true)
+  })
 })
 
 describe("Tests for single attachment entity", () => {
@@ -2001,21 +2027,14 @@ describe("Tests for single attachment entity", () => {
   afterAll(async () => {
     const db = await cds.connect.to("db")
     const svc = await cds.connect.to("ProcessorService")
-    const attachmentsSrv = await cds.connect.to("attachments")
     const allRecords = await db.run(
-      SELECT.from("sap.capire.incidents.SingleAttachment").columns(
-        "ID",
-        "myAttachment_url",
-      ),
+      SELECT.from("sap.capire.incidents.SingleAttachment").columns("ID"),
     )
-    for (const { ID, myAttachment_url: url } of allRecords) {
+    for (const { ID } of allRecords) {
       if (baselineIDs.has(ID)) continue
-      if (url) await attachmentsSrv.emit("DeleteAttachment", { url })
-      await db.run(
-        cds.ql.DELETE.from("sap.capire.incidents.SingleAttachment").where({
-          ID,
-        }),
-      )
+      await DELETE(
+        `/odata/v4/processor/SingleAttachment(ID=${ID},IsActiveEntity=true)`,
+      ).catch(() => {})
     }
     const allDrafts = await db.run(
       SELECT.from(svc.entities.SingleAttachment.drafts).columns("ID"),
@@ -2023,9 +2042,7 @@ describe("Tests for single attachment entity", () => {
     for (const { ID } of allDrafts) {
       if (!baselineDraftIDs.has(ID))
         await db.run(
-          cds.ql.DELETE.from(svc.entities.SingleAttachment.drafts).where({
-            ID,
-          }),
+          cds.ql.DELETE.from(svc.entities.SingleAttachment.drafts).where({ ID }),
         )
     }
   })
@@ -2391,6 +2408,41 @@ describe("Tests for single attachment entity", () => {
     expect(discardRes.status).toEqual(204)
 
     await deletionWaiter
+  })
+
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when active SingleAttachment entity is deleted without open draft", async () => {
+    const scanCleanWaiter = waitForScanStatus("Clean")
+
+    const { data: singleAttachment } = await POST(
+      "/odata/v4/processor/SingleAttachment",
+      { name: "Active delete test" },
+    )
+    await POST(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/draftActivate`,
+    )
+
+    const filepath = join(__dirname, "content/sample.pdf")
+    const fileContent = readFileSync(filepath)
+    await PUT(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "application/pdf" } },
+    )
+    await scanCleanWaiter
+
+    const { data: active } = await GET(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+    expect(active.myAttachment_url).toBeTruthy()
+
+    const deletionWaiter = waitForDeletion(active.myAttachment_url)
+
+    await DELETE(
+      `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)`,
+    )
+
+    expect(await deletionWaiter).toBe(true)
   })
 
   it("Should serve new content after re-edit and re-upload", async () => {
