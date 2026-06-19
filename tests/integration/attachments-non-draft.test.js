@@ -39,20 +39,20 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(resCreate.data.title).toBe("New Incident")
   })
 
-  it("should create attachment metadata", async () => {
+  it("Should create attachment metadata", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
   })
 
-  it("should upload attachment content", async () => {
+  it("Should upload attachment content", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).toBe(204)
   })
 
-  it("unknown extension throws warning", async () => {
+  it("Unknown extension throws warning", async () => {
     const incidentID = await newIncident(POST, "admin")
     const response = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
@@ -66,7 +66,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("should list attachments for incident", async () => {
+  it("Should list attachments for incident", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
@@ -110,7 +110,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(Buffer.compare(response.data, originalContent)).toBe(0)
   })
 
-  it("should delete attachment and verify deletion", async () => {
+  it("Should delete attachment and verify deletion", async () => {
     const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
@@ -199,7 +199,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(responseContent.status).toBe(200)
   })
 
-  it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
+  it("Should NOT allow overwriting an existing attachment file via /content handler", async () => {
     const incidentID = await newIncident(POST, "admin")
     // Create attachment metadata
     const attachmentID = await createAttachmentMetadata(incidentID)
@@ -236,7 +236,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
     const incidentID = await newIncident(POST, "admin")
 
     // Create attachment metadata on overwritableAttachments
@@ -281,7 +281,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(overwriteRes.status).toBe(204)
   })
 
-  it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -331,7 +331,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -393,7 +393,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   // prettier-ignore
-  isNotLocal("should delete file from object store if data is deleted", async () => {
+  isNotLocal("Should delete file from object store if data is deleted", async () => {
     const detailsID = cds.utils.uuid()
 
     const testID = await newIncident(
@@ -443,7 +443,41 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(await deletion).toBe(true)
   })
 
-  it("should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when parent entity is deleted in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Parent delete object store test",
+    })
+
+    const attachRes = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+        createdAt: new Date(),
+        createdBy: "alice",
+      },
+    )
+    expect(attachRes.data.url).toBeTruthy()
+    await uploadAttachmentContent(
+      testID,
+      attachRes.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
+
+    const deletion = waitForDeletion(attachRes.data.url)
+
+    await DELETE(`odata/v4/processor/NonDraftTest(ID=${testID})`)
+
+    expect(await deletion).toBe(true)
+  })
+
+  it("Should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
     const firstID = cds.utils.uuid()
     const secondID = cds.utils.uuid()
 
@@ -498,7 +532,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(attachment2.data.filename).toBe("file2.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
@@ -553,7 +587,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
   })
 
-  it("should handle duplicate filenames on deep insert", async () => {
+  it("Should handle duplicate filenames on deep insert", async () => {
     const incidentID = cds.utils.uuid()
     const { data: incident } = await POST("/odata/v4/admin/Incidents", {
       ID: incidentID,
@@ -924,7 +958,7 @@ describe("Row-level security on attachments composition", () => {
     await scanCleanWaiter
   })
 
-  it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
+  it("Should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
     // Now, try to GET the attachment content as alice
     const getRes = await GET(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
@@ -936,7 +970,7 @@ describe("Row-level security on attachments composition", () => {
     expect(getRes.data).not.toBeUndefined()
   })
 
-  it("should reject CREATE attachment for unauthorized user", async () => {
+  it("Should reject CREATE attachment for unauthorized user", async () => {
     await POST(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
       {
@@ -950,7 +984,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject UPDATE attachment for unauthorized user", async () => {
+  it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
     await axios
       .patch(
@@ -965,7 +999,7 @@ describe("Row-level security on attachments composition", () => {
       })
   })
 
-  it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
+  it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
     await GET(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
       {
@@ -976,7 +1010,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should reject DELETE attachment for unauthorized user", async () => {
+  it("Should reject DELETE attachment for unauthorized user", async () => {
     await DELETE(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
       {
@@ -987,7 +1021,7 @@ describe("Row-level security on attachments composition", () => {
     })
   })
 
-  it("should not allow bob to PUT into file alice has POSTed", async () => {
+  it("Should not allow bob to PUT into file alice has POSTed", async () => {
     const attachRes = await POST(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
       {
@@ -1014,6 +1048,141 @@ describe("Row-level security on attachments composition", () => {
     ).catch((e) => {
       expect(e.status).toEqual(403)
     })
+  })
+})
+
+describe("Tests for inline single attachment in non-draft mode", () => {
+  axios.defaults.auth = { username: "alice" }
+  const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
+
+  it("Should create a SingleAttachment and serve content without draft", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft inline test",
+      myAttachment_filename: "hello.txt",
+    })
+    expect(entity.ID).toBeDefined()
+
+    const fileContent = "non-draft inline content"
+    const putRes = await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    expect(putRes.status).toEqual(204)
+
+    // Bypass scan to can read immediately
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: entity.ID }),
+    )
+
+    const getRes = await GET(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toEqual(fileContent)
+  })
+
+  it("Should delete a SingleAttachment and clear all inline fields", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft delete test",
+      myAttachment_filename: "bye.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "content to be deleted",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    // Confirm url was set
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+
+    const delRes = await DELETE(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})`,
+    )
+    expect(delRes.status).toEqual(204)
+
+    const after = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(after).toBeUndefined()
+  })
+
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when a SingleAttachment entity is deleted", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Object store delete test",
+      myAttachment_filename: "bye.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "content to be deleted",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+
+    const deletion = waitForDeletion(before.myAttachment_url)
+
+    await DELETE(`/odata/v4/admin/SingleAttachment(ID=${entity.ID})`)
+
+    expect(await deletion).toBe(true)
+  })
+
+  it("Should return 403 when content is in Scanning status (non-draft)", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft scanning status test",
+      myAttachment_filename: "scan.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "scanning content",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Scanning",
+          myAttachment_url: "some-url",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: entity.ID }),
+    )
+
+    let expectedError
+    await GET(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+    ).catch((e) => {
+      expectedError = e.response ?? e
+    })
+
+    expect(expectedError?.status ?? expectedError?.response?.status).toEqual(
+      403,
+    )
   })
 })
 
