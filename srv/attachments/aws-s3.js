@@ -196,14 +196,22 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         throw error
       }
 
-      const attachmentRef = await SELECT.one("filename")
-        .from(attachments)
-        .where({ ID: { "=": data.ID } })
+      const filename =
+        data.filename ??
+        (attachments.elements?.filename
+          ? (
+              await SELECT.one("filename")
+                .from(attachments)
+                .where({ ID: data.ID })
+            )?.filename
+          : null)
 
+      const contentElement =
+        data._contentElement ?? attachments.elements?.content
       const maxFileSize =
-        attachments.elements.content["@Validation.Maximum"] != null
+        contentElement?.["@Validation.Maximum"] != null
           ? (sizeInBytes(
-              attachments.elements.content["@Validation.Maximum"],
+              contentElement["@Validation.Maximum"],
               attachments.name,
             ) ?? MAX_FILE_SIZE)
           : MAX_FILE_SIZE
@@ -223,11 +231,11 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         },
       })
 
-      const sizeLimit =
-        attachments.elements.content["@Validation.Maximum"] || "400MB"
+      const sizeLimit = contentElement?.["@Validation.Maximum"] || "400MB"
+
       const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
         maxFileSize,
-        filename: attachmentRef?.filename,
+        filename,
         sizeLimit,
         onSizeExceeded: () => {
           multipartUpload.abort()
@@ -248,7 +256,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
         throw err
       }
 
-      await super.put(attachments, metadata)
+      if (metadata.ID) {
+        await super.put(attachments, metadata)
+      }
 
       const duration = Date.now() - startTime
       LOG.debug("File upload to S3 completed successfully", {
@@ -280,7 +290,7 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
   /**
    * @inheritdoc
    */
-  async get(attachments, keys) {
+  async get(attachments, keys, url) {
     const startTime = Date.now()
 
     LOG.info("Starting file download from S3", {
@@ -293,7 +303,9 @@ module.exports = class AWSAttachmentsService extends require("./object-store") {
 
     try {
       LOG.debug("Fetching attachment metadata", { keys })
-      const response = await SELECT.from(attachments, keys).columns("url")
+      const response = url
+        ? { url }
+        : await SELECT.from(attachments, keys).columns("url")
 
       if (!response?.url) {
         LOG.warn(

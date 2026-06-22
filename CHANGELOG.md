@@ -10,6 +10,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
 
+## Version 3.13.0
+
+### Added
+
+- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field of type Attachment, without the composition value:
+
+```cds
+entity MyEntity {
+  title: String;
+  attachment: Attachment;
+}
+```
+
+### Fixed
+
+- Removed hard-coded attributes that were being used. Variable attribute names supports multiple compositions of attachments on a single entity.
+
 ## Version 3.12.2
 
 ### Fixed

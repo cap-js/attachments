@@ -14,6 +14,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Quick Start](#quick-start)
     - [Local Walk-Through](#local-walk-through)
     - [Changes in the CDS Models](#changes-in-the-cds-models)
+    - [Single Attachments](#single-attachments)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
       - [Rate Limit Handling (Auto-Retry)](#rate-limit-handling-auto-retry)
@@ -124,7 +125,7 @@ With the steps above, we have successfully set up asset handling for our referen
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
    <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
 
-4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_tests/integration/content/sample.pdf_](./tests/integration/content/sample.pdf):
+4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_tests/integration/content/sample.pdf_](./tests/integration/content/sample.pdf):
    <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
 
 5. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
@@ -164,6 +165,20 @@ annotate service.Incidents with @odata.draft.enabled;
 ```
 
 If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
+### Single Attachments
+
+It is also possible to allow for only 1 attachment by defining the attachments field as a single attachment. This displays a different UI that more clearly shows the single attachment rather than in a list.
+
+```cds
+using { Attachment } from '@cap-js/attachments';
+entity Incidents {
+  ...
+  attachment: Attachment;
+}
+```
+
+<img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/comparison.png">
 
 ### Storage Targets
 
@@ -596,9 +611,9 @@ For multi-tenant applications, `@cap-js/attachments` must be included in the dep
 
 #### Separate object store instances
 
-By default the plugin creates for each tenant its own object store instance during the tenants subscription.
+By default, the plugin creates its own object store instance for each tenant during the tenant's subscription.
 
-When the tenant unsubscribes the object store instance is deleted.
+When the tenant unsubscribes, the object store instance is deleted.
 
 > [!WARNING]
 > When you remove the plugin from an application after separate object stores already have been created, the object stores are not automatically removed!
@@ -691,7 +706,7 @@ The following table gives an overview of the fields and the i18n codes:
 | `status`   | `ScanStatus` |
 | `note`     | `note`       |
 
-In addition to the field names, header information (`@UI.HeaderInfo`) are also annotated:
+In addition to the field names, header information (`@UI.HeaderInfo`) is also annotated:
 
 | Header Info      | i18n Code     |
 | ---------------- | ------------- |

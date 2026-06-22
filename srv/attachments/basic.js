@@ -10,34 +10,42 @@ const {
 class AttachmentsService extends cds.Service {
   init() {
     this.on("DeleteAttachment", async (msg) => {
-      await this.delete(msg.data.url, msg.data.target)
+      await this.delete(msg.data.url, msg.data.target, msg.data.prefix)
     })
 
     this.on("DeleteInfectedAttachment", async (msg) => {
-      const { target, hash, keys } = msg.data
+      const { target, hash, keys, prefix } = msg.data
+      const hashField = prefix ? `${prefix}_hash` : "hash"
+      const urlField = prefix ? `${prefix}_url` : "url"
+      const contentField = prefix ? `${prefix}_content` : "content"
+
       const attachment = await SELECT.one
         .from(target)
-        .where(Object.assign({ hash }, keys))
-        .columns("url")
-      if (attachment && attachment.url) {
+        .where(Object.assign({ [hashField]: hash }, keys))
+        .columns(urlField)
+      if (attachment && attachment[urlField]) {
         //Might happen that a draft object is the target
         try {
-          const url = attachment.url
+          const url = attachment[urlField]
           const activeEntity = cds.model.definitions[target]
           const draftEntity = target
             ? cds.model.definitions?.[target + ".draft"]
             : undefined
 
           await UPDATE(activeEntity)
-            .where({ url: url })
-            .set({ content: null, url: null, hash: null })
+            .where({ [urlField]: url })
+            .set({ [contentField]: null, [urlField]: null, [hashField]: null })
           if (draftEntity) {
             await UPDATE(draftEntity)
-              .where({ url: url })
-              .set({ content: null, url: null, hash: null })
+              .where({ [urlField]: url })
+              .set({
+                [contentField]: null,
+                [urlField]: null,
+                [hashField]: null,
+              })
           }
 
-          await this.delete(url, target)
+          await this.delete(url, target, prefix)
         } catch (error) {
           LOG.error(`Failed to delete infected file from object store`, error)
         }
@@ -188,21 +196,24 @@ class AttachmentsService extends cds.Service {
    * Registers attachment handlers for the given service and entity
    * @param {import('@sap/cds').Entity} attachments - The attachment service instance
    * @param {string} keys - The keys to identify the attachment
-   * @param {import('@sap/cds').Request} req - The request object
+   * @param {string} url - The URL of the attachment content
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Buffer|Stream|null} - The content of the attachment or null if not found
    */
-  async get(attachments, keys) {
+  async get(attachments, keys, url, prefix) {
     LOG.debug("Downloading attachment for", {
       attachmentName: attachments.name,
       attachmentKeys: keys,
     })
-    let result = await SELECT.from(attachments, keys).columns("content")
-    if ((!result || !result.content) && attachments.isDraft) {
+    const contentField = prefix ? `${prefix}_content` : "content"
+    let result = await SELECT.from(attachments, keys).columns(contentField)
+    if ((!result || !result[contentField]) && attachments.isDraft) {
       attachments = attachments.actives
-      result = await SELECT.from(attachments, keys).columns("content")
+      result = await SELECT.from(attachments, keys).columns(contentField)
     }
-    return result?.content ? result.content : null
+    return result?.[contentField] ? result[contentField] : null
   }
+
   /**
    * Returns a handler to copy updated attachments content from draft to active / object store
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
@@ -230,6 +241,7 @@ class AttachmentsService extends cds.Service {
       if (draftAttachments.length) await this.put(attachments, draftAttachments)
     }
   }
+
   /**
    * Returns the fields to be selected from Attachments entity definition
    * including the association keys if Attachments entity definition is associated to another entity
@@ -374,6 +386,26 @@ class AttachmentsService extends cds.Service {
    * @param {Array} path - The array of keys representing the path.
    * @returns {*} - The value found at the path, or [] if not found.
    */
+  buildExpandColumns(compositions) {
+    const columns = []
+    for (const path of compositions) {
+      let current = columns
+      for (let i = 0; i < path.length; i++) {
+        const segment = path[i]
+        let next = current.find(
+          (c) => c.ref?.length === 1 && c.ref[0] === segment,
+        )
+        if (!next) {
+          next = { ref: [segment], expand: [] }
+          current.push(next)
+        }
+        current = next.expand
+        if (i === path.length - 1) current.push("*")
+      }
+    }
+    return columns
+  }
+
   traverseDataByPath(root, path) {
     let current = root
     for (let i = 0; i < path.length; i++) {
@@ -390,97 +422,220 @@ class AttachmentsService extends cds.Service {
   }
 
   /**
-   * Registers attachment handlers for the given service and entity
+   * Collects attachment URLs from a loaded active entity record by traversing composition paths.
+   * @param {object} active - The loaded active entity record
+   * @param {string[][]} compositions - Composition paths to attachment entities
+   * @param {import('@sap/cds').Entity} parentTarget - The parent entity definition
+   * @returns {Array<{url: string, target: string}>}
+   */
+  urlsFromCompositions(active, compositions, parentTarget) {
+    const result = []
+    for (const path of compositions) {
+      const entityTarget = traverseEntity(parentTarget, path)
+      const attachments = this.traverseDataByPath(active, path) || []
+      result.push(
+        ...attachments
+          .filter((a) => a.url)
+          .map((a) => ({ url: a.url, target: entityTarget.name })),
+      )
+    }
+    return result
+  }
+
+  /**
+   * Collects attachment URLs to delete for draft-enabled entities with composition-based attachments.
+   * Handles three cases: active entity deleted with no open draft, draft discard, and draft activate with removed attachments.
    * @param {import('@sap/cds').Request} req - The request object
    */
-  async attachDeletionData(req) {
-    if (!req.target?.drafts) return
+  async attachDraftCompositionDeletionData(req) {
     const attachmentCompositions =
       req.target._attachments.attachmentCompositions
-    if (attachmentCompositions.length > 0) {
-      const whereCond = req.subject?.ref?.[0]?.where
-      if (!whereCond) return
+    if (!attachmentCompositions.length) return
 
-      const columns = []
-      for (const path of attachmentCompositions) {
-        let current = columns
-        for (let i = 0; i < path.length; i++) {
-          const segment = path[i]
-          let next = current.find(
-            (c) => c.ref?.length === 1 && c.ref[0] === segment,
-          )
-          if (!next) {
-            next = { ref: [segment], expand: [] }
-            current.push(next)
-          }
-          current = next.expand
-          if (i === path.length - 1) {
-            current.push("*")
-          }
-        }
-      }
+    const whereCond = req.subject?.ref?.[0]?.where
+    if (!whereCond) return
 
-      const [draft, active] = await Promise.all([
-        SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
-        SELECT.one.from(req.target).where(whereCond).columns(columns),
-      ])
-      // If no draft exists at all, this means it is the bypass draft option where
-      // active entities can be modified
-      if (!draft) {
+    const columns = this.buildExpandColumns(attachmentCompositions)
+    const [draft, active] = await Promise.all([
+      SELECT.one.from(req.target.drafts).where(whereCond).columns(columns),
+      SELECT.one.from(req.target).where(whereCond).columns(columns),
+    ])
+
+    if (!draft) {
+      if (
+        req.event === "DELETE" &&
+        req.subject?.ref?.[0]?.id !== req.target.drafts.name &&
+        active
+      ) {
+        const toDelete = this.urlsFromCompositions(
+          active,
+          attachmentCompositions,
+          req.target,
+        )
+        if (toDelete.length) req.attachmentsToDelete = toDelete
+      } else {
         DEBUG?.(
           `Skipping attachDeletionData handler detecting deleted attachments because no draft was found for ${req.target.name} and the where condition: `,
           whereCond,
         )
-        return
       }
+      return
+    }
 
-      if (!active) return
+    if (!active) return
+
+    const attachmentsToDelete = []
+    for (const attachmentsComp of attachmentCompositions) {
+      const activeAttachments =
+        this.traverseDataByPath(active, attachmentsComp) || []
+      const draftAttachments =
+        this.traverseDataByPath(draft, attachmentsComp) || []
+      const draftAttachmentIDs = new Set(draftAttachments.map((a) => a.ID))
+      const entityTarget = traverseEntity(req.target, attachmentsComp)
+
+      if (
+        req.event === "DELETE" &&
+        req.subject?.ref?.[0]?.id === req.target.drafts.name
+      ) {
+        attachmentsToDelete.push(
+          ...draftAttachments
+            .filter((att) => att.url && !att.HasActiveEntity)
+            .map((att) => ({ url: att.url, target: entityTarget.name })),
+        )
+      }
+      attachmentsToDelete.push(
+        ...activeAttachments
+          .filter((att) => att.url && att.ID && !draftAttachmentIDs.has(att.ID))
+          .map((att) => ({ url: att.url, target: entityTarget.name })),
+      )
+    }
+    if (attachmentsToDelete.length > 0)
+      req.attachmentsToDelete = attachmentsToDelete
+  }
+
+  /**
+   * Collects inline attachment URLs to delete for draft-enabled entities.
+   * Handles active entity deleted with no open draft, and draft discard/activate with changed inline attachment.
+   * @param {import('@sap/cds').Request} req - The request object
+   */
+  async attachDraftInlineDeletionData(req) {
+    if (
+      req.event !== "DELETE" ||
+      !req.target._attachments?.hasInlineAttachments
+    )
+      return
+
+    const prefixes = req.target._attachments.inlineAttachmentPrefixes
+    const whereCond = req.subject?.ref?.[0]?.where
+    if (!whereCond) return
+    const urlColumns = prefixes.map((p) => `${p}_url`)
+
+    const draft = await SELECT.one
+      .from(req.target.drafts)
+      .where(whereCond)
+      .columns([...urlColumns, "HasActiveEntity"])
+
+    if (!draft) {
+      if (req.subject?.ref?.[0]?.id !== req.target.drafts.name) {
+        const keys = Object.fromEntries(
+          Object.entries(req.params?.at(-1) || {}).filter(
+            ([k]) => k !== "IsActiveEntity",
+          ),
+        )
+        const active = await SELECT.one
+          .from(req.target)
+          .where(keys)
+          .columns(urlColumns)
+        if (active) {
+          const toDelete = prefixes
+            .map((p) => ({
+              url: active[`${p}_url`],
+              target: req.target.name,
+              prefix: p,
+            }))
+            .filter(({ url }) => url)
+          if (toDelete.length)
+            req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(
+              toDelete,
+            )
+        }
+      }
+      return
+    }
+
+    let activeUrls = new Set()
+    if (draft.HasActiveEntity) {
+      const keys = Object.fromEntries(
+        Object.entries(req.params?.at(-1) || {}).filter(
+          ([k]) => k !== "IsActiveEntity",
+        ),
+      )
+      const active = await SELECT.one
+        .from(req.target)
+        .where(keys)
+        .columns(urlColumns)
+      activeUrls = new Set(Object.values(active || {}).filter(Boolean))
+    }
+
+    const toDelete = prefixes
+      .map((p) => ({
+        url: draft[`${p}_url`],
+        target: req.target.name,
+        prefix: p,
+      }))
+      .filter(({ url }) => url && !activeUrls.has(url))
+    if (toDelete.length)
+      req.attachmentsToDelete = (req.attachmentsToDelete || []).concat(toDelete)
+  }
+
+  /**
+   * Collects attachment URLs that should be deleted from object storage when an entity is deleted or updated.
+   * Populates req.attachmentsToDelete for use by deleteAttachmentsWithKeys in the after handler.
+   * @param {import('@sap/cds').Request} req - The request object
+   */
+  async attachDeletionData(req) {
+    const attachmentCompositions =
+      req.target._attachments.attachmentCompositions
+
+    if (req.target?.drafts) {
+      await this.attachDraftCompositionDeletionData(req)
+      await this.attachDraftInlineDeletionData(req)
+    } else {
+      if (req.event !== "DELETE") return
 
       const attachmentsToDelete = []
 
-      for (const attachmentsComp of attachmentCompositions) {
-        const activeAttachments =
-          this.traverseDataByPath(active, attachmentsComp) || []
-        const draftAttachments =
-          this.traverseDataByPath(draft, attachmentsComp) || []
-        const draftAttachmentIDs = new Set(draftAttachments.map((a) => a.ID))
-        const entityTarget = traverseEntity(req.target, attachmentsComp)
-
-        // Find attachments present in the draft entity but not in the active using HasActiveEntity flag when deleting
-        if (
-          req.event === "DELETE" &&
-          req.subject?.ref?.[0]?.id === req.target.drafts.name
-        ) {
-          const newAndDiscarded = draftAttachments.filter(
-            (att) => att.url && !att.HasActiveEntity,
-          )
-          if (newAndDiscarded.length > 0) {
-            attachmentsToDelete.push(
-              ...newAndDiscarded.map((attachment) => ({
-                url: attachment.url,
-                target: entityTarget.name,
-              })),
-            )
-          }
-        }
-
-        // Find attachments present in the active entity but not in the draft
-        const deletedAttachments = activeAttachments.filter(
-          (att) => att.url && !draftAttachmentIDs.has(att.ID),
-        )
-
-        if (deletedAttachments.length) {
+      if (attachmentCompositions.length > 0) {
+        const columns = this.buildExpandColumns(attachmentCompositions)
+        const active = await SELECT.one.from(req.subject).columns(columns)
+        if (active)
           attachmentsToDelete.push(
-            ...deletedAttachments.map((attachment) => ({
-              url: attachment.url,
-              target: entityTarget.name,
-            })),
+            ...this.urlsFromCompositions(
+              active,
+              attachmentCompositions,
+              req.target,
+            ),
           )
-        }
       }
-      if (attachmentsToDelete.length > 0) {
+
+      if (req.target._attachments?.hasInlineAttachments) {
+        const prefixes = req.target._attachments.inlineAttachmentPrefixes
+        const urlColumns = prefixes.map((p) => `${p}_url`)
+        const record = await SELECT.one.from(req.subject).columns(urlColumns)
+        if (record)
+          attachmentsToDelete.push(
+            ...prefixes
+              .map((p) => ({
+                url: record[`${p}_url`],
+                target: req.target.name,
+                prefix: p,
+              }))
+              .filter(({ url }) => url),
+          )
+      }
+
+      if (attachmentsToDelete.length > 0)
         req.attachmentsToDelete = attachmentsToDelete
-      }
     }
   }
 
@@ -657,10 +812,16 @@ class AttachmentsService extends cds.Service {
   /**
    * Deletes a file from the database. Does not delete metadata
    * @param {string} url - The url of the file to delete
+   * @param {string} target - The entity name of the attachment to delete
+   * @param {string} prefix - The prefix for inline attachments (if applicable)
    * @returns {Promise} - Promise resolving when deletion is complete
    */
-  async delete(url, target) {
-    return await UPDATE(target).where({ url }).with({ content: null })
+  async delete(url, target, prefix) {
+    const urlField = prefix ? `${prefix}_url` : "url"
+    const contentField = prefix ? `${prefix}_content` : "content"
+    return await UPDATE(target)
+      .where({ [urlField]: url })
+      .with({ [contentField]: null })
   }
 }
 
