@@ -14,6 +14,7 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
     - [Quick Start](#quick-start)
     - [Local Walk-Through](#local-walk-through)
     - [Changes in the CDS Models](#changes-in-the-cds-models)
+    - [Single Attachments](#single-attachments)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
       - [Rate Limit Handling (Auto-Retry)](#rate-limit-handling-auto-retry)
@@ -164,6 +165,20 @@ annotate service.Incidents with @odata.draft.enabled;
 ```
 
 If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
+### Single Attachments
+
+It is also possible to allow for only 1 attachment by defining the attachments field as a single attachment. This displays a different UI that more clearly shows the single attachment rather than in a list.
+
+```cds
+using { Attachment } from '@cap-js/attachments';
+entity Incidents {
+  ...
+  attachment: Attachment;
+}
+```
+
+<img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/comparison.png">
 
 ### Storage Targets
 

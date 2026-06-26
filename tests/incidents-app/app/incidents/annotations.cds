@@ -256,3 +256,24 @@ annotate service.TestDetails with @(
     }
   ]
 );
+
+annotate service.SingleAttachment with @(
+    UI.LineItem : [
+        {
+            Value : name,
+            Label : 'Name',
+        },
+    ],
+    UI.Facets : [
+        {
+            $Type : 'UI.ReferenceFacet',
+            Label : 'General Information',
+            Target : '@UI.FieldGroup#General',
+        },
+    ],
+    UI.FieldGroup #General : {
+        Data : [
+            { Value : name },
+        ]
+    }
+);
