@@ -25,8 +25,7 @@
     "@aws-sdk/client-s3": "^3.993.0",
     "@aws-sdk/lib-storage": "^3.993.0",
     "@azure/storage-blob": "^12.31.0",
-    "@google-cloud/storage": "^7.19.0",
-    "axios": "^1.13.5"
+    "@google-cloud/storage": "^7.19.0"
   },
   "devDependencies": {
     "@cap-js/cds-test": ">=0",
