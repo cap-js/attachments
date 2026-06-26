@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
 
+## Version 3.13.1
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+
 ## Version 3.13.0
 
 ### Added
