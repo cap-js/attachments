@@ -22,13 +22,13 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "axios": "^1.13.5"
+  },
+  "devDependencies": {
     "@aws-sdk/client-s3": "^3.993.0",
     "@aws-sdk/lib-storage": "^3.993.0",
     "@azure/storage-blob": "^12.31.0",
     "@google-cloud/storage": "^7.19.0",
-    "axios": "^1.13.5"
-  },
-  "devDependencies": {
     "@cap-js/cds-test": ">=0",
     "@cap-js/cds-types": "^0.17.0",
     "@cap-js/hana": "^2.7.0",
@@ -39,7 +39,25 @@
     "husky": "^9.1.7"
   },
   "peerDependencies": {
+    "@aws-sdk/client-s3": "^3",
+    "@aws-sdk/lib-storage": "^3",
+    "@azure/storage-blob": "^12",
+    "@google-cloud/storage": "^7",
     "@sap/cds": ">=8"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    },
+    "@aws-sdk/lib-storage": {
+      "optional": true
+    },
+    "@azure/storage-blob": {
+      "optional": true
+    },
+    "@google-cloud/storage": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=18.0.0"
