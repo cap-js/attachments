@@ -10,7 +10,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - **Breaking:** The `outbox` configuration key under `cds.requires.attachments` has been renamed to `queue`. Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `queue`. A deprecation warning is logged at startup when the old key is detected.
 
-## Version 3.12.3
+## Version 3.13.1
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+
+## Version 3.13.0
+
+### Added
+
+- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field of type Attachment, without the composition value:
+
+```cds
+entity MyEntity {
+  title: String;
+  attachment: Attachment;
+}
+```
 
 ### Fixed
 
