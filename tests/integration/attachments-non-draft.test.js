@@ -872,7 +872,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified targeting composition property", async () => {
+  it("Custom error message can be specified targeting composition property", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",
@@ -894,7 +894,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified for entity", async () => {
+  it("Custom error message can be specified for entity", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",

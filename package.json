@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "3.13.1",
+  "version": "4.0.0",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -39,7 +39,7 @@
     "husky": "^9.1.7"
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
+    "@sap/cds": ">=9"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -94,7 +94,7 @@
         }
       },
       "attachments": {
-        "outbox": true,
+        "outboxed": true,
         "scan": true,
         "deduplicateFileNames": true,
         "scanExpiryMs": 259200000,
