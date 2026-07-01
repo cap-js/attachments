@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.2
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+- Upload of inline attachments with `@Core.AcceptableMediaTypes` annotation no longer crashes with a TypeError
+- UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
+
 ## Version 3.13.1
 
 ### Fixed
