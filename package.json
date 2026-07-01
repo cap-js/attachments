@@ -137,8 +137,5 @@
   },
   "workspaces": [
     "tests/incidents-app/"
-  ],
-  "overrides": {
-    "gtoken": "^8.0.0"
-  }
+  ]
 }
