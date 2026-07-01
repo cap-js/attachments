@@ -3080,7 +3080,7 @@ describe("Tests for attachments facet disable", () => {
     const model = cds.linked({
       definitions: {
         // Only the inline Attachment type — no Attachments composition aspect.
-        // Apps that never import `Attachments` so `sap.attachments.Attachments` is absent 
+        // Apps that never import `Attachments` so `sap.attachments.Attachments` is absent
         // from the CSN, causing the early-return guard to wrongly skip all facet injection.
         "sap.attachments.Attachment": {
           kind: "type",
