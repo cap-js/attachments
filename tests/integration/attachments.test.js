@@ -2922,6 +2922,64 @@ describe("Tests for single attachment entity", () => {
     })
     expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
   })
+
+  it("Should accept upload when file type matches @Core.AcceptableMediaTypes on inline attachment", async () => {
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities.SingleAttachment.elements.myAttachment_content
+    const origTypes = el["@Core.AcceptableMediaTypes"]
+    el["@Core.AcceptableMediaTypes"] = ["application/pdf"]
+
+    try {
+      const { data: singleAttachment } = await POST(
+        "/odata/v4/processor/SingleAttachment",
+        { name: "Mime type allowed test", myAttachment_filename: "sample.pdf" },
+      )
+
+      const filepath = join(__dirname, "content/sample.pdf")
+      const fileContent = readFileSync(filepath)
+
+      const putRes = await PUT(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+        fileContent,
+        { headers: { "Content-Type": "application/pdf" } },
+      )
+      expect(putRes.status).toEqual(204)
+    } finally {
+      el["@Core.AcceptableMediaTypes"] = origTypes
+    }
+  })
+
+  it("Should reject upload when file type does not match @Core.AcceptableMediaTypes on inline attachment", async () => {
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities.SingleAttachment.elements.myAttachment_content
+    const origTypes = el["@Core.AcceptableMediaTypes"]
+    el["@Core.AcceptableMediaTypes"] = ["image/jpeg"]
+
+    try {
+      const { data: singleAttachment } = await POST(
+        "/odata/v4/processor/SingleAttachment",
+        { name: "Mime type rejected test", myAttachment_filename: "sample.pdf" },
+      )
+
+      const filepath = join(__dirname, "content/sample.pdf")
+      const fileContent = readFileSync(filepath)
+
+      let expectedError
+      await PUT(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+        fileContent,
+        { headers: { "Content-Type": "application/pdf" } },
+      ).catch((e) => {
+        expectedError = e
+      })
+      expect(expectedError?.response?.status).toEqual(400)
+      expect(expectedError?.response?.data?.error?.message).toMatch(
+        "The attachment file type 'application/pdf' is not allowed.",
+      )
+    } finally {
+      el["@Core.AcceptableMediaTypes"] = origTypes
+    }
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
