@@ -2958,7 +2958,10 @@ describe("Tests for single attachment entity", () => {
     try {
       const { data: singleAttachment } = await POST(
         "/odata/v4/processor/SingleAttachment",
-        { name: "Mime type rejected test", myAttachment_filename: "sample.pdf" },
+        {
+          name: "Mime type rejected test",
+          myAttachment_filename: "sample.pdf",
+        },
       )
 
       const filepath = join(__dirname, "content/sample.pdf")
