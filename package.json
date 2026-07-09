@@ -18,7 +18,8 @@
     "lint": "npx eslint .",
     "test": "npx jest --silent=true",
     "test:postgres": "CDS_ENV=pg npx jest --silent=true",
-    "deploy:postgres": "cd ./tests/incidents-app && cds deploy --profile pg"
+    "deploy:postgres": "cd ./tests/incidents-app && cds deploy --profile pg",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.993.0",
