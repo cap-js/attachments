@@ -3106,6 +3106,8 @@ describe("Tests for attachments facet disable", () => {
         },
       },
     })
+    // Reset the flag so unfoldModel runs even after the real model has been processed
+    delete model.meta?._enhanced_for_attachments
     cds.emit("compile.to.edmx", model)
 
     const entity = model.definitions["TestSvc.MyEntity"]
