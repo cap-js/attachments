@@ -71,7 +71,7 @@ runs:
       shell: bash
     - run: npm i @sap/cds
       shell: bash
-    - run: npm i
+    - run: npm i --legacy-peer-deps @sap/cds
       shell: bash
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
