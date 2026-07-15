@@ -94,7 +94,7 @@
         }
       },
       "attachments": {
-        "outboxed": true,
+        "queue": true,
         "scan": true,
         "deduplicateFileNames": true,
         "scanExpiryMs": 259200000,
