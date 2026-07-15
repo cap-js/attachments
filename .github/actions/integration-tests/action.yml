@@ -69,9 +69,9 @@ runs:
         node-version: ${{ inputs.NODE_VERSION }}
     - run: npm i -g @sap/cds-dk
       shell: bash
-    - run: npm i
-      shell: bash
     - run: npm i @sap/cds
+      shell: bash
+    - run: npm i
       shell: bash
     - run: cd tests/incidents-app && npm i
       shell: bash
