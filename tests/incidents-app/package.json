@@ -4,9 +4,8 @@
   "dependencies": {
     "@cap-js/attachments": "file:../../.",
     "@cap-js/audit-logging": "^1.2.0",
-    "@cap-js/hana": ">=2.6.0",
-    "@cap-js/postgres": "^2.2.0",
-    "@sap/cds": ">=9"
+    "@cap-js/hana": "3.0.1",
+    "@cap-js/postgres": "^2.2.0"
   },
   "devDependencies": {
     "@cap-js/sqlite": "*"
