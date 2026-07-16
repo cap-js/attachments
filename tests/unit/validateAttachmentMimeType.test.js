@@ -7,10 +7,14 @@ const { axios, POST, PUT, GET } = cds.test(app)
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
 const { newIncident } = require("../utils/testUtils")
 
-afterAll(() => cds.disconnect())
+afterAll(async () => {
+  await cds.disconnect()
+})
 
 describe("validateAttachmentMimeType - Content-Type header bypass security test", () => {
   axios.defaults.auth = { username: "alice" }
+
+  afterEach(() => cds.flush())
 
   /**
    * Security Test: Content-Type Header Bypass Attack
@@ -139,6 +143,10 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
 
     expect(expectedError).toBeDefined()
     expect(expectedError.status).toEqual(400)
+
+    // await GET(
+    //   `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments(up__ID=${incidentID},ID=${attachmentID})`,
+    // )
   })
 
   it("should allow upload when file extension matches allowed mimetypes", async () => {
@@ -239,6 +247,10 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
     expect(expectedError.response.data.error.message).toContain(
       "application/pdf",
     )
+
+    // await GET(
+    //   `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments(up__ID=${incidentID},ID=${attachmentID})`,
+    // )
   })
 })
 
