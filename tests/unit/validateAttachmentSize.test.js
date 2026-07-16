@@ -7,6 +7,8 @@ const { axios, POST } = cds.test(app)
 const { validateAttachmentSize } = require("../../lib/generic-handlers")
 const { newIncident } = require("../utils/testUtils")
 
+afterAll(() => cds.disconnect())
+
 describe("validateAttachmentSize", () => {
   axios.defaults.auth = { username: "alice" }
 
