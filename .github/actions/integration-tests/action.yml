@@ -73,6 +73,10 @@ runs:
       if: ${{ inputs.NODE_VERSION == '20.x' }}
       run: npm i @sap/cds@^9
       shell: bash
+    - name: Install CDS (latest) for other Node versions
+      if: ${{ inputs.NODE_VERSION != '20.x' }}
+      run: npm i @sap/cds
+      shell: bash
     - run: npm i
       shell: bash
     - name: Set node env for HANA
