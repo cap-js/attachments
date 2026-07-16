@@ -143,10 +143,6 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
 
     expect(expectedError).toBeDefined()
     expect(expectedError.status).toEqual(400)
-
-    // await GET(
-    //   `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments(up__ID=${incidentID},ID=${attachmentID})`,
-    // )
   })
 
   it("should allow upload when file extension matches allowed mimetypes", async () => {
@@ -247,10 +243,6 @@ describe("validateAttachmentMimeType - Content-Type header bypass security test"
     expect(expectedError.response.data.error.message).toContain(
       "application/pdf",
     )
-
-    // await GET(
-    //   `/odata/v4/admin/Incidents(${incidentID})/mediaTypeAttachments(up__ID=${incidentID},ID=${attachmentID})`,
-    // )
   })
 })
 
