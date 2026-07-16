@@ -3,9 +3,13 @@ const cds = require("@sap/cds")
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 const app = join(__dirname, "../incidents-app")
-const { axios, POST } = cds.test(app)
+const { axios, POST, PUT } = cds.test(app)
 const { validateAttachmentSize } = require("../../lib/generic-handlers")
 const { newIncident } = require("../utils/testUtils")
+
+afterAll(async () => {
+  await cds.disconnect()
+})
 
 describe("validateAttachmentSize", () => {
   axios.defaults.auth = { username: "alice" }
@@ -22,7 +26,7 @@ describe("validateAttachmentSize", () => {
       join(__dirname, "..", "integration", "content/sample.pdf"),
     )
 
-    const response = await axios.put(
+    const response = await PUT(
       `/odata/v4/admin/Incidents(${incidentID})/attachments(up__ID=${incidentID},ID=${responseCreate.data.ID})/content`,
       fileContent,
       {
