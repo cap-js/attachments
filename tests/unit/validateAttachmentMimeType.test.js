@@ -7,6 +7,8 @@ const { axios, POST, PUT, GET } = cds.test(app)
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
 const { newIncident } = require("../utils/testUtils")
 
+afterAll(() => cds.disconnect())
+
 describe("validateAttachmentMimeType - Content-Type header bypass security test", () => {
   axios.defaults.auth = { username: "alice" }
 
