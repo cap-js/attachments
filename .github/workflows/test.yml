@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -37,12 +37,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm i -g @sap/cds-dk
-      - name: Pin CDS 9 + HANA 2 + SQLite 2 for Node 20
-        if: ${{ matrix.node-version == '20.x' }}
-        run: |
-          npm pkg set peerDependencies.@sap/cds="^9"
-          npm pkg set devDependencies.@cap-js/hana="^2"
-          npm pkg set devDependencies.@cap-js/sqlite="^2"
       - run: npm i
       - run: npm run test
 
@@ -54,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
         hyperscaler: [AWS, AZURE, GCP]
         scanner-auth: [basic, mtls]
     steps:
@@ -78,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
     services:
       postgres:
         image: postgres:14.5
