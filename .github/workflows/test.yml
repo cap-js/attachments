@@ -40,8 +40,8 @@ jobs:
       - name: Pin CDS 9 + HANA 2 for Node 20
         if: ${{ matrix.node-version == '20.x' }}
         run: |
-          npm pkg set overrides.@sap/cds="^9"
-          npm pkg set overrides.@cap-js/hana="^2"
+          npm pkg set peerDependencies.@sap/cds="^9"
+          npm pkg set devDependencies.@cap-js/hana="^2"
       - run: npm i
       - run: npm run test
 
