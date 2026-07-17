@@ -73,7 +73,7 @@ runs:
       shell: bash
     - name: Pin CDS 9 + HANA 2 for Node 20
       if: ${{ inputs.NODE_VERSION == '20.x' }}
-      run: npm i @sap/cds@^9 @cap-js/hana@^2
+      run: npm i @sap/cds@^9 @cap-js/hana@^2 --no-save --legacy-peer-deps
       shell: bash
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
