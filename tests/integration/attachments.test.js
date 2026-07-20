@@ -2008,59 +2008,61 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const incidentID = await newIncident(POST, "processor")
     cds.env.requires.attachments.scan = false
 
-    await utils.draftModeEdit(
-      "processor",
-      "Incidents",
-      incidentID,
-      "ProcessorService",
-    )
+    try {
+      await utils.draftModeEdit(
+        "processor",
+        "Incidents",
+        incidentID,
+        "ProcessorService",
+      )
 
-    const svgPayload =
-      '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)"><script>alert(1)</script></svg>'
+      const svgPayload =
+        '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)"><script>alert(1)</script></svg>'
 
-    const res = await POST(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
-      {
-        up__ID: incidentID,
-        filename: "evil.svg",
-        mimeType: "image/svg+xml",
-        createdAt: new Date(),
-        createdBy: "alice",
-      },
-    )
-    expect(res.data.ID).toBeTruthy()
-    const attachmentID = res.data.ID
-
-    await PUT(
-      `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
-      svgPayload,
-      {
-        headers: {
-          "Content-Type": "image/svg+xml",
-          "Content-Length": Buffer.byteLength(svgPayload),
+      const res = await POST(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
+        {
+          up__ID: incidentID,
+          filename: "evil.svg",
+          mimeType: "image/svg+xml",
+          createdAt: new Date(),
+          createdBy: "alice",
         },
-      },
-    )
+      )
+      expect(res.data.ID).toBeTruthy()
+      const attachmentID = res.data.ID
 
-    await utils.draftModeSave(
-      "processor",
-      "Incidents",
-      incidentID,
-      "ProcessorService",
-    )
+      await PUT(
+        `/odata/v4/processor/Incidents_attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=false)/content`,
+        svgPayload,
+        {
+          headers: {
+            "Content-Type": "image/svg+xml",
+            "Content-Length": Buffer.byteLength(svgPayload),
+          },
+        },
+      )
 
-    const contentResponse = await axios.get(
-      `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
-      { responseType: "text" },
-    )
-    expect(contentResponse.status).toEqual(200)
+      await utils.draftModeSave(
+        "processor",
+        "Incidents",
+        incidentID,
+        "ProcessorService",
+      )
 
-    const disposition = contentResponse.headers["content-disposition"] ?? ""
-    // Must force a download —> "inline" lets browsers execute embedded scripts
-    expect(disposition.toLowerCase()).toMatch(/^attachment/)
-    expect(disposition.toLowerCase()).not.toMatch(/^inline/)
+      const contentResponse = await axios.get(
+        `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${attachmentID},IsActiveEntity=true)/content`,
+        { responseType: "text" },
+      )
+      expect(contentResponse.status).toEqual(200)
 
-    cds.env.requires.attachments.scan = true
+      const disposition = contentResponse.headers["content-disposition"] ?? ""
+      // Must force a download —> "inline" lets browsers execute embedded scripts
+      expect(disposition.toLowerCase()).toMatch(/^attachment/)
+      expect(disposition.toLowerCase()).not.toMatch(/^inline/)
+    } finally {
+      cds.env.requires.attachments.scan = true
+    }
   })
 })
 
