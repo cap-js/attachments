@@ -3141,6 +3141,44 @@ describe("Tests for attachments facet disable", () => {
 
     expect(model.definitions["TestSvc.MyEntity"]["@UI.Facets"]).toHaveLength(0)
   })
+
+  it("Propagates @UI.Hidden from inline attachment content element to its facet", () => {
+    const model = cds.linked({
+      definitions: {
+        "sap.attachments.Attachment": {
+          kind: "type",
+          "@_is_media_data": true,
+          elements: {
+            content: { type: "cds.LargeBinary", "@_is_media_data": true },
+            filename: { type: "cds.String" },
+            status: { type: "cds.String" },
+          },
+        },
+        "TestSvc.MyEntity": {
+          kind: "entity",
+          elements: {
+            ID: { key: true, type: "cds.UUID" },
+            attachment_content: {
+              type: "cds.LargeBinary",
+              "@_is_media_data": true,
+              "@UI.Hidden": true,
+            },
+            attachment_filename: { type: "cds.String" },
+            attachment_status: { type: "cds.String" },
+          },
+          "@UI.Facets": [],
+        },
+      },
+    })
+    cds.emit("compile.to.edmx", model)
+
+    const facets = model.definitions["TestSvc.MyEntity"]["@UI.Facets"]
+    const inlineFacet = facets.find(
+      (f) => f.Target === "@UI.FieldGroup#attachment",
+    )
+    expect(inlineFacet).toBeDefined()
+    expect(inlineFacet["@UI.Hidden"]).toBe(true)
+  })
 })
 
 describe("Tests for acceptable media types", () => {
