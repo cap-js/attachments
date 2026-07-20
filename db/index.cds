@@ -81,8 +81,7 @@ context sap.attachments {
   }  @Capabilities: {SortRestrictions: {NonSortableProperties: [content]}}  {
     content
     @Core.ContentDisposition: {
-      Filename: filename,
-      Type    : 'inline'
+      Filename: filename
     }
   }
 
