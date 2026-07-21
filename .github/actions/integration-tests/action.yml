@@ -71,10 +71,6 @@ runs:
       shell: bash
     - run: npm i
       shell: bash
-    - run: npm i @sap/cds
-      shell: bash
-    - run: cd tests/incidents-app && npm i
-      shell: bash
     - name: Set node env for HANA
       run: echo "NODE_VERSION_HANA=$(echo ${{ inputs.NODE_VERSION }} | tr . _)" >> $GITHUB_ENV
       shell: bash
