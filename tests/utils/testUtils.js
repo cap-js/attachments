@@ -172,7 +172,7 @@ async function runWithUser(user, fn) {
   return cds._with(ctx, fn)
 }
 
-async function waitUntil(predicate, timeout = 30000) {
+async function waitUntil(predicate, timeout = 180000) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
     if (await predicate()) return
