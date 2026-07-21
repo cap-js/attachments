@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ### Fixed
 
-- Breaking: remove inline type from index.cds to enforce standard CAP security.
+- Remove inline type from index.cds to enforce standard CAP security.
 
 ## Version 3.13.1
 
