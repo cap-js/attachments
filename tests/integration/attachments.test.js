@@ -8,14 +8,15 @@ const {
   waitForDeletion,
   runWithUser,
 } = require("../utils/testUtils")
-const { createReadStream, readFileSync } = cds.utils.fs
-const { join, basename } = cds.utils.path
+const path = require("path")
 const { Readable } = require("stream")
 
-const app = join(__dirname, "../incidents-app")
+const app = path.resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
 axios.defaults.auth = { username: "alice" }
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
+const { createReadStream, readFileSync } = cds.utils.fs
+const { join, basename } = cds.utils.path
 
 let utils = null
 

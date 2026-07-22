@@ -5,12 +5,13 @@ const {
   newIncident,
   waitForDeletion,
 } = require("../utils/testUtils")
-const { join, resolve } = cds.utils.path
-const { createReadStream, readFileSync, statSync } = cds.utils.fs
+const path = require("path")
 
-const app = resolve(__dirname, "../incidents-app")
+const app = path.resolve(__dirname, "../incidents-app")
 const { axios, GET, POST, PATCH, DELETE, PUT } =
   require("@cap-js/cds-test")(app)
+const { join } = cds.utils.path
+const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
