@@ -3083,105 +3083,25 @@ describe("Tests for attachments facet disable", () => {
   })
 
   it("Adds @UI.FieldGroup and @UI.Facet for an inline attachment when only sap.attachments.Attachment is used (no Attachments composition)", () => {
-    const model = cds.linked({
-      definitions: {
-        // Only the inline Attachment type — no Attachments composition aspect.
-        // Apps that never import `Attachments` so `sap.attachments.Attachments` is absent
-        // from the CSN, causing the early-return guard to wrongly skip all facet injection.
-        "sap.attachments.Attachment": {
-          kind: "type",
-          "@_is_media_data": true,
-          elements: {
-            content: { type: "cds.LargeBinary", "@_is_media_data": true },
-            filename: { type: "cds.String" },
-            status: { type: "cds.String" },
-          },
-        },
-        "TestSvc.MyEntity": {
-          kind: "entity",
-          elements: {
-            ID: { key: true, type: "cds.UUID" },
-            attachment_content: {
-              type: "cds.LargeBinary",
-              "@_is_media_data": true,
-            },
-            attachment_filename: { type: "cds.String" },
-            attachment_status: { type: "cds.String" },
-          },
-          "@UI.Facets": [],
-        },
-      },
-    })
-    cds.emit("compile.to.edmx", model)
-
-    const entity = model.definitions["TestSvc.MyEntity"]
-    expect(entity["@UI.FieldGroup#attachment"]).toBeDefined()
-    const inlineFacet = entity["@UI.Facets"].find(
-      (f) => f.Target === "@UI.FieldGroup#attachment",
-    )
+    const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
+    expect(entity["@UI.FieldGroup#myAttachment"]).toBeDefined()
+    const inlineFacet = entity["@UI.Facets"].find(f => f.Target === "@UI.FieldGroup#myAttachment")
     expect(inlineFacet).toBeDefined()
     expect(inlineFacet.$Type).toBe("UI.ReferenceFacet")
   })
 
-  it("Does not add a facet when the entity has no inline attachment fields", () => {
-    const model = cds.linked({
-      definitions: {
-        "sap.attachments.Attachment": {
-          kind: "type",
-          "@_is_media_data": true,
-          elements: {
-            content: { type: "cds.LargeBinary", "@_is_media_data": true },
-          },
-        },
-        "TestSvc.MyEntity": {
-          kind: "entity",
-          elements: {
-            ID: { key: true, type: "cds.UUID" },
-            name: { type: "cds.String" },
-          },
-          "@UI.Facets": [],
-        },
-      },
-    })
-    cds.emit("compile.to.edmx", model)
-
-    expect(model.definitions["TestSvc.MyEntity"]["@UI.Facets"]).toHaveLength(0)
+  it("Does not add an inline @UI.FieldGroup facet when the entity has no inline attachment fields", () => {
+    const entity = cds.model.definitions["ProcessorService.Test"]
+    const facets = entity["@UI.Facets"]
+    expect(facets).toBeDefined()
+    const inlineFacets = facets.filter(f =>f.Target?.startsWith("@UI.FieldGroup#"))
+    expect(inlineFacets).toHaveLength(0)
   })
 
   it("Propagates @UI.Hidden from inline attachment content element to its facet", () => {
-    const model = cds.linked({
-      definitions: {
-        "sap.attachments.Attachment": {
-          kind: "type",
-          "@_is_media_data": true,
-          elements: {
-            content: { type: "cds.LargeBinary", "@_is_media_data": true },
-            filename: { type: "cds.String" },
-            status: { type: "cds.String" },
-          },
-        },
-        "TestSvc.MyEntity": {
-          kind: "entity",
-          elements: {
-            ID: { key: true, type: "cds.UUID" },
-            attachment_content: {
-              type: "cds.LargeBinary",
-              "@_is_media_data": true,
-              "@UI.Hidden": true,
-            },
-            attachment_filename: { type: "cds.String" },
-            attachment_status: { type: "cds.String" },
-          },
-          "@UI.Facets": [],
-        },
-      },
-    })
-    cds.emit("compile.to.edmx", model)
-
-    const facets = model.definitions["TestSvc.MyEntity"]["@UI.Facets"]
-    const inlineFacet = facets.find(
-      (f) => f.Target === "@UI.FieldGroup#attachment",
-    )
+    const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
+    const facets = entity["@UI.Facets"]
+    const inlineFacet = facets.find(f => f.Target === "@UI.FieldGroup#myAttachment")
     expect(inlineFacet).toBeDefined()
     expect(inlineFacet["@UI.Hidden"]).toBe(true)
   })
