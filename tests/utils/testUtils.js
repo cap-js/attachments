@@ -199,14 +199,23 @@ async function unwrapStream(res) {
 
 function withUser(username, test) {
   const auth = { auth: { username } }
-  const wrap = (body) => Buffer.isBuffer(body) ? Readable.from(body) : body
-  const req = (fn) => (...args) => fn(...args).then(unwrapStream)
+  const wrap = (body) => (Buffer.isBuffer(body) ? Readable.from(body) : body)
+  const req =
+    (fn) =>
+    (...args) =>
+      fn(...args).then(unwrapStream)
   return {
     GET: req((url, opts) => test.GET(url, { ...auth, ...opts })),
-    POST: req((url, body, opts) => test.POST(url, wrap(body), { ...auth, ...opts })),
-    PUT: req((url, body, opts) => test.PUT(url, wrap(body), { ...auth, ...opts })),
+    POST: req((url, body, opts) =>
+      test.POST(url, wrap(body), { ...auth, ...opts }),
+    ),
+    PUT: req((url, body, opts) =>
+      test.PUT(url, wrap(body), { ...auth, ...opts }),
+    ),
     DELETE: req((url, opts) => test.DELETE(url, { ...auth, ...opts })),
-    PATCH: req((url, body, opts) => test.PATCH(url, wrap(body), { ...auth, ...opts })),
+    PATCH: req((url, body, opts) =>
+      test.PATCH(url, wrap(body), { ...auth, ...opts }),
+    ),
   }
 }
 

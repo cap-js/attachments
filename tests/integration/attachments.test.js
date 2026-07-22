@@ -187,20 +187,19 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
       let expectedError
       await PUT(
-          `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
-          largeStream,
-          {
-            headers: {
-              "Content-Type": "application/pdf",
-              // No Content-Length header - server must track size during streaming
-            },
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
+        `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
+        largeStream,
+        {
+          headers: {
+            "Content-Type": "application/pdf",
+            // No Content-Length header - server must track size during streaming
           },
-        )
-        .catch((e) => {
-          expectedError = e
-        })
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        },
+      ).catch((e) => {
+        expectedError = e
+      })
 
       expect(expectedError).toBeDefined()
       expect(expectedError.response?.status || expectedError.status).toEqual(

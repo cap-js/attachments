@@ -11,7 +11,10 @@ const { join, resolve } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
 const app = resolve(__dirname, "../incidents-app")
-const { GET, POST, PATCH, DELETE, PUT } = withUser("alice", require("@cap-js/cds-test")(app))  
+const { GET, POST, PATCH, DELETE, PUT } = withUser(
+  "alice",
+  require("@cap-js/cds-test")(app),
+)
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
@@ -990,15 +993,14 @@ describe("Row-level security on attachments composition", () => {
   it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
     await PATCH(
-        `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
-        {
-          note: "Should fail",
-        },
-        { auth: { username: "bob" } },
-      )
-      .catch((e) => {
-        expect(e.status).toEqual(403)
-      })
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
+      {
+        note: "Should fail",
+      },
+      { auth: { username: "bob" } },
+    ).catch((e) => {
+      expect(e.status).toEqual(403)
+    })
   })
 
   it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
