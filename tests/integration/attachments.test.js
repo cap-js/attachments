@@ -7,14 +7,14 @@ const {
   waitForMalwareDeletion,
   waitForDeletion,
   runWithUser,
+  withUser,
 } = require("../utils/testUtils")
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
 const { Readable } = require("stream")
 
 const app = join(__dirname, "../incidents-app")
-const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
-axios.defaults.auth = { username: "alice" }
+const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 
 let utils = null
@@ -186,8 +186,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       })
 
       let expectedError
-      await axios
-        .put(
+      await PUT(
           `/odata/v4/processor/Incidents_maximumSizeAttachments(up__ID=${incidentID},ID=${attachmentResult.data.ID},IsActiveEntity=false)/content`,
           largeStream,
           {

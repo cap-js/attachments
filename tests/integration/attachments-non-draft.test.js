@@ -5,13 +5,13 @@ const {
   newIncident,
   waitForDeletion,
   delay,
+  withUser,
 } = require("../utils/testUtils")
 const { join, resolve } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
 const app = resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, PATCH, DELETE, PUT } =
-  require("@cap-js/cds-test")(app)
+const { GET, POST, PATCH, DELETE, PUT } = withUser("alice", require("@cap-js/cds-test")(app))  
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
@@ -28,7 +28,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       originalDeduplicateFileNames
   })
 
-  axios.defaults.auth = { username: "alice" }
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
 
@@ -990,8 +989,7 @@ describe("Row-level security on attachments composition", () => {
 
   it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
-    await axios
-      .patch(
+    await PATCH(
         `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
         {
           note: "Should fail",
@@ -1056,7 +1054,6 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Tests for inline single attachment in non-draft mode", () => {
-  axios.defaults.auth = { username: "alice" }
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
 
   it("Should create a SingleAttachment and serve content without draft", async () => {

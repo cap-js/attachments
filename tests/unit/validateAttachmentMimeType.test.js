@@ -3,19 +3,16 @@ const cds = require("@sap/cds")
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 const app = join(__dirname, "../incidents-app")
-const { axios, POST, PUT, GET } = cds.test(app)
+
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
-const { newIncident, delay } = require("../utils/testUtils")
+const { withUser, newIncident } = require("../utils/testUtils")
+const { GET, POST, PUT } = withUser("alice", cds.test(app))
 
 afterAll(async () => {
   await cds.disconnect()
 })
 
 describe("validateAttachmentMimeType - Content-Type header bypass security test", () => {
-  axios.defaults.auth = { username: "alice" }
-
-  // Allow background operations (malware scan status updates) to complete before teardown
-  afterAll(() => delay(2000))
   afterEach(() => cds.flush())
 
   /**

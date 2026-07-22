@@ -181,6 +181,17 @@ async function waitUntil(predicate, timeout = 180000) {
   throw new Error(`Timeout: condition not met within ${timeout}ms`)
 }
 
+function withUser(username, test) {
+  const auth = { auth: { username } }
+  return {
+    GET: (url, opts) => test.GET(url, { ...auth, ...opts }),
+    POST: (url, body, opts) => test.POST(url, body, { ...auth, ...opts }),
+    PUT: (url, body, opts) => test.PUT(url, body, { ...auth, ...opts }),
+    DELETE: (url, opts) => test.DELETE(url, { ...auth, ...opts }),
+    PATCH: (url, body, opts) => test.PATCH(url, body, { ...auth, ...opts }),
+  }
+}
+
 module.exports = {
   delay,
   waitForScanStatus,
@@ -189,4 +200,5 @@ module.exports = {
   waitForDeletion,
   waitForMalwareDeletion,
   runWithUser,
+  withUser,
 }
