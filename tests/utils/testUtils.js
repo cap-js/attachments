@@ -1,4 +1,6 @@
 const cds = require("@sap/cds")
+const { readFileSync } = cds.utils.fs
+const { join, basename } = cds.utils.path
 
 /**
  * Waits for attachment scanning to complete
@@ -181,6 +183,76 @@ async function waitUntil(predicate, timeout = 180000) {
   throw new Error(`Timeout: condition not met within ${timeout}ms`)
 }
 
+/**
+ * Uploads attachment in draft mode using CDS test utilities
+ * @param {Object} utils - RequestSend utility instance
+ * @param {Object} POST - CDS test POST function
+ * @param {Object} PUT - CDS test PUT function
+ * @param {Object} GET - CDS test GET function
+ * @param {string} incidentId - Incident ID
+ * @param {number} overrideContentLength - Override Content-Length header (-1 = use file size)
+ * @param {string} entityName - Attachment composition name
+ * @returns {Promise<string>} - Attachment ID
+ */
+async function uploadDraftAttachment(
+  utils,
+  POST,
+  PUT,
+  GET,
+  incidentId,
+  overrideContentLength = -1,
+  entityName = "attachments",
+) {
+  const filepath = join(__dirname, "..", "integration", "content/sample.pdf")
+
+  await utils.draftModeEdit(
+    "processor",
+    "Incidents",
+    incidentId,
+    "ProcessorService",
+  )
+
+  const res = await POST(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
+    {
+      up__ID: incidentId,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+      createdAt: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+      ),
+      createdBy: "alice",
+    },
+  )
+  const fileContent = readFileSync(filepath)
+  await PUT(
+    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentId},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    fileContent,
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length":
+          overrideContentLength != -1
+            ? overrideContentLength
+            : fileContent.byteLength,
+      },
+    },
+  )
+
+  await utils.draftModeSave(
+    "processor",
+    "Incidents",
+    incidentId,
+    "ProcessorService",
+  )
+
+  // Get the uploaded attachment ID
+  const response = await GET(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/${entityName}`,
+  )
+  return response.data.value[0]?.ID
+}
+
 module.exports = {
   delay,
   waitForScanStatus,
@@ -189,4 +261,5 @@ module.exports = {
   waitForDeletion,
   waitForMalwareDeletion,
   runWithUser,
+  uploadDraftAttachment,
 }
