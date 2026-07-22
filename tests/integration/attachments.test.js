@@ -3085,7 +3085,9 @@ describe("Tests for attachments facet disable", () => {
   it("Adds @UI.FieldGroup and @UI.Facet for an inline attachment when only sap.attachments.Attachment is used (no Attachments composition)", () => {
     const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
     expect(entity["@UI.FieldGroup#myAttachment"]).toBeDefined()
-    const inlineFacet = entity["@UI.Facets"].find(f => f.Target === "@UI.FieldGroup#myAttachment")
+    const inlineFacet = entity["@UI.Facets"].find(
+      (f) => f.Target === "@UI.FieldGroup#myAttachment",
+    )
     expect(inlineFacet).toBeDefined()
     expect(inlineFacet.$Type).toBe("UI.ReferenceFacet")
   })
@@ -3094,14 +3096,18 @@ describe("Tests for attachments facet disable", () => {
     const entity = cds.model.definitions["ProcessorService.Test"]
     const facets = entity["@UI.Facets"]
     expect(facets).toBeDefined()
-    const inlineFacets = facets.filter(f =>f.Target?.startsWith("@UI.FieldGroup#"))
+    const inlineFacets = facets.filter((f) =>
+      f.Target?.startsWith("@UI.FieldGroup#"),
+    )
     expect(inlineFacets).toHaveLength(0)
   })
 
   it("Propagates @UI.Hidden from inline attachment content element to its facet", () => {
     const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
     const facets = entity["@UI.Facets"]
-    const inlineFacet = facets.find(f => f.Target === "@UI.FieldGroup#myAttachment")
+    const inlineFacet = facets.find(
+      (f) => f.Target === "@UI.FieldGroup#myAttachment",
+    )
     expect(inlineFacet).toBeDefined()
     expect(inlineFacet["@UI.Hidden"]).toBe(true)
   })
