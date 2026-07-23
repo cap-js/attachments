@@ -353,6 +353,9 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     // First upload an attachment to delete
     sampleDocID = await uploadDraftAttachment(utils, POST, PUT, GET, incidentID)
 
+    // Wait for scanning to complete
+    await scanCleanWaiter
+
     // Check the content of the uploaded attachment in main table
     const contentResponse = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
