@@ -522,7 +522,7 @@ When a file with a disallowed MIME type is uploaded, the request will be rejecte
 
 ### Inline browser preview
 
-By default, attachments are served with `Content-Disposition: attachment`, which forces a file download and prevents the browser from rendering the content inline. This is the secure default — it protects against stored XSS attacks where an attacker uploads a script-capable file (e.g. `.svg`, `.html`) that would otherwise execute in the application's origin when opened.
+By default, attachments are served with `Content-Disposition: attachment`, which forces a file download and prevents the browser from rendering the content inline. This is the secure default to protect against stored files from XSS attacks that would execute in the application's origin when opened.
 
 To enable inline browser preview (i.e. PDFs and images opening directly in the browser tab instead of downloading), set the `inline` flag in your CDS config:
 
