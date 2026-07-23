@@ -1,7 +1,8 @@
 require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
-const { join } = cds.utils.path
-const app = join(__dirname, "../incidents-app")
+const path = require("path")
+
+const app = path.join(__dirname, "../incidents-app")
 cds.test(app)
 
 const {

@@ -1,9 +1,10 @@
 require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
+const path = require("path")
+const app = path.resolve(__dirname, "../incidents-app")
+const { axios, POST, PUT, GET } = cds.test(app)
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
-const app = join(__dirname, "../incidents-app")
-const { axios, POST, PUT, GET } = cds.test(app)
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
 const { newIncident } = require("../utils/testUtils")
 
