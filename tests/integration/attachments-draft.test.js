@@ -727,7 +727,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     cds.env.requires.attachments.scan = false
 
     // Upload attachment using helper function
-    let sampleDocID = await uploadDraftAttachment(utils, POST, PUT, GET, incidentID)
+    let sampleDocID = await uploadDraftAttachment(
+      utils,
+      POST,
+      PUT,
+      GET,
+      incidentID,
+    )
     expect(sampleDocID).toBeTruthy()
 
     //read attachments list for Incident
