@@ -10,9 +10,11 @@ const mockRedacted = jest.fn((cred) => {
   if (!cred || typeof cred !== "object") return cred
   const result = {}
   for (const k of Object.keys(cred)) {
-    result[k] = /(passw)|(cert)|(ca)|(secret)|(key)/i.test(k) && typeof cred[k] === "string"
-      ? "..."
-      : cred[k]
+    result[k] =
+      /(passw)|(cert)|(ca)|(secret)|(key)/i.test(k) &&
+      typeof cred[k] === "string"
+        ? "..."
+        : cred[k]
   }
   return result
 })
