@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 4.0.0
 
-### Changed
+### Fixed
 
 - Attachments are now served with `Content-Disposition: attachment` by default with inline being toggleable
 
