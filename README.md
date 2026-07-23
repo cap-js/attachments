@@ -520,6 +520,30 @@ annotate Incidents.attachments with {
 
 When a file with a disallowed MIME type is uploaded, the request will be rejected with a `400` error.
 
+### Inline browser preview
+
+By default, attachments are served with `Content-Disposition: attachment`, which forces a file download and prevents the browser from rendering the content inline. This is the secure default — it protects against stored XSS attacks where an attacker uploads a script-capable file (e.g. `.svg`, `.html`) that would otherwise execute in the application's origin when opened.
+
+To enable inline browser preview (i.e. PDFs and images opening directly in the browser tab instead of downloading), set the `inline` flag in your CDS config:
+
+```json
+"cds": {
+  "requires": {
+    "attachments": {
+      "inline": true
+    }
+  }
+}
+```
+
+> **Security note:** When enabling inline preview, you should restrict the allowed MIME types to a safe allowlist using `@Core.AcceptableMediaTypes` to prevent script-capable file types from being uploaded. Types such as `image/svg+xml`, `text/html`, and `application/xhtml+xml` can execute embedded JavaScript when rendered inline by a browser and should be excluded:
+>
+> ```cds
+> annotate Incidents.attachments with {
+>   content @Core.AcceptableMediaTypes : ['image/jpeg', 'image/png', 'application/pdf'];
+> }
+> ```
+
 ### Minimum and Maximum Number of Attachments
 
 You can control the number of attachments allowed for an entity by using the `@Validation.MaxItems` and `@Validation.MinItems` annotations. These annotations define the maximum and minimum number of files that can be associated with an entity.

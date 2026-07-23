@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 3.14.0
 
-### Fixed
+### Changed
 
-- Remove inline type from index.cds to enforce standard CAP security.
+- Attachments are now served with `Content-Disposition: attachment` by default with inline being toggleable
 
 ## Version 3.13.1
 
