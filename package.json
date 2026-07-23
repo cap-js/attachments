@@ -1,7 +1,7 @@
 {
   "name": "@cap-js/attachments",
   "description": "CAP cds-plugin providing image and attachment storing out-of-the-box.",
-  "version": "3.13.1",
+  "version": "3.13.2",
   "repository": "cap-js/attachments",
   "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
@@ -19,7 +19,7 @@
     "test": "npx jest --silent=true",
     "test:postgres": "CDS_ENV=pg npx jest --silent=true",
     "deploy:postgres": "cd ./tests/incidents-app && cds deploy --profile pg",
-    "prepare": "husky"
+    "prepare": "git config core.hooksPath .husky"
   },
   "dependencies": {
     "axios": "^1.13.5"
@@ -29,14 +29,9 @@
     "@aws-sdk/lib-storage": "^3.993.0",
     "@azure/storage-blob": "^12.31.0",
     "@google-cloud/storage": "^7.19.0",
-    "@cap-js/cds-test": ">=0",
-    "@cap-js/cds-types": "^0.17.0",
-    "@cap-js/hana": ">=2.7.0",
-    "@cap-js/sqlite": ">=2",
-    "@eslint/js": "^10",
-    "eslint": "^10",
-    "express": "^4.18.2",
-    "husky": "^9.1.7"
+    "@cap-js/cds-test": "^1",
+    "@cap-js/hana": ">=2.7",
+    "@cap-js/sqlite": ">=2"
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3",
@@ -58,9 +53,6 @@
     "@google-cloud/storage": {
       "optional": true
     }
-  },
-  "engines": {
-    "node": ">=18.0.0"
   },
   "cds": {
     "requires": {

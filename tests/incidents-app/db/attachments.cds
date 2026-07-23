@@ -67,7 +67,7 @@ extend my.SingleAttachment with {
 
 annotate my.SingleAttachment with {
   myAttachment {
-    content @Validation.Maximum: '5MB';
+    content @Validation.Maximum: '5MB' @UI.Hidden;
   }
 }
 

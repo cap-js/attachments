@@ -4,11 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 4.0.0 BREAKING-CHANGE t.b.d
+## Version 4.0.0
 
 ### Changed
 
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
+
+## Version 3.13.2
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+- Upload of inline attachments with `@Core.AcceptableMediaTypes` annotation no longer crashes with a TypeError
+- UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
+- Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
 
 ## Version 3.13.1
 
