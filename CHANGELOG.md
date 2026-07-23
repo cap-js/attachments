@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.3
+
+### Fixed
+
+- Avoid leaking Service Manager credentials when service manager binding is not complete.
+
 ## Version 3.13.2
 
 ### Fixed
