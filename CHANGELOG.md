@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 4.0.0
+
+### Fixed
+
+- Attachments are now served with `Content-Disposition: attachment` by default with inline being toggleable
+
 ## Version 3.13.2
 
 ### Fixed
