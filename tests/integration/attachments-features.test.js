@@ -202,6 +202,7 @@ describe("Tests for acceptable media types", () => {
   })
 
   it("Uploading attachment with disallowed mime type and charset specified", async () => {
+    expect.assertions(2)
     const incidentID = await newIncident(POST, "processor")
     await utils.draftModeEdit(
       "processor",
@@ -215,10 +216,11 @@ describe("Tests for acceptable media types", () => {
       {
         up__ID: incidentID,
         filename: "sample.pdf",
-        mimeType: "application/jpeg charset=UTF-8",
+        mimeType: "application/pdf charset=UTF-8",
         createdAt: new Date(
           Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
         ),
+        content: createReadStream(join(__dirname, "content/sample.pdf")),
         createdBy: "alice",
       },
     ).catch((e) => {

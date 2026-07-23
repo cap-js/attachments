@@ -827,7 +827,7 @@ describe("Tests for copy() on AttachmentsService", () => {
       .columns("DraftAdministrativeData_DraftUUID")
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
-    const newAtt = await await runWithUser(alice, () =>
+    const newAtt = await runWithUser(alice, () =>
       AttachmentsSrv.copy(
         Attachments,
         { ID: sourceAttachmentID },
