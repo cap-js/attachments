@@ -1,12 +1,13 @@
 require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
+const path = require("path")
+const app = path.join(__dirname, "../incidents-app")
+cds.test(app)
+
 cds.env.requires["audit-log"] = {
   impl: "@cap-js/audit-logging/srv/log2console",
   outbox: false,
 }
-const { join } = cds.utils.path
-const app = join(__dirname, "../incidents-app")
-cds.test(app)
 
 let attachmentsSvc
 
