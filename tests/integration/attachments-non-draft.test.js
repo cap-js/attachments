@@ -237,7 +237,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdatableProperties is empty", async () => {
     const incidentID = await newIncident(POST, "admin")
 
     // Create attachment metadata on overwritableAttachments

@@ -85,20 +85,20 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Checks whether content updates are restricted for the given attachment entity.
-   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdateableProperties,
+   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdatableProperties,
    * meaning overwriting existing content is NOT allowed.
    * Returns false if the annotation is missing, is an empty array, or does not include `content`.
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @returns {boolean}
    */
   _isContentUpdateRestricted(attachments) {
-    const nonUpdateable =
-      attachments["@Capabilities.UpdateRestrictions.NonUpdateableProperties"]
+    const nonUpdatable =
+      attachments["@Capabilities.UpdateRestrictions.NonUpdatableProperties"]
     // If annotation is not set, allow content overwrite by default
-    if (!nonUpdateable) return false
+    if (!nonUpdatable) return false
     // If it's an array, check if 'content' is listed
-    if (Array.isArray(nonUpdateable)) {
-      return nonUpdateable.some(
+    if (Array.isArray(nonUpdatable)) {
+      return nonUpdatable.some(
         (prop) => prop === "content" || prop?.["="] === "content",
       )
     }
