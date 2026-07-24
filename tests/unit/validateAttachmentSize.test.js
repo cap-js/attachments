@@ -2,12 +2,11 @@ require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
 const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, POST, PUT } = cds.test(app)
-const { readFileSync } = cds.utils.fs
-const { join } = cds.utils.path
 const { validateAttachmentSize } = require("../../lib/generic-handlers")
 const { newIncident, withUser } = require("../utils/testUtils")
 const { POST, PUT } = withUser("alice", cds.test(app))
+const { readFileSync } = cds.utils.fs
+const { join } = cds.utils.path
 
 afterAll(async () => {
   await cds.disconnect()
