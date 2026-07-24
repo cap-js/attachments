@@ -272,14 +272,13 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
       .where({ ID: sampleDocID })
       .set({ lastScan: "2020-01-01T00:00:00" })
 
-    await GET(
+    const rescanRes = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=true)/attachments(up__ID=${incidentID},ID=${sampleDocID},IsActiveEntity=true)/content`,
-    ).catch((e) => {
-      expect(e.status).toEqual(202)
-      expect(e.response.data.error.message).toContain(
-        "The previous scan was more than 3 days ago. Please try to download again in a moment, after the attachment is rescanned.",
-      )
-    })
+    ).catch((e) => e.response)
+    expect(rescanRes.status).toEqual(202)
+    expect(rescanRes.data.error.message).toContain(
+      "The previous scan was more than 3 days ago. Please try to download again in a moment, after the attachment is rescanned.",
+    )
   })
 
   it("Scan status is translated", async () => {
@@ -632,7 +631,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
     const response = await GET(
       `odata/v4/processor/Incidents(ID=${incidentID},IsActiveEntity=false)/attachments`,
     )
-    //the data should have no attachments
+    //the data should have one attachment
     expect(response.status).toEqual(200)
     expect(response.data.value.length).toEqual(1)
 
@@ -1943,8 +1942,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
 
     try {
       await waitForDeletion(attachmentResponse.data.value[0].url)
-      // Should throw due to timeout
-      expect(true).toEqual(false)
+      throw new Error("Expected waitForDeletion to time out, but it resolved")
     } catch (error) {
       expect(error.message.startsWith("Timeout waiting for deletion")).toEqual(
         true,

@@ -190,7 +190,7 @@ async function waitUntil(predicate, timeout = 180000) {
  * @param {Object} PUT - CDS test PUT function
  * @param {Object} GET - CDS test GET function
  * @param {string} incidentId - Incident ID
- * @param {number} overrideContentLength - Override Content-Length header (-1 = use file size)
+ * @param {number|null} overrideContentLength - Override Content-Length header (null = use file size)
  * @param {string} entityName - Attachment composition name
  * @returns {Promise<string>} - Attachment ID
  */
@@ -200,7 +200,7 @@ async function uploadDraftAttachment(
   PUT,
   GET,
   incidentId,
-  overrideContentLength = -1,
+  overrideContentLength = null,
   entityName = "attachments",
 ) {
   const filepath = join(__dirname, "..", "integration", "content/sample.pdf")
@@ -231,10 +231,7 @@ async function uploadDraftAttachment(
     {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Length":
-          overrideContentLength != -1
-            ? overrideContentLength
-            : fileContent.byteLength,
+        "Content-Length": overrideContentLength ?? fileContent.byteLength,
       },
     },
   )

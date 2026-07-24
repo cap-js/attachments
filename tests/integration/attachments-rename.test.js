@@ -901,7 +901,7 @@ describe("Tests for copy() on AttachmentsService", () => {
     expect(targetDraft?.DraftAdministrativeData_DraftUUID).toBeTruthy()
 
     // Source is the active Attachments entity (uploaded via draft, now active after save)
-    const newAtt = await await runWithUser(alice, () =>
+    const newAtt = await runWithUser(alice, () =>
       AttachmentsSrv.copy(
         Attachments,
         { ID: sourceAttachmentID },
