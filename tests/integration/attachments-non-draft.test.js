@@ -4,12 +4,16 @@ const {
   waitForScanStatus,
   newIncident,
   waitForDeletion,
+  delay,
+  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, PATCH, DELETE, PUT } =
-  require("@cap-js/cds-test")(app)
+const { GET, POST, PATCH, DELETE, PUT } = withUser(
+  "alice",
+  require("@cap-js/cds-test")(app),
+)
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
@@ -28,9 +32,11 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       originalDeduplicateFileNames
   })
 
-  axios.defaults.auth = { username: "alice" }
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
+
+  // Allow background operations (malware scan status updates) to complete before teardown
+  afterAll(() => delay(2000))
 
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
     const resCreate = await POST("/odata/v4/admin/Incidents", {
@@ -987,17 +993,15 @@ describe("Row-level security on attachments composition", () => {
 
   it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
-    await axios
-      .patch(
-        `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
-        {
-          note: "Should fail",
-        },
-        { auth: { username: "bob" } },
-      )
-      .catch((e) => {
-        expect(e.status).toEqual(403)
-      })
+    await PATCH(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
+      {
+        note: "Should fail",
+      },
+      { auth: { username: "bob" } },
+    ).catch((e) => {
+      expect(e.status).toEqual(403)
+    })
   })
 
   it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
@@ -1053,7 +1057,6 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Tests for inline single attachment in non-draft mode", () => {
-  axios.defaults.auth = { username: "alice" }
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
 
   it("Should create a SingleAttachment and serve content without draft", async () => {

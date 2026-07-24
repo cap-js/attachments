@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Avoid leaking Service Manager credentials when service manager binding is not complete.
+- Replaced `axios` with the built-in `fetch` API, removing an external dependency
 
 ## Version 3.13.2
 

@@ -30,15 +30,8 @@ jest.mock("@sap/cds", () => ({
   },
 }))
 
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    json: () => Promise.resolve({ malwareDetected: false }),
-  }),
-)
+global.fetch = jest.fn()
 
-jest.mock("axios")
-
-// Mock individual functions used in malwareScanner since it imports logger
 jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
   const original = jest.requireActual(
     "../../srv/malware-scanner/malwareScanner",
@@ -57,7 +50,6 @@ const {
   MAX_FILE_SIZE,
   validateServiceManagerCredentials,
 } = require("../../lib/helper")
-const axios = require("axios")
 const cds = require("@sap/cds")
 
 beforeEach(() => {
@@ -70,8 +62,9 @@ beforeEach(() => {
   }
   global.fetch = jest.fn(() =>
     Promise.resolve({
-      json: () => Promise.resolve({ malwareDetected: false }),
+      ok: true,
       status: 200,
+      json: () => Promise.resolve({ malwareDetected: false }),
     }),
   )
 })
@@ -87,8 +80,18 @@ describe("getObjectStoreCredentials", () => {
       },
     }
 
-    axios.get.mockResolvedValue({ data: { items: [{ id: "test-cred" }] } })
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+    global.fetch = jest
+      .fn()
+      // First call: fetchTokenWithClientSecret (POST to /oauth/token)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: "test-token" }),
+      })
+      // Second call: fetchObjectStoreBinding (GET service_bindings)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ items: [{ id: "test-cred" }] }),
+      })
 
     const creds = await getObjectStoreCredentials("tenant")
     expect(creds.id).toBe("test-cred")
@@ -116,8 +119,11 @@ describe("getObjectStoreCredentials", () => {
 })
 
 describe("fetchToken", () => {
-  it("should return a token when axios resolves", async () => {
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+  it("should return a token when fetch resolves", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ access_token: "test-token" }),
+    })
     const token = await fetchToken("url", "clientId", "clientSecret")
     expect(token).toBe("test-token")
   })
@@ -135,7 +141,7 @@ describe("fetchToken", () => {
   })
 
   it("should handle error and throw", async () => {
-    axios.post.mockRejectedValue(new Error("fail"))
+    global.fetch = jest.fn().mockRejectedValueOnce(new Error("fail"))
     await expect(fetchToken("url", "clientId", "clientSecret")).rejects.toThrow(
       "fail",
     )

@@ -1,11 +1,14 @@
 const cds = require("@sap/cds")
 const { RequestSend } = require("../utils/api")
-const { waitForScanStatus, newIncident } = require("../utils/testUtils")
+const {
+  waitForScanStatus,
+  newIncident,
+  withUser,
+} = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
-axios.defaults.auth = { username: "alice" }
+const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 

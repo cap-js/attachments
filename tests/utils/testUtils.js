@@ -183,6 +183,44 @@ async function waitUntil(predicate, timeout = 180000) {
   throw new Error(`Timeout: condition not met within ${timeout}ms`)
 }
 
+const { Readable } = require("stream")
+
+async function unwrapStream(res) {
+  if (res.data && typeof res.data.getReader === "function") {
+    const reader = res.data.getReader()
+    const chunks = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+    }
+    res.data = Buffer.concat(chunks).toString()
+  }
+  return res
+}
+
+function withUser(username, test) {
+  const auth = { auth: { username } }
+  const wrap = (body) => (Buffer.isBuffer(body) ? Readable.from(body) : body)
+  const req =
+    (fn) =>
+    (...args) =>
+      fn(...args).then(unwrapStream)
+  return {
+    GET: req((url, opts) => test.GET(url, { ...auth, ...opts })),
+    POST: req((url, body, opts) =>
+      test.POST(url, wrap(body), { ...auth, ...opts }),
+    ),
+    PUT: req((url, body, opts) =>
+      test.PUT(url, wrap(body), { ...auth, ...opts }),
+    ),
+    DELETE: req((url, opts) => test.DELETE(url, { ...auth, ...opts })),
+    PATCH: req((url, body, opts) =>
+      test.PATCH(url, wrap(body), { ...auth, ...opts }),
+    ),
+  }
+}
+
 /**
  * Uploads attachment in draft mode using CDS test utilities
  * @param {Object} utils - RequestSend utility instance
@@ -258,5 +296,6 @@ module.exports = {
   waitForDeletion,
   waitForMalwareDeletion,
   runWithUser,
+  withUser,
   uploadDraftAttachment,
 }

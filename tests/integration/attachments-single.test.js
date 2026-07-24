@@ -5,14 +5,14 @@ const {
   waitForMalwareDeletion,
   waitForDeletion,
   runWithUser,
+  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, DELETE, PATCH, PUT } = cds.test(app)
-axios.defaults.auth = { username: "alice" }
+const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
-const { createReadStream, readFileSync } = cds.utils.fs
+const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 
 describe("Tests for single attachment entity", () => {
@@ -183,7 +183,7 @@ describe("Tests for single attachment entity", () => {
     let expectedError
     await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
-      createReadStream(join(__dirname, "content/sample.pdf")),
+      Buffer.alloc(6 * 1024 * 1024),
       {
         headers: {
           "Content-Type": "text/plain",
@@ -194,7 +194,7 @@ describe("Tests for single attachment entity", () => {
       expectedError = e
     })
 
-    expect(expectedError.response.status).toEqual(413)
+    expect(expectedError.status).toEqual(413)
     expect(expectedError.response.data.error.message).toMatch(
       'The size of "large.txt" exceeds the maximum allowed limit of 5MB',
     )
