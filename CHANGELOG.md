@@ -4,20 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 4.0.0
+## Version 4.0.0 - TBD
 
 ### Changed
 
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
 
-## Version 3.13.3
+## Version 3.13.3 - 2026-07-24
 
 ### Fixed
 
 - Avoid leaking Service Manager credentials when service manager binding is not complete.
 - Replaced `axios` with the built-in `fetch` API, removing an external dependency
 
-## Version 3.13.2
+## Version 3.13.2 - 2026-07-23
 
 ### Fixed
 
@@ -26,13 +26,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
 - Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
 
-## Version 3.13.1
+## Version 3.13.1 - 2026-06-26
 
 ### Fixed
 
 - Multiple single attachments components now are visible in the UI with unique labels
 
-## Version 3.13.0
+## Version 3.13.0 - 2026-06-22
 
 ### Added
 
@@ -49,13 +49,13 @@ entity MyEntity {
 
 - Removed hard-coded attributes that were being used. Variable attribute names supports multiple compositions of attachments on a single entity.
 
-## Version 3.12.2
+## Version 3.12.2 - 2026-05-20
 
 ### Fixed
 
 - Querying from content column while using object storage now returns expected result.
 
-## Version 3.12.1
+## Version 3.12.1 - 2026-04-29
 
 ### Added
 
@@ -65,7 +65,7 @@ entity MyEntity {
 
 - Security audit events (`AttachmentSizeExceeded`, `AttachmentUploadRejected`, `AttachmentDownloadRejected`) now log the real client IP on reverse-proxy deployments (e.g. BTP Cloud Foundry) as well by setting `X-Forwarded-For` as an attribute on the audit log.
 
-## Version 3.12.0
+## Version 3.12.0 - 2026-04-20
 
 ### Added
 
@@ -80,7 +80,7 @@ entity MyEntity {
 - Wrong file name being shown when rejecting an attachment due to file size.
 - Fix a server crash when uploading extensions due to wrongfully assuming each request has a query attached.
 
-## Version 3.11.0
+## Version 3.11.0 - 2026-04-02
 
 ### Added
 
@@ -90,7 +90,7 @@ entity MyEntity {
 
 - When `cds.env.fiori.bypass_draft` was enabled attachments were wrongfully deleted
 
-## Version 3.10.0
+## Version 3.10.0 - 2026-03-31
 
 ### Added
 
@@ -106,7 +106,7 @@ entity MyEntity {
 - Fixed bug to allow navigation of self-referencing entities.
 - Fix that POST requests for attachments did not have a response when the plugin is used with an object store.
 
-## Version 3.9.0
+## Version 3.9.0 - 2026-03-10
 
 ### Fixed
 
@@ -116,7 +116,7 @@ entity MyEntity {
 - Fixed bug in which discarded drafts would save files to database.
 - Now allows for downloading files while in draft mode.
 
-## Version 3.8.0
+## Version 3.8.0 - 2026-02-20
 
 ### Added
 
@@ -147,7 +147,7 @@ entity MyEntity {
 
 - Resolved an issue in draft mode where discarding an active draft incorrectly deleted attachments from the object store. Removed dependency on `req.diff()`.
 
-## Version 3.7.0
+## Version 3.7.0 - 2026-01-22
 
 ### Added
 
@@ -158,14 +158,14 @@ entity MyEntity {
 
 - Addressed an issue where files were deleted twice from the underlying object store, which previously resulted in error messages and looping through the outbox.
 
-## Version 3.6.1
+## Version 3.6.1 - 2026-01-15
 
 ### Fixed
 
 - Resolved an issue where URLs for nested entities were not generated.
 - Fixed an internal server error in CDS 8 caused by the absence of `cds.infer?.target`.
 
-## Version 3.6.0
+## Version 3.6.0 - 2026-01-08
 
 ### Added
 
@@ -198,14 +198,14 @@ entity MyEntity {
 - Handling the use of nested POST requests in non-draft mode.
 - Prevent overriding attachments using `/content` handler.
 
-## Version 3.5.0
+## Version 3.5.0 - 2025-12-05
 
 ### Fixed
 
 - Enforced the use of the `Content-Length` header to prevent server errors.
 - Designated the `content` property in the Attachments table as a `NonSortableProperty` to prevent database errors when sorting LargeBinary fields.
 
-## Version 3.4.0
+## Version 3.4.0 - 2025-11-25
 
 ### Added
 
@@ -227,7 +227,7 @@ entity MyEntity {
 - Removed the previous hard limit of `400 MB` for file uploads. Files exceeding this size may still fail during malware scanning and will be marked with a `Failed` status.
 - Resolved issues with generic handler registration, enabling services to intercept the attachments plugin using middleware.
 
-## Version 3.3.0
+## Version 3.3.0 - 2025-11-18
 
 ### Added
 
@@ -246,7 +246,7 @@ entity MyEntity {
 - Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
 - Fixed an issue where the content could be uploaded for a not existing attachments entity.
 
-## Version 3.2.0
+## Version 3.2.0 - 2025-11-07
 
 ### Added
 
@@ -257,7 +257,7 @@ entity MyEntity {
 - Added criticality status to the attachment scan status.
 - Provided translations for all SAP-supported languages.
 
-## Version 3.1.0
+## Version 3.1.0 - 2025-10-21
 
 ### Added
 
@@ -269,7 +269,7 @@ entity MyEntity {
 - Ensured reliable deletion of all related attachments when parent entities are removed, preventing orphaned data.
 - Improved handling of attachment deletion for non-draft entities to ensure consistent cleanup.
 
-## Version 3.0.0
+## Version 3.0.0 - 2025-10-14
 
 **BREAKING CHANGE:** Replaced usage of the CAP `req` variable with `cds.context` throughout the codebase.
 
@@ -284,7 +284,7 @@ entity MyEntity {
 - Deprecated `@attachments.disable_facet`
 - Introduced support for @UI.Hidden, enabling dynamic hiding of the attachments section in the UI.
 
-## Version 2.2.2
+## Version 2.2.2 - 2025-09-26
 
 ### Added
 
@@ -294,13 +294,13 @@ entity MyEntity {
 
 - Resolved an issue in hybrid mode where an incorrect route path variable was used for attachment uploads in local environments.
 
-## Version 2.2.1
+## Version 2.2.1 - 2025-09-10
 
 ### Fixed
 
 - Ensured content is correctly stored and retrievable in non-draft mode.
 
-## Version 2.2.0
+## Version 2.2.0 - 2025-07-21
 
 ### Added
 
@@ -312,13 +312,13 @@ entity MyEntity {
 - Improved error handling and runtime crashes.
 - Fixed support for MTLS authentication via Service Manager.
 
-## Version 2.1.2
+## Version 2.1.2 - 2025-05-22
 
 ### Fixed
 
 - Bug fixes.
 
-## Version 2.1.1
+## Version 2.1.1 - 2025-05-14
 
 ### Added
 
@@ -328,7 +328,7 @@ entity MyEntity {
 
 - Deleted attachments are now removed from S3 when a draft is discarded or deleted.
 
-## Version 2.1.0
+## Version 2.1.0 - 2025-04-21
 
 ### Added
 
@@ -338,19 +338,19 @@ entity MyEntity {
 
 - Support for `.mov` file extension.
 
-## Version 2.0.2
+## Version 2.0.2 - 2025-03-19
 
 ### Fixed
 
 - Restored Attachments aspect on root namespace.
 
-## Version 2.0.1
+## Version 2.0.1 - 2025-03-17
 
 ### Fixed
 
 - Minor bug fixes.
 
-## Version 2.0.0
+## Version 2.0.0 - 2025-03-10
 
 ### Changed
 
@@ -361,13 +361,13 @@ entity MyEntity {
 
 - **Visibility Control**: Added visibility control for attachments plugin using `@attachments.disable_facet`.
 
-## Version 1.2.1
+## Version 1.2.1 - 2025-02-26
 
 ### Fixed
 
 - CDS version check added for rendering UI facets in older versions.
 
-## Version 1.2.0
+## Version 1.2.0 - 2025-02-26
 
 ### Added
 
@@ -377,7 +377,7 @@ entity MyEntity {
 
 - Fixed query syntax error for hana cloud bindings.
 
-## Version 1.1.9
+## Version 1.1.9 - 2025-02-04
 
 ### Added
 
@@ -388,7 +388,7 @@ entity MyEntity {
 
 - Fixed upload attachment bug after cds `8.7.0` update.
 
-## Version 1.1.8
+## Version 1.1.8 - 2024-11-04
 
 ### Changed
 
@@ -398,13 +398,13 @@ entity MyEntity {
 
 - Fix for viewing stored attachment.
 
-## Version 1.1.7
+## Version 1.1.7 - 2024-10-07
 
 ### Fixed
 
 - Fix for scenario where an aspect has a composition.
 
-## Version 1.1.6
+## Version 1.1.6 - 2024-08-23
 
 ### Added
 
@@ -414,7 +414,7 @@ entity MyEntity {
 
 - Fix for adding note for attachments.
 
-## Version 1.1.5
+## Version 1.1.5 - 2024-08-07
 
 ### Changed
 
@@ -422,13 +422,13 @@ entity MyEntity {
 - Scan status is mocked to `Clean` only in the development profile and otherwise set to `Unscanned`, when malware scan is disabled.
 - When malware scan is disabled, removed restriction to access uploaded attachment.
 
-## Version 1.1.4
+## Version 1.1.4 - 2024-07-08
 
 ### Changed
 
 - Updated Node version restriction.
 
-## Version 1.1.3
+## Version 1.1.3 - 2024-06-27
 
 ### Changed
 
@@ -438,7 +438,7 @@ entity MyEntity {
 
 - Minor bug fixes.
 
-## Version 1.1.2
+## Version 1.1.2 - 2024-06-21
 
 ### Added
 
@@ -454,7 +454,7 @@ entity MyEntity {
 - Bug fixes for event handlers in production.
 - Bug fix for attachment target condition.
 
-## Version 1.1.1
+## Version 1.1.1 - 2024-05-31
 
 ### Changed
 
@@ -465,7 +465,7 @@ entity MyEntity {
 
 - Bug fixes for upload functionality in production.
 
-## Version 1.1.0
+## Version 1.1.0 - 2024-05-28
 
 ### Added
 
@@ -475,19 +475,19 @@ entity MyEntity {
 
 - Fixes for deployment
 
-## Version 1.0.2
+## Version 1.0.2 - 2024-04-30
 
 ### Fixed
 
 - Bug fixes
 
-## Version 1.0.1
+## Version 1.0.1 - 2024-03-28
 
 ### Fixed
 
 - Updating the documentation.
 
-## Version 1.0.0
+## Version 1.0.0 - 2024-03-28
 
 ### Added
 
