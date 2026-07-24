@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
 
+## Version 3.13.3
+
+### Fixed
+
+- Avoid leaking Service Manager credentials when service manager binding is not complete.
+- Replaced `axios` with the built-in `fetch` API, removing an external dependency
+
 ## Version 3.13.2
 
 ### Fixed
@@ -77,7 +84,7 @@ entity MyEntity {
 
 ### Added
 
-- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdateableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
+- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdatableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
 
 ### Fixed
 
