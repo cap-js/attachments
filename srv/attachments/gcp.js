@@ -1,4 +1,15 @@
-const { Storage } = require("@google-cloud/storage")
+let Storage
+try {
+  ;({ Storage } = require("@google-cloud/storage"))
+} catch (e) {
+  if (e.code === "MODULE_NOT_FOUND")
+    throw new Error(
+      'The Google Cloud Platform storage provider requires "@google-cloud/storage" to be installed.\n' +
+        "Please run: npm install @google-cloud/storage",
+      { cause: e },
+    )
+  throw e
+}
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../../lib/helper")

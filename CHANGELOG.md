@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 4.0.0 - TBD
+
+### Changed
+
+- Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
+
 ## Version 3.13.3 - 2026-07-24
 
 ### Fixed
