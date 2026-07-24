@@ -1,26 +1,37 @@
+const mockLogInstance = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  _debug: true,
+}
+
+const mockRedacted = jest.fn((cred) => {
+  if (!cred || typeof cred !== "object") return cred
+  const result = {}
+  for (const k of Object.keys(cred)) {
+    result[k] =
+      /(passw)|(cert)|(ca)|(secret)|(key)/i.test(k) &&
+      typeof cred[k] === "string"
+        ? "..."
+        : cred[k]
+  }
+  return result
+})
+
 jest.mock("@sap/cds", () => ({
   ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
   debug: jest.fn(),
-  log: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    _debug: true,
-  })),
+  log: jest.fn(() => mockLogInstance),
   Service: class {},
   env: { requires: {} },
+  utils: {
+    redacted: mockRedacted,
+  },
 }))
 
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    json: () => Promise.resolve({ malwareDetected: false }),
-  }),
-)
+global.fetch = jest.fn()
 
-jest.mock("axios")
-
-// Mock individual functions used in malwareScanner since it imports logger
 jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
   const original = jest.requireActual(
     "../../srv/malware-scanner/malwareScanner",
@@ -37,8 +48,8 @@ const {
   fetchToken,
   sizeInBytes,
   MAX_FILE_SIZE,
+  validateServiceManagerCredentials,
 } = require("../../lib/helper")
-const axios = require("axios")
 const cds = require("@sap/cds")
 
 beforeEach(() => {
@@ -51,8 +62,9 @@ beforeEach(() => {
   }
   global.fetch = jest.fn(() =>
     Promise.resolve({
-      json: () => Promise.resolve({ malwareDetected: false }),
+      ok: true,
       status: 200,
+      json: () => Promise.resolve({ malwareDetected: false }),
     }),
   )
 })
@@ -68,8 +80,18 @@ describe("getObjectStoreCredentials", () => {
       },
     }
 
-    axios.get.mockResolvedValue({ data: { items: [{ id: "test-cred" }] } })
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+    global.fetch = jest
+      .fn()
+      // First call: fetchTokenWithClientSecret (POST to /oauth/token)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: "test-token" }),
+      })
+      // Second call: fetchObjectStoreBinding (GET service_bindings)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ items: [{ id: "test-cred" }] }),
+      })
 
     const creds = await getObjectStoreCredentials("tenant")
     expect(creds.id).toBe("test-cred")
@@ -97,8 +119,11 @@ describe("getObjectStoreCredentials", () => {
 })
 
 describe("fetchToken", () => {
-  it("should return a token when axios resolves", async () => {
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+  it("should return a token when fetch resolves", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ access_token: "test-token" }),
+    })
     const token = await fetchToken("url", "clientId", "clientSecret")
     expect(token).toBe("test-token")
   })
@@ -116,7 +141,7 @@ describe("fetchToken", () => {
   })
 
   it("should handle error and throw", async () => {
-    axios.post.mockRejectedValue(new Error("fail"))
+    global.fetch = jest.fn().mockRejectedValueOnce(new Error("fail"))
     await expect(fetchToken("url", "clientId", "clientSecret")).rejects.toThrow(
       "fail",
     )
@@ -155,5 +180,64 @@ describe("size to byte converter", () => {
     expect(sizeInBytes(undefined)).toEqual(MAX_FILE_SIZE)
 
     expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(MAX_FILE_SIZE)
+  })
+})
+
+describe("validateServiceManagerCredentials - no credential leakage", () => {
+  beforeEach(() => {
+    mockLogInstance.error.mockClear()
+    mockRedacted.mockClear()
+  })
+
+  it("should not expose raw credentials in LOG.error when fields are missing", () => {
+    const sensitiveCredentials = {
+      sm_url: "https://sm.example.com",
+      url: "https://token.example.com",
+      clientid: "", // missing
+      clientsecret: "super-secret-value",
+      certificate: "-----BEGIN CERTIFICATE-----\nMIIB...",
+      key: "-----BEGIN PRIVATE KEY-----\nMIIE...",
+    }
+
+    expect(() =>
+      validateServiceManagerCredentials(sensitiveCredentials),
+    ).toThrow("Missing Service Manager credentials")
+
+    expect(mockLogInstance.error).toHaveBeenCalled()
+    const loggedArgs = mockLogInstance.error.mock.calls[0]
+    const loggedString = JSON.stringify(loggedArgs)
+
+    // Must NOT contain raw secret values
+    expect(loggedString).not.toContain("super-secret-value")
+    expect(loggedString).not.toContain("-----BEGIN CERTIFICATE-----")
+    expect(loggedString).not.toContain("-----BEGIN PRIVATE KEY-----")
+
+    // cds.utils.redacted must have been called
+    expect(mockRedacted).toHaveBeenCalledWith(sensitiveCredentials)
+  })
+
+  it("should pass redacted object to LOG.error, not original", () => {
+    const sensitiveCredentials = {
+      sm_url: "https://sm.example.com",
+      url: "https://token.example.com",
+      clientid: "", // missing
+      clientsecret: "do-not-leak",
+      key: "private-key-content",
+    }
+
+    expect(() =>
+      validateServiceManagerCredentials(sensitiveCredentials),
+    ).toThrow()
+
+    const loggedArgs = mockLogInstance.error.mock.calls[0]
+    // Second arg is what was passed as the credentials object
+    const loggedCreds = loggedArgs[1]
+
+    // Redacted fields should be masked
+    expect(loggedCreds.clientsecret).toBe("...")
+    expect(loggedCreds.key).toBe("...")
+    // Non-secret fields preserved
+    expect(loggedCreds.sm_url).toBe("https://sm.example.com")
+    expect(loggedCreds.url).toBe("https://token.example.com")
   })
 })

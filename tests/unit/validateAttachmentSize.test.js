@@ -2,19 +2,17 @@ require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
 const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
-const { axios, POST, PUT } = cds.test(app)
+const { validateAttachmentSize } = require("../../lib/generic-handlers")
+const { newIncident, withUser } = require("../utils/testUtils")
+const { POST, PUT } = withUser("alice", cds.test(app))
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
-const { validateAttachmentSize } = require("../../lib/generic-handlers")
-const { newIncident } = require("../utils/testUtils")
 
 afterAll(async () => {
   await cds.disconnect()
 })
 
 describe("validateAttachmentSize", () => {
-  axios.defaults.auth = { username: "alice" }
-
   it("should pass validation for a file size under 400 MB", async () => {
     const incidentID = await newIncident(POST, "admin")
     const responseCreate = await POST(
