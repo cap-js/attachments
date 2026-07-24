@@ -12,7 +12,7 @@ const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
 const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
-const { createReadStream, readFileSync } = cds.utils.fs
+const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 
 describe("Tests for single attachment entity", () => {

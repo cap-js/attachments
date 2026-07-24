@@ -198,8 +198,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
           maxBodyLength: Infinity,
           maxContentLength: Infinity,
         },
-      )
-      .catch((e) => {
+      ).catch((e) => {
         expectedError = e
       })
 
