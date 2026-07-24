@@ -7,14 +7,15 @@ const {
   delay,
   withUser,
 } = require("../utils/testUtils")
-const { join, resolve } = cds.utils.path
-const { createReadStream, readFileSync, statSync } = cds.utils.fs
+const path = require("path")
 
-const app = resolve(__dirname, "../incidents-app")
+const app = path.resolve(__dirname, "../incidents-app")
 const { GET, POST, PATCH, DELETE, PUT } = withUser(
   "alice",
   require("@cap-js/cds-test")(app),
 )
+const { join } = cds.utils.path
+const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
@@ -242,7 +243,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdatableProperties is empty", async () => {
     const incidentID = await newIncident(POST, "admin")
 
     // Create attachment metadata on overwritableAttachments

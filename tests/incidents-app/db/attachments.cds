@@ -29,8 +29,8 @@ annotate my.Incidents.mediaTypeAttachments with {
   content @Core.AcceptableMediaTypes: ['image/jpeg'];
 }
 
-// Allow overwriting content for overwritableAttachments by setting empty NonUpdateableProperties
-annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdateableProperties: [];
+// Allow overwriting content for overwritableAttachments by setting empty NonUpdatableProperties
+annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdatableProperties: [];
 
 @UI.Facets: [{
   $Type : 'UI.ReferenceFacet',
@@ -67,7 +67,7 @@ extend my.SingleAttachment with {
 
 annotate my.SingleAttachment with {
   myAttachment {
-    content @Validation.Maximum: '5MB';
+    content @Validation.Maximum: '5MB' @UI.Hidden;
   }
 }
 

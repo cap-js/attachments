@@ -9,13 +9,14 @@ const {
   runWithUser,
   withUser,
 } = require("../utils/testUtils")
-const { createReadStream, readFileSync } = cds.utils.fs
-const { join, basename } = cds.utils.path
+const path = require("path")
 const { Readable } = require("stream")
 
-const app = join(__dirname, "../incidents-app")
+const app = path.resolve(__dirname, "../incidents-app")
 const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
+const { createReadStream, readFileSync } = cds.utils.fs
+const { join, basename } = cds.utils.path
 
 let utils = null
 
@@ -2540,7 +2541,6 @@ describe("Tests for single attachment entity", () => {
     )
 
     const fileContent = "content that will be rescanned"
-    const initialScanWaiter = waitForScanStatus("Clean")
     await PUT(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
       fileContent,
@@ -2552,9 +2552,16 @@ describe("Tests for single attachment entity", () => {
       {},
     )
 
-    await initialScanWaiter
-
     const db = await cds.connect.to("db")
+    await waitUntil(async () => {
+      const row = await db.run(
+        SELECT.one
+          .from("sap.capire.incidents.SingleAttachment")
+          .where({ ID: singleAttachment.ID }),
+      )
+      return row?.myAttachment_status === "Clean"
+    })
+
     await db.run(
       UPDATE("sap.capire.incidents.SingleAttachment")
         .set({
@@ -2920,6 +2927,67 @@ describe("Tests for single attachment entity", () => {
     })
     expect(Buffer.concat(chunks).length).toBeGreaterThan(0)
   })
+
+  it("Should accept upload when file type matches @Core.AcceptableMediaTypes on inline attachment", async () => {
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities.SingleAttachment.elements.myAttachment_content
+    const origTypes = el["@Core.AcceptableMediaTypes"]
+    el["@Core.AcceptableMediaTypes"] = ["application/pdf"]
+
+    try {
+      const { data: singleAttachment } = await POST(
+        "/odata/v4/processor/SingleAttachment",
+        { name: "Mime type allowed test", myAttachment_filename: "sample.pdf" },
+      )
+
+      const filepath = join(__dirname, "content/sample.pdf")
+      const fileContent = readFileSync(filepath)
+
+      const putRes = await PUT(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+        fileContent,
+        { headers: { "Content-Type": "application/pdf" } },
+      )
+      expect(putRes.status).toEqual(204)
+    } finally {
+      el["@Core.AcceptableMediaTypes"] = origTypes
+    }
+  })
+
+  it("Should reject upload when file type does not match @Core.AcceptableMediaTypes on inline attachment", async () => {
+    const svc = await cds.connect.to("ProcessorService")
+    const el = svc.entities.SingleAttachment.elements.myAttachment_content
+    const origTypes = el["@Core.AcceptableMediaTypes"]
+    el["@Core.AcceptableMediaTypes"] = ["image/jpeg"]
+
+    try {
+      const { data: singleAttachment } = await POST(
+        "/odata/v4/processor/SingleAttachment",
+        {
+          name: "Mime type rejected test",
+          myAttachment_filename: "sample.pdf",
+        },
+      )
+
+      const filepath = join(__dirname, "content/sample.pdf")
+      const fileContent = readFileSync(filepath)
+
+      let expectedError
+      await PUT(
+        `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+        fileContent,
+        { headers: { "Content-Type": "application/pdf" } },
+      ).catch((e) => {
+        expectedError = e
+      })
+      expect(expectedError?.response?.status).toEqual(400)
+      expect(expectedError?.response?.data?.error?.message).toMatch(
+        "The attachment file type 'application/pdf' is not allowed.",
+      )
+    } finally {
+      el["@Core.AcceptableMediaTypes"] = origTypes
+    }
+  })
 })
 
 describe("Tests for attachments facet disable", () => {
@@ -3011,6 +3079,36 @@ describe("Tests for attachments facet disable", () => {
     )
     expect(attachmentFacets.length).toEqual(1)
     expect(attachmentFacets[0].Label).toEqual("My custom attachments")
+  })
+
+  it("Adds @UI.FieldGroup and @UI.Facet for an inline attachment when only sap.attachments.Attachment is used (no Attachments composition)", () => {
+    const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
+    expect(entity["@UI.FieldGroup#myAttachment"]).toBeDefined()
+    const inlineFacet = entity["@UI.Facets"].find(
+      (f) => f.Target === "@UI.FieldGroup#myAttachment",
+    )
+    expect(inlineFacet).toBeDefined()
+    expect(inlineFacet.$Type).toBe("UI.ReferenceFacet")
+  })
+
+  it("Does not add an inline @UI.FieldGroup facet when the entity has no inline attachment fields", () => {
+    const entity = cds.model.definitions["ProcessorService.Test"]
+    const facets = entity["@UI.Facets"]
+    expect(facets).toBeDefined()
+    const inlineFacets = facets.filter((f) =>
+      f.Target?.startsWith("@UI.FieldGroup#"),
+    )
+    expect(inlineFacets).toHaveLength(0)
+  })
+
+  it("Propagates @UI.Hidden from inline attachment content element to its facet", () => {
+    const entity = cds.model.definitions["ProcessorService.SingleAttachment"]
+    const facets = entity["@UI.Facets"]
+    const inlineFacet = facets.find(
+      (f) => f.Target === "@UI.FieldGroup#myAttachment",
+    )
+    expect(inlineFacet).toBeDefined()
+    expect(inlineFacet["@UI.Hidden"]).toBe(true)
   })
 })
 

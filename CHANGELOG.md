@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.3
+
+### Fixed
+
+- Avoid leaking Service Manager credentials when service manager binding is not complete.
+
+## Version 3.13.2
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+- Upload of inline attachments with `@Core.AcceptableMediaTypes` annotation no longer crashes with a TypeError
+- UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
+- Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
+
 ## Version 3.13.1
 
 ### Fixed
@@ -63,7 +78,7 @@ entity MyEntity {
 
 ### Added
 
-- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdateableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
+- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdatableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
 
 ### Fixed
 
