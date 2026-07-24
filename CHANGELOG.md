@@ -71,7 +71,7 @@ entity MyEntity {
 
 ### Added
 
-- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdateableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
+- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdatableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
 
 ### Fixed
 
