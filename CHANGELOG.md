@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 3.13.3
+## Version 4.0.0
 
 ### Fixed
 
 - Avoid leaking Service Manager credentials when service manager binding is not complete.
+- Replaced `axios` with the built-in `fetch` API, removing an external dependency
 
 ## Version 3.13.2
 
@@ -47,7 +48,6 @@ entity MyEntity {
 ### Fixed
 
 - Querying from content column while using object storage now returns expected result.
-- Replaced `axios` with the built-in `fetch` API, removing an external dependency
 
 ## Version 3.12.1
 
