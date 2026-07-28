@@ -4,7 +4,6 @@ const {
   waitForScanStatus,
   newIncident,
   waitForDeletion,
-  delay,
   withUser,
 } = require("../utils/testUtils")
 const path = require("path")
@@ -16,6 +15,10 @@ const { GET, POST, PATCH, DELETE, PUT } = withUser(
 )
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
+
+afterAll(async () => {
+  await cds.db?.disconnect()
+})
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
@@ -34,9 +37,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
-
-  // Allow background operations (malware scan status updates) to complete before teardown
-  afterAll(() => delay(2000))
 
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
     const resCreate = await POST("/odata/v4/admin/Incidents", {

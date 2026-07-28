@@ -17,6 +17,10 @@ const { join, basename } = cds.utils.path
 
 let utils = null
 
+afterAll(async () => {
+  await cds.db?.disconnect()
+})
+
 describe("Tests for renaming duplicate attachments", () => {
   let originalDeduplicateFileNames
 
