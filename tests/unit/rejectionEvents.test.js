@@ -529,4 +529,110 @@ describe("Rescan triggered for Unscanned attachment", () => {
     expect(cds.spawn).not.toHaveBeenCalled()
     expect(req.reject).not.toHaveBeenCalled()
   })
+
+  it("should commit the Scanning status before throwing 202 (attachments entity)", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    // Gate the status commit so we can assert the throw waits for it. If
+    // cds.tx were not awaited, the 202 would be thrown before this resolves.
+    let releaseCommit
+    const commitGate = new Promise((resolve) => {
+      releaseCommit = resolve
+    })
+    cds.tx = jest.fn().mockImplementation(async (fn) => {
+      await commitGate
+      return await fn()
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    let gateReleased = false
+    let settledEarly = false
+    const validation = require("../../lib/generic-handlers")
+      .validateAttachment(req)
+      .catch((err) => err)
+    validation.then(() => {
+      settledEarly = !gateReleased
+    })
+
+    // Drain microtasks: while the commit gate is closed, validateAttachment
+    // must not have settled. Without the await on cds.tx, it would already
+    // have thrown the 202 here.
+    await new Promise((r) => setImmediate(r))
+    expect(settledEarly).toBe(false)
+
+    gateReleased = true
+    releaseCommit()
+
+    const result = await validation
+    expect(result).toMatchObject({
+      status: 202,
+      code: "UnableToDownloadAttachmentScanStatusExpired",
+    })
+    expect(malwareScannerSvc.updateStatus).toHaveBeenCalledWith(
+      target.name,
+      { ID: attachmentId },
+      "Scanning",
+    )
+    // The scan itself is triggered fire-and-forget after the commit.
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+  })
+
+  it("should commit the Scanning status before spawning the scan and throwing", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    const order = []
+    cds.tx = jest.fn().mockImplementation(async (fn) => {
+      const result = await fn()
+      order.push("commit")
+      return result
+    })
+    cds.spawn = jest.fn().mockImplementation((fn) => {
+      order.push("spawn")
+      spawnCallback = fn
+      return { on: jest.fn() }
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    try {
+      await require("../../lib/generic-handlers").validateAttachment(req)
+    } catch {
+      order.push("throw")
+    }
+
+    // The Scanning commit must complete before the scan is spawned and
+    // before the 202 is thrown.
+    expect(order).toEqual(["commit", "spawn", "throw"])
+  })
 })
