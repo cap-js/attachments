@@ -14,6 +14,10 @@ const { join } = cds.utils.path
 
 let utils = null
 
+afterAll(async () => {
+  await cds.db?.disconnect()
+})
+
 describe("Tests for attachments facet disable", () => {
   beforeAll(async () => {
     // Initialize test variables

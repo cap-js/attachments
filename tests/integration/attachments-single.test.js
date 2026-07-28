@@ -15,6 +15,10 @@ const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 
+afterAll(async () => {
+  await cds.db?.disconnect()
+})
+
 describe("Tests for single attachment entity", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
   let log = cds.test.log()

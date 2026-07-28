@@ -20,6 +20,10 @@ const { join, basename } = cds.utils.path
 
 let utils = null
 
+afterAll(async () => {
+  await cds.db?.disconnect()
+})
+
 describe("Tests for uploading/deleting attachments through API calls", () => {
   let log = cds.test.log()
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
