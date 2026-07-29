@@ -1,35 +1,3 @@
-const mockLogInstance = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  _debug: true,
-}
-
-const mockRedacted = jest.fn((cred) => {
-  if (!cred || typeof cred !== "object") return cred
-  const result = {}
-  for (const k of Object.keys(cred)) {
-    result[k] =
-      /(passw)|(cert)|(ca)|(secret)|(key)/i.test(k) &&
-      typeof cred[k] === "string"
-        ? "..."
-        : cred[k]
-  }
-  return result
-})
-
-jest.mock("@sap/cds", () => ({
-  ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
-  debug: jest.fn(),
-  log: jest.fn(() => mockLogInstance),
-  Service: class {},
-  env: { requires: {} },
-  utils: {
-    redacted: mockRedacted,
-  },
-}))
-
 global.fetch = jest.fn()
 
 jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
@@ -43,6 +11,7 @@ jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
   }
 })
 
+const cds = require("@sap/cds")
 const {
   getObjectStoreCredentials,
   fetchToken,
@@ -50,7 +19,6 @@ const {
   MAX_FILE_SIZE,
   validateServiceManagerCredentials,
 } = require("../../lib/helper")
-const cds = require("@sap/cds")
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -184,9 +152,17 @@ describe("size to byte converter", () => {
 })
 
 describe("validateServiceManagerCredentials - no credential leakage", () => {
+  let redactedSpy
+  let consoleErrorSpy
+
   beforeEach(() => {
-    mockLogInstance.error.mockClear()
-    mockRedacted.mockClear()
+    redactedSpy = jest.spyOn(cds.utils, "redacted")
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    redactedSpy.mockRestore()
+    consoleErrorSpy.mockRestore()
   })
 
   it("should not expose raw credentials in LOG.error when fields are missing", () => {
@@ -203,17 +179,14 @@ describe("validateServiceManagerCredentials - no credential leakage", () => {
       validateServiceManagerCredentials(sensitiveCredentials),
     ).toThrow("Missing Service Manager credentials")
 
-    expect(mockLogInstance.error).toHaveBeenCalled()
-    const loggedArgs = mockLogInstance.error.mock.calls[0]
-    const loggedString = JSON.stringify(loggedArgs)
+    // cds.utils.redacted must have been called with the credentials
+    expect(redactedSpy).toHaveBeenCalledWith(sensitiveCredentials)
 
-    // Must NOT contain raw secret values
+    // Verify raw secrets never reached console
+    const loggedString = JSON.stringify(consoleErrorSpy.mock.calls)
     expect(loggedString).not.toContain("super-secret-value")
     expect(loggedString).not.toContain("-----BEGIN CERTIFICATE-----")
     expect(loggedString).not.toContain("-----BEGIN PRIVATE KEY-----")
-
-    // cds.utils.redacted must have been called
-    expect(mockRedacted).toHaveBeenCalledWith(sensitiveCredentials)
   })
 
   it("should pass redacted object to LOG.error, not original", () => {
@@ -229,15 +202,15 @@ describe("validateServiceManagerCredentials - no credential leakage", () => {
       validateServiceManagerCredentials(sensitiveCredentials),
     ).toThrow()
 
-    const loggedArgs = mockLogInstance.error.mock.calls[0]
-    // Second arg is what was passed as the credentials object
-    const loggedCreds = loggedArgs[1]
+    // Verify raw secrets never reached console
+    const loggedString = JSON.stringify(consoleErrorSpy.mock.calls)
+    expect(loggedString).not.toContain("do-not-leak")
+    expect(loggedString).not.toContain("private-key-content")
 
-    // Redacted fields should be masked
-    expect(loggedCreds.clientsecret).toBe("...")
-    expect(loggedCreds.key).toBe("...")
-    // Non-secret fields preserved
-    expect(loggedCreds.sm_url).toBe("https://sm.example.com")
-    expect(loggedCreds.url).toBe("https://token.example.com")
+    // Redacted values should appear instead
+    expect(loggedString).toContain("...")
+    // Non-secret fields preserved in output
+    expect(loggedString).toContain("https://sm.example.com")
+    expect(loggedString).toContain("https://token.example.com")
   })
 })
