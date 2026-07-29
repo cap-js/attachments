@@ -530,23 +530,12 @@ describe("Rescan triggered for Unscanned attachment", () => {
     expect(req.reject).not.toHaveBeenCalled()
   })
 
-  it("should commit the Scanning status before throwing 202 (attachments entity)", async () => {
+  it("should not write status on the request path, but spawn the scan and throw 202 (attachments entity)", async () => {
     const target = cds.model.definitions["AdminService.Incidents.attachments"]
 
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
       status: "Unscanned",
       lastScan: null,
-    })
-
-    // Gate the status commit so we can assert the throw waits for it. If
-    // cds.tx were not awaited, the 202 would be thrown before this resolves.
-    let releaseCommit
-    const commitGate = new Promise((resolve) => {
-      releaseCommit = resolve
-    })
-    cds.tx = jest.fn().mockImplementation(async (fn) => {
-      await commitGate
-      return await fn()
     })
 
     const attachmentId = cds.utils.uuid()
@@ -561,39 +550,27 @@ describe("Rescan triggered for Unscanned attachment", () => {
 
     cds.env.requires.attachments = { scan: true }
 
-    let gateReleased = false
-    let settledEarly = false
-    const validation = require("../../lib/generic-handlers")
+    const result = await require("../../lib/generic-handlers")
       .validateAttachment(req)
       .catch((err) => err)
-    validation.then(() => {
-      settledEarly = !gateReleased
-    })
 
-    // Drain microtasks: while the commit gate is closed, validateAttachment
-    // must not have settled. Without the await on cds.tx, it would already
-    // have thrown the 202 here.
-    await new Promise((r) => setImmediate(r))
-    expect(settledEarly).toBe(false)
-
-    gateReleased = true
-    releaseCommit()
-
-    const result = await validation
     expect(result).toMatchObject({
       status: 202,
       code: "UnableToDownloadAttachmentScanStatusExpired",
     })
-    expect(malwareScannerSvc.updateStatus).toHaveBeenCalledWith(
-      target.name,
-      { ID: attachmentId },
-      "Scanning",
-    )
-    // The scan itself is triggered fire-and-forget after the commit.
+
+    // The request path must NOT write the scan status itself. The spawned scan
+    // (_scanAttachmentsFile) sets "Scanning" as its first step. A request-path
+    // write would hold a DB connection across the 202 throw and race the scan's
+    // own status writes (regression: attachment stuck in "Scanning").
+    expect(malwareScannerSvc.updateStatus).not.toHaveBeenCalled()
+    expect(cds.tx).not.toHaveBeenCalled()
+
+    // The scan is triggered fire-and-forget.
     expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
   })
 
-  it("should commit the Scanning status before spawning the scan and throwing", async () => {
+  it("should spawn the ScanAttachmentsFile event with the correct payload", async () => {
     const target = cds.model.definitions["AdminService.Incidents.attachments"]
 
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
@@ -601,15 +578,9 @@ describe("Rescan triggered for Unscanned attachment", () => {
       lastScan: null,
     })
 
-    const order = []
-    cds.tx = jest.fn().mockImplementation(async (fn) => {
-      const result = await fn()
-      order.push("commit")
-      return result
-    })
+    let spawnedFn
     cds.spawn = jest.fn().mockImplementation((fn) => {
-      order.push("spawn")
-      spawnCallback = fn
+      spawnedFn = fn
       return { on: jest.fn() }
     })
 
@@ -625,14 +596,18 @@ describe("Rescan triggered for Unscanned attachment", () => {
 
     cds.env.requires.attachments = { scan: true }
 
-    try {
-      await require("../../lib/generic-handlers").validateAttachment(req)
-    } catch {
-      order.push("throw")
-    }
+    await require("../../lib/generic-handlers")
+      .validateAttachment(req)
+      .catch((err) => err)
 
-    // The Scanning commit must complete before the scan is spawned and
-    // before the 202 is thrown.
-    expect(order).toEqual(["commit", "spawn", "throw"])
+    expect(cds.spawn).toHaveBeenCalledTimes(1)
+
+    // Running the spawned function emits the scan event that the malware
+    // scanner consumes to perform the scan and set the status.
+    await spawnedFn()
+    expect(malwareScannerSvc.emit).toHaveBeenCalledWith("ScanAttachmentsFile", {
+      target: target.name,
+      keys: { ID: attachmentId },
+    })
   })
 })
