@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- TOCTOU race in scan-status update: a per-scan UUID token (`scanToken`) is now generated at scan-start and required in the completion `WHERE` clause, replacing the `hash IS NULL` disjunct that could match a concurrently-started scan and stamp the wrong verdict onto a replaced file. A new `scanToken` column has been added to the `Attachment` type.
+
 ## Version 4.0.0 - 2026-08-03
 
 **BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**

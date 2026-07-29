@@ -19,6 +19,7 @@ context sap.attachments {
     hash      : String                                    @UI.Hidden                  @Core.Computed;
     status    : String default 'Unscanned'                @title: '{i18n>ScanStatus}' @readonly;
     lastScan  : Timestamp                                 @title: '{i18n>LastScan}'   @Core.Computed  @readonly;
+    scanToken : UUID                                      @UI.Hidden                  @Core.Computed;
   }
 
   aspect MediaData : Attachment {
