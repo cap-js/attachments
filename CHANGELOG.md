@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
 - Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
 
+### Migration Note
+
+- The per-locale `ScanStates_texts_*.csv` files (e.g. `_de.csv`, `_ar.csv`) were consolidated into a single base CSV in this version. To resolve, add the removed per-locale files to your `undeploy.json` before upgrading. Alternatively, enable `--auto-undeploy` in your HDI deploy configuration to automatically undeploy artifacts that no longer exist in the source.
+
 ## Version 3.13.1 - 2026-06-26
 
 ### Fixed
