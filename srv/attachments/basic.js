@@ -619,6 +619,8 @@ class AttachmentsService extends cds.Service {
             )
           } else {
             for (const comp of attachmentCompositions) {
+              const topKey = comp[0]
+              if (!(topKey in req.data)) continue
               const existing = this.traverseDataByPath(active, comp) || []
               const incoming = this.traverseDataByPath(req.data, comp)
               if (!Array.isArray(incoming)) continue

@@ -705,10 +705,38 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       attachments: [{ ID: attachmentID }],
     })
 
-    const req = spy.mock.calls[0]?.[1]
     spy.mockRestore()
 
-    expect(req?.attachmentsToDelete).toBeUndefined()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Scalar PATCH test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "should-survive.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      name: "Updated name",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("Should handle duplicate filenames on deep insert", async () => {
