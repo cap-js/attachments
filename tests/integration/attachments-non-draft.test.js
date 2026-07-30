@@ -630,7 +630,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     expect(req?.attachmentsToDelete).toBeDefined()
     expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
-    expect(req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-1")).toBe(true)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-1"),
+    ).toBe(true)
   })
 
   it("PATCH nested item with empty attachments array should populate attachmentsToDelete (Scenario 2)", async () => {
@@ -643,12 +645,15 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       name: "Nested PATCH delete test",
       singledetails: { ID: detailsID, abc: "child" },
     })
-    await POST(`odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`, {
-      ID: attachmentID,
-      up__ID: detailsID,
-      filename: "nested-to-delete.pdf",
-      mimeType: "application/pdf",
-    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "nested-to-delete.pdf",
+        mimeType: "application/pdf",
+      },
+    )
 
     const db = await cds.connect.to("db")
     await db.run(
@@ -671,7 +676,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     expect(req?.attachmentsToDelete).toBeDefined()
     expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
-    expect(req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-2")).toBe(true)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-2"),
+    ).toBe(true)
   })
 
   it("PATCH keeping attachments should not populate attachmentsToDelete (Scenario 3)", async () => {
