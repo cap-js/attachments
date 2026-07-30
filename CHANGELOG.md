@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Version 3.13.4 - 2026-07-30
+
+### Fixed
+
+- Fixed a race condition where a download-triggered re-scan could leave an attachment stuck in `Scanning` (causing clean files to be rejected on download). The redundant request-path status write in `rescan` has been removed; the spawned scan (`_scanAttachmentsFile`) already sets the status to `Scanning` as its first step. This also avoids holding a DB connection across the request rejection, which could drain the pool on single-connection databases.
+
 ## Version 3.13.3 - 2026-07-24
 
 ### Fixed
