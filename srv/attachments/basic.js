@@ -601,30 +601,52 @@ class AttachmentsService extends cds.Service {
       await this.attachDraftCompositionDeletionData(req)
       await this.attachDraftInlineDeletionData(req)
     } else {
-      if (req.event !== "DELETE") return
+      if (req.event !== "DELETE" && req.event !== "UPDATE") return
 
       const attachmentsToDelete = []
 
       if (attachmentCompositions.length > 0) {
         const columns = this.buildExpandColumns(attachmentCompositions)
         const active = await SELECT.one.from(req.subject).columns(columns)
-        if (active)
-          attachmentsToDelete.push(
-            ...this.urlsFromCompositions(
-              active,
-              attachmentCompositions,
-              req.target,
-            ),
-          )
+        if (active) {
+          if (req.event === "DELETE") {
+            attachmentsToDelete.push(
+              ...this.urlsFromCompositions(
+                active,
+                attachmentCompositions,
+                req.target,
+              ),
+            )
+          } else {
+            for (const comp of attachmentCompositions) {
+              const existing = this.traverseDataByPath(active, comp) || []
+              const incoming = this.traverseDataByPath(req.data, comp)
+              if (!Array.isArray(incoming)) continue
+              const incomingIDs = new Set(incoming.map((a) => a.ID))
+              const entityTarget = traverseEntity(req.target, comp)
+              attachmentsToDelete.push(
+                ...existing
+                  .filter((a) => a.url && !incomingIDs.has(a.ID))
+                  .map((a) => ({ url: a.url, target: entityTarget.name })),
+              )
+            }
+          }
+        }
       }
 
       if (req.target._attachments?.hasInlineAttachments) {
         const prefixes = req.target._attachments.inlineAttachmentPrefixes
         const urlColumns = prefixes.map((p) => `${p}_url`)
         const record = await SELECT.one.from(req.subject).columns(urlColumns)
-        if (record)
+        if (record) {
+          const relevantPrefixes =
+            req.event === "DELETE"
+              ? prefixes
+              : prefixes.filter(
+                  (p) => `${p}_url` in req.data && !req.data[`${p}_url`],
+                )
           attachmentsToDelete.push(
-            ...prefixes
+            ...relevantPrefixes
               .map((p) => ({
                 url: record[`${p}_url`],
                 target: req.target.name,
@@ -632,6 +654,7 @@ class AttachmentsService extends cds.Service {
               }))
               .filter(({ url }) => url),
           )
+        }
       }
 
       if (attachmentsToDelete.length > 0)
