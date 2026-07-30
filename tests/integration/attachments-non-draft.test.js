@@ -739,6 +739,41 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(spy).not.toHaveBeenCalled()
   })
 
+  it("PATCH nested entity with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested scalar PATCH test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "should-survive-nested.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    // singledetails is present in payload but attachments key is absent —> must not delete
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      abc: "updated",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
   it("Should handle duplicate filenames on deep insert", async () => {
     const incidentID = cds.utils.uuid()
     const { data: incident } = await POST("/odata/v4/admin/Incidents", {

@@ -421,6 +421,22 @@ class AttachmentsService extends cds.Service {
     return current
   }
 
+  traverseDataByPathStrict(root, path) {
+    let current = root
+    for (let i = 0; i < path.length; i++) {
+      const part = path[i]
+      if (Array.isArray(current)) {
+        const results = current.map((item) =>
+          this.traverseDataByPathStrict(item, path.slice(i)),
+        )
+        return results.some((r) => r === undefined) ? undefined : results.flat()
+      }
+      if (!current || !(part in current)) return undefined
+      current = current[part]
+    }
+    return current
+  }
+
   /**
    * Collects attachment URLs from a loaded active entity record by traversing composition paths.
    * @param {object} active - The loaded active entity record
@@ -619,11 +635,9 @@ class AttachmentsService extends cds.Service {
             )
           } else {
             for (const comp of attachmentCompositions) {
-              const topKey = comp[0]
-              if (!(topKey in req.data)) continue
-              const existing = this.traverseDataByPath(active, comp) || []
-              const incoming = this.traverseDataByPath(req.data, comp)
+              const incoming = this.traverseDataByPathStrict(req.data, comp)
               if (!Array.isArray(incoming)) continue
+              const existing = this.traverseDataByPath(active, comp) || []
               const incomingIDs = new Set(incoming.map((a) => a.ID))
               const entityTarget = traverseEntity(req.target, comp)
               attachmentsToDelete.push(
