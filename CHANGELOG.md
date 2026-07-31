@@ -6,10 +6,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## Version 4.0.0 - TBD
 
+**BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
+
 ### Changed
 
 - **BREAKING CHANGE:** The `outbox` configuration key under `cds.requires.attachments` has been renamed to `queue`. Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `queue`. A deprecation warning is logged at startup when the old key is detected.
 - Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
+
+### Fixed
+
+- Attachments are now served with `Content-Disposition: attachment` by default with inline being a toggle
 
 ## Version 3.13.4 - 2026-07-31
 
