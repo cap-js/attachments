@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 3.13.4 - 2026-07-30
+## Version 3.13.4 - 2026-07-31
 
 ### Fixed
 
 - Fixed a race condition where a download-triggered re-scan could leave an attachment stuck in `Scanning` (causing clean files to be rejected on download). The redundant request-path status write in `rescan` has been removed; the spawned scan (`_scanAttachmentsFile`) already sets the status to `Scanning` as its first step. This also avoids holding a DB connection across the request rejection, which could drain the pool on single-connection databases.
+- Non-draft PATCH now allows for deleting attachment arrays from the database.
 
 ## Version 3.13.3 - 2026-07-24
 
@@ -25,6 +26,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Upload of inline attachments with `@Core.AcceptableMediaTypes` annotation no longer crashes with a TypeError
 - UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
 - Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
+
+### Migration Note
+
+- The per-locale `ScanStates_texts_*.csv` files (e.g. `_de.csv`, `_ar.csv`) were consolidated into a single base CSV in this version. To resolve, add the removed per-locale files to your `undeploy.json` before upgrading. Alternatively, enable `--auto-undeploy` in your HDI deploy configuration to automatically undeploy artifacts that no longer exist in the source.
 
 ## Version 3.13.1 - 2026-06-26
 
