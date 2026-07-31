@@ -9,10 +9,7 @@ const {
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, PATCH, DELETE, PUT } = withUser(
-  "alice",
-  cds.test(app),
-)
+const { GET, POST, PATCH, DELETE, PUT } = withUser("alice", cds.test(app))
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
