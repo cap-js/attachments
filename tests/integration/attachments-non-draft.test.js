@@ -1,5 +1,4 @@
 const cds = require("@sap/cds")
-const { test } = cds.test()
 const {
   waitForScanStatus,
   newIncident,
@@ -10,10 +9,7 @@ const {
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, PATCH, DELETE, PUT } = withUser(
-  "alice",
-  require("@cap-js/cds-test")(app),
-)
+const { GET, POST, PATCH, DELETE, PUT } = withUser("alice", cds.test(app))
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
@@ -32,7 +28,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       originalDeduplicateFileNames
   })
 
-  let log = test.log()
+  let log = cds.test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
 
   // Allow background operations (malware scan status updates) to complete before teardown
