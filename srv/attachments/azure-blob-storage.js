@@ -1,4 +1,15 @@
-const { BlobServiceClient } = require("@azure/storage-blob")
+let BlobServiceClient
+try {
+  ;({ BlobServiceClient } = require("@azure/storage-blob"))
+} catch (e) {
+  if (e.code === "MODULE_NOT_FOUND")
+    throw new Error(
+      'The Azure Blob Storage provider requires "@azure/storage-blob" to be installed.\n' +
+        "Please run: npm install @azure/storage-blob",
+      { cause: e },
+    )
+  throw e
+}
 const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")

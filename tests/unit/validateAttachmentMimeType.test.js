@@ -1,19 +1,19 @@
 require("../../lib/csn-runtime-extension")
 const cds = require("@sap/cds")
+const path = require("path")
+const app = path.resolve(__dirname, "../incidents-app")
+
+const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
+const { withUser, newIncident } = require("../utils/testUtils")
+const { GET, POST, PUT } = withUser("alice", cds.test(app))
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
-const app = join(__dirname, "../incidents-app")
-const { axios, POST, PUT, GET } = cds.test(app)
-const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
-const { newIncident } = require("../utils/testUtils")
 
 afterAll(async () => {
   await cds.disconnect()
 })
 
 describe("validateAttachmentMimeType - Content-Type header bypass security test", () => {
-  axios.defaults.auth = { username: "alice" }
-
   afterEach(() => cds.flush())
 
   /**

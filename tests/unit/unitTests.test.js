@@ -1,26 +1,5 @@
-jest.mock("@sap/cds", () => ({
-  ql: { UPDATE: jest.fn(() => ({ with: jest.fn() })) },
-  debug: jest.fn(),
-  log: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    _debug: true,
-  })),
-  Service: class {},
-  env: { requires: {} },
-}))
+global.fetch = jest.fn()
 
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    json: () => Promise.resolve({ malwareDetected: false }),
-  }),
-)
-
-jest.mock("axios")
-
-// Mock individual functions used in malwareScanner since it imports logger
 jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
   const original = jest.requireActual(
     "../../srv/malware-scanner/malwareScanner",
@@ -32,14 +11,14 @@ jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
   }
 })
 
+const cds = require("@sap/cds")
 const {
   getObjectStoreCredentials,
   fetchToken,
   sizeInBytes,
   MAX_FILE_SIZE,
+  validateServiceManagerCredentials,
 } = require("../../lib/helper")
-const axios = require("axios")
-const cds = require("@sap/cds")
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -51,8 +30,9 @@ beforeEach(() => {
   }
   global.fetch = jest.fn(() =>
     Promise.resolve({
-      json: () => Promise.resolve({ malwareDetected: false }),
+      ok: true,
       status: 200,
+      json: () => Promise.resolve({ malwareDetected: false }),
     }),
   )
 })
@@ -68,8 +48,18 @@ describe("getObjectStoreCredentials", () => {
       },
     }
 
-    axios.get.mockResolvedValue({ data: { items: [{ id: "test-cred" }] } })
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+    global.fetch = jest
+      .fn()
+      // First call: fetchTokenWithClientSecret (POST to /oauth/token)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: "test-token" }),
+      })
+      // Second call: fetchObjectStoreBinding (GET service_bindings)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ items: [{ id: "test-cred" }] }),
+      })
 
     const creds = await getObjectStoreCredentials("tenant")
     expect(creds.id).toBe("test-cred")
@@ -97,8 +87,11 @@ describe("getObjectStoreCredentials", () => {
 })
 
 describe("fetchToken", () => {
-  it("should return a token when axios resolves", async () => {
-    axios.post.mockResolvedValue({ data: { access_token: "test-token" } })
+  it("should return a token when fetch resolves", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ access_token: "test-token" }),
+    })
     const token = await fetchToken("url", "clientId", "clientSecret")
     expect(token).toBe("test-token")
   })
@@ -116,7 +109,7 @@ describe("fetchToken", () => {
   })
 
   it("should handle error and throw", async () => {
-    axios.post.mockRejectedValue(new Error("fail"))
+    global.fetch = jest.fn().mockRejectedValueOnce(new Error("fail"))
     await expect(fetchToken("url", "clientId", "clientSecret")).rejects.toThrow(
       "fail",
     )
@@ -155,5 +148,69 @@ describe("size to byte converter", () => {
     expect(sizeInBytes(undefined)).toEqual(MAX_FILE_SIZE)
 
     expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(MAX_FILE_SIZE)
+  })
+})
+
+describe("validateServiceManagerCredentials - no credential leakage", () => {
+  let redactedSpy
+  let consoleErrorSpy
+
+  beforeEach(() => {
+    redactedSpy = jest.spyOn(cds.utils, "redacted")
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    redactedSpy.mockRestore()
+    consoleErrorSpy.mockRestore()
+  })
+
+  it("should not expose raw credentials in LOG.error when fields are missing", () => {
+    const sensitiveCredentials = {
+      sm_url: "https://sm.example.com",
+      url: "https://token.example.com",
+      clientid: "", // missing
+      clientsecret: "super-secret-value",
+      certificate: "-----BEGIN CERTIFICATE-----\nMIIB...",
+      key: "-----BEGIN PRIVATE KEY-----\nMIIE...",
+    }
+
+    expect(() =>
+      validateServiceManagerCredentials(sensitiveCredentials),
+    ).toThrow("Missing Service Manager credentials")
+
+    // cds.utils.redacted must have been called with the credentials
+    expect(redactedSpy).toHaveBeenCalledWith(sensitiveCredentials)
+
+    // Verify raw secrets never reached console
+    const loggedString = JSON.stringify(consoleErrorSpy.mock.calls)
+    expect(loggedString).not.toContain("super-secret-value")
+    expect(loggedString).not.toContain("-----BEGIN CERTIFICATE-----")
+    expect(loggedString).not.toContain("-----BEGIN PRIVATE KEY-----")
+  })
+
+  it("should pass redacted object to LOG.error, not original", () => {
+    const sensitiveCredentials = {
+      sm_url: "https://sm.example.com",
+      url: "https://token.example.com",
+      clientid: "", // missing
+      clientsecret: "do-not-leak",
+      key: "private-key-content",
+    }
+
+    expect(() =>
+      validateServiceManagerCredentials(sensitiveCredentials),
+    ).toThrow()
+
+    // Verify raw secrets never reached console
+    const loggedString = JSON.stringify(consoleErrorSpy.mock.calls)
+    expect(loggedString).not.toContain("do-not-leak")
+    expect(loggedString).not.toContain("private-key-content")
+
+    // Redacted values should appear instead
+    expect(loggedString).toContain("...")
+    // Non-secret fields preserved in output
+    expect(loggedString).toContain("https://sm.example.com")
+    expect(loggedString).toContain("https://token.example.com")
   })
 })

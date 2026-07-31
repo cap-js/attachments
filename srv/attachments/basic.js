@@ -85,20 +85,20 @@ class AttachmentsService extends cds.Service {
 
   /**
    * Checks whether content updates are restricted for the given attachment entity.
-   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdateableProperties,
+   * Returns true if `content` is listed in @Capabilities.UpdateRestrictions.NonUpdatableProperties,
    * meaning overwriting existing content is NOT allowed.
    * Returns false if the annotation is missing, is an empty array, or does not include `content`.
    * @param {import('@sap/cds').Entity} attachments - Attachments entity definition
    * @returns {boolean}
    */
   _isContentUpdateRestricted(attachments) {
-    const nonUpdateable =
-      attachments["@Capabilities.UpdateRestrictions.NonUpdateableProperties"]
+    const nonUpdatable =
+      attachments["@Capabilities.UpdateRestrictions.NonUpdatableProperties"]
     // If annotation is not set, allow content overwrite by default
-    if (!nonUpdateable) return false
+    if (!nonUpdatable) return false
     // If it's an array, check if 'content' is listed
-    if (Array.isArray(nonUpdateable)) {
-      return nonUpdateable.some(
+    if (Array.isArray(nonUpdatable)) {
+      return nonUpdatable.some(
         (prop) => prop === "content" || prop?.["="] === "content",
       )
     }
@@ -421,6 +421,22 @@ class AttachmentsService extends cds.Service {
     return current
   }
 
+  traverseDataByPathStrict(root, path) {
+    let current = root
+    for (let i = 0; i < path.length; i++) {
+      const part = path[i]
+      if (Array.isArray(current)) {
+        const results = current.map((item) =>
+          this.traverseDataByPathStrict(item, path.slice(i)),
+        )
+        return results.some((r) => r === undefined) ? undefined : results.flat()
+      }
+      if (!current || !(part in current)) return undefined
+      current = current[part]
+    }
+    return current
+  }
+
   /**
    * Collects attachment URLs from a loaded active entity record by traversing composition paths.
    * @param {object} active - The loaded active entity record
@@ -601,30 +617,52 @@ class AttachmentsService extends cds.Service {
       await this.attachDraftCompositionDeletionData(req)
       await this.attachDraftInlineDeletionData(req)
     } else {
-      if (req.event !== "DELETE") return
+      if (req.event !== "DELETE" && req.event !== "UPDATE") return
 
       const attachmentsToDelete = []
 
       if (attachmentCompositions.length > 0) {
         const columns = this.buildExpandColumns(attachmentCompositions)
         const active = await SELECT.one.from(req.subject).columns(columns)
-        if (active)
-          attachmentsToDelete.push(
-            ...this.urlsFromCompositions(
-              active,
-              attachmentCompositions,
-              req.target,
-            ),
-          )
+        if (active) {
+          if (req.event === "DELETE") {
+            attachmentsToDelete.push(
+              ...this.urlsFromCompositions(
+                active,
+                attachmentCompositions,
+                req.target,
+              ),
+            )
+          } else {
+            for (const comp of attachmentCompositions) {
+              const incoming = this.traverseDataByPathStrict(req.data, comp)
+              if (!Array.isArray(incoming)) continue
+              const existing = this.traverseDataByPath(active, comp) || []
+              const incomingIDs = new Set(incoming.map((a) => a.ID))
+              const entityTarget = traverseEntity(req.target, comp)
+              attachmentsToDelete.push(
+                ...existing
+                  .filter((a) => a.url && !incomingIDs.has(a.ID))
+                  .map((a) => ({ url: a.url, target: entityTarget.name })),
+              )
+            }
+          }
+        }
       }
 
       if (req.target._attachments?.hasInlineAttachments) {
         const prefixes = req.target._attachments.inlineAttachmentPrefixes
         const urlColumns = prefixes.map((p) => `${p}_url`)
         const record = await SELECT.one.from(req.subject).columns(urlColumns)
-        if (record)
+        if (record) {
+          const relevantPrefixes =
+            req.event === "DELETE"
+              ? prefixes
+              : prefixes.filter(
+                  (p) => `${p}_url` in req.data && !req.data[`${p}_url`],
+                )
           attachmentsToDelete.push(
-            ...prefixes
+            ...relevantPrefixes
               .map((p) => ({
                 url: record[`${p}_url`],
                 target: req.target.name,
@@ -632,6 +670,7 @@ class AttachmentsService extends cds.Service {
               }))
               .filter(({ url }) => url),
           )
+        }
       }
 
       if (attachmentsToDelete.length > 0)

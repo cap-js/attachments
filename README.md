@@ -546,7 +546,7 @@ entity Incidents {
 
 ### Allow Overwriting Attachment Content
 
-By default, the `Attachments` aspect annotates the entity with `@Capabilities.UpdateRestrictions.NonUpdateableProperties: [content]`, which prevents overwriting the content of an existing attachment. Any attempt to upload new content to an attachment that already has content will be rejected with a `409 Conflict` error.
+By default, the `Attachments` aspect annotates the entity with `@Capabilities.UpdateRestrictions.NonUpdatableProperties: [content]`, which prevents overwriting the content of an existing attachment. Any attempt to upload new content to an attachment that already has content will be rejected with a `409 Conflict` error.
 
 To allow overwriting attachment content, override the annotation with an empty array on the specific attachment composition:
 
@@ -560,7 +560,7 @@ entity Incidents {
 
 // Allow content to be overwritten
 annotate Incidents.attachments with
-  @Capabilities.UpdateRestrictions.NonUpdateableProperties: [] {};
+  @Capabilities.UpdateRestrictions.NonUpdatableProperties: [] {};
 ```
 
 With this annotation in place, uploading new content via `PUT` to an attachment that already has content will overwrite the existing content instead of returning a `409` error.

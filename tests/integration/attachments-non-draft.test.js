@@ -4,13 +4,18 @@ const {
   waitForScanStatus,
   newIncident,
   waitForDeletion,
+  delay,
+  withUser,
 } = require("../utils/testUtils")
-const { join, resolve } = cds.utils.path
-const { createReadStream, readFileSync, statSync } = cds.utils.fs
+const path = require("path")
 
-const app = resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, PATCH, DELETE, PUT } =
-  require("@cap-js/cds-test")(app)
+const app = path.resolve(__dirname, "../incidents-app")
+const { GET, POST, PATCH, DELETE, PUT } = withUser(
+  "alice",
+  require("@cap-js/cds-test")(app),
+)
+const { join } = cds.utils.path
+const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
@@ -27,9 +32,11 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       originalDeduplicateFileNames
   })
 
-  axios.defaults.auth = { username: "alice" }
   let log = test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
+
+  // Allow background operations (malware scan status updates) to complete before teardown
+  afterAll(() => delay(2000))
 
   it("Create new entity and ensuring nothing attachment related crashes", async () => {
     const resCreate = await POST("/odata/v4/admin/Incidents", {
@@ -236,7 +243,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     )
   })
 
-  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdateableProperties is empty", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdatableProperties is empty", async () => {
     const incidentID = await newIncident(POST, "admin")
 
     // Create attachment metadata on overwritableAttachments
@@ -585,6 +592,186 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
+  })
+
+  it("PATCH with empty attachments array should populate attachmentsToDelete (Scenario 1)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH delete test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "to-delete.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.NonDraftTest.attachments")
+        .set({ url: "fake-url-scenario-1" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-1"),
+    ).toBe(true)
+  })
+
+  it("PATCH nested item with empty attachments array should populate attachmentsToDelete (Scenario 2)", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested PATCH delete test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "nested-to-delete.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleTestDetails.attachments")
+        .set({ url: "fake-url-scenario-2" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-2"),
+    ).toBe(true)
+  })
+
+  it("PATCH keeping attachments should not populate attachmentsToDelete (Scenario 3)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH keep test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "keep-me.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [{ ID: attachmentID }],
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Scalar PATCH test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "should-survive.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      name: "Updated name",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH nested entity with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested scalar PATCH test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "should-survive-nested.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    // singledetails is present in payload but attachments key is absent —> must not delete
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      abc: "updated",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("Should handle duplicate filenames on deep insert", async () => {
@@ -986,17 +1173,15 @@ describe("Row-level security on attachments composition", () => {
 
   it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
-    await axios
-      .patch(
-        `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
-        {
-          note: "Should fail",
-        },
-        { auth: { username: "bob" } },
-      )
-      .catch((e) => {
-        expect(e.status).toEqual(403)
-      })
+    await PATCH(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
+      {
+        note: "Should fail",
+      },
+      { auth: { username: "bob" } },
+    ).catch((e) => {
+      expect(e.status).toEqual(403)
+    })
   })
 
   it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
@@ -1052,7 +1237,6 @@ describe("Row-level security on attachments composition", () => {
 })
 
 describe("Tests for inline single attachment in non-draft mode", () => {
-  axios.defaults.auth = { username: "alice" }
   const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
 
   it("Should create a SingleAttachment and serve content without draft", async () => {

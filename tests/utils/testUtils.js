@@ -1,4 +1,6 @@
 const cds = require("@sap/cds")
+const { readFileSync } = cds.utils.fs
+const { join, basename } = cds.utils.path
 
 /**
  * Waits for attachment scanning to complete
@@ -181,6 +183,111 @@ async function waitUntil(predicate, timeout = 180000) {
   throw new Error(`Timeout: condition not met within ${timeout}ms`)
 }
 
+const { Readable } = require("stream")
+
+async function unwrapStream(res) {
+  if (res.data && typeof res.data.getReader === "function") {
+    const reader = res.data.getReader()
+    const chunks = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+    }
+    res.data = Buffer.concat(chunks).toString()
+  }
+  return res
+}
+
+function withUser(username, test) {
+  const auth = { auth: { username } }
+  const wrap = (body) => (Buffer.isBuffer(body) ? Readable.from(body) : body)
+  const req =
+    (fn) =>
+    (...args) =>
+      fn(...args).then(unwrapStream)
+  return {
+    GET: req((url, opts) => test.GET(url, { ...auth, ...opts })),
+    POST: req((url, body, opts) =>
+      test.POST(url, wrap(body), { ...auth, ...opts }),
+    ),
+    PUT: req((url, body, opts) =>
+      test.PUT(url, wrap(body), { ...auth, ...opts }),
+    ),
+    DELETE: req((url, opts) => test.DELETE(url, { ...auth, ...opts })),
+    PATCH: req((url, body, opts) =>
+      test.PATCH(url, wrap(body), { ...auth, ...opts }),
+    ),
+  }
+}
+
+/**
+ * Uploads attachment in draft mode using CDS test utilities
+ * @param {Object} utils - RequestSend utility instance
+ * @param {Object} POST - CDS test POST function
+ * @param {Object} PUT - CDS test PUT function
+ * @param {Object} GET - CDS test GET function
+ * @param {string} incidentId - Incident ID
+ * @param {number|null} overrideContentLength - Override Content-Length header (null = use file size)
+ * @param {string} entityName - Attachment composition name
+ * @returns {Promise<string>} - Attachment ID
+ */
+async function uploadDraftAttachment(
+  utils,
+  POST,
+  PUT,
+  GET,
+  incidentId,
+  overrideContentLength = null,
+  entityName = "attachments",
+) {
+  const filepath = join(__dirname, "..", "integration", "content/sample.pdf")
+
+  await utils.draftModeEdit(
+    "processor",
+    "Incidents",
+    incidentId,
+    "ProcessorService",
+  )
+
+  const res = await POST(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=false)/${entityName}`,
+    {
+      up__ID: incidentId,
+      filename: basename(filepath),
+      mimeType: "application/pdf",
+      createdAt: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+      ),
+      createdBy: "alice",
+    },
+  )
+  const fileContent = readFileSync(filepath)
+  await PUT(
+    `/odata/v4/processor/Incidents_${entityName}(up__ID=${incidentId},ID=${res.data.ID},IsActiveEntity=false)/content`,
+    fileContent,
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": overrideContentLength ?? fileContent.byteLength,
+      },
+    },
+  )
+
+  await utils.draftModeSave(
+    "processor",
+    "Incidents",
+    incidentId,
+    "ProcessorService",
+  )
+
+  // Get the uploaded attachment ID
+  const response = await GET(
+    `odata/v4/processor/Incidents(ID=${incidentId},IsActiveEntity=true)/${entityName}`,
+  )
+  return response.data.value[0]?.ID
+}
+
 module.exports = {
   delay,
   waitForScanStatus,
@@ -189,4 +296,6 @@ module.exports = {
   waitForDeletion,
   waitForMalwareDeletion,
   runWithUser,
+  withUser,
+  uploadDraftAttachment,
 }
