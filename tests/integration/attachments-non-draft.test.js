@@ -594,6 +594,186 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
   })
 
+  it("PATCH with empty attachments array should populate attachmentsToDelete (Scenario 1)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH delete test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "to-delete.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.NonDraftTest.attachments")
+        .set({ url: "fake-url-scenario-1" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-1"),
+    ).toBe(true)
+  })
+
+  it("PATCH nested item with empty attachments array should populate attachmentsToDelete (Scenario 2)", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested PATCH delete test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "nested-to-delete.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleTestDetails.attachments")
+        .set({ url: "fake-url-scenario-2" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-2"),
+    ).toBe(true)
+  })
+
+  it("PATCH keeping attachments should not populate attachmentsToDelete (Scenario 3)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH keep test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "keep-me.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [{ ID: attachmentID }],
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Scalar PATCH test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "should-survive.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      name: "Updated name",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH nested entity with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested scalar PATCH test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "should-survive-nested.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    // singledetails is present in payload but attachments key is absent —> must not delete
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      abc: "updated",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
   it("Should handle duplicate filenames on deep insert", async () => {
     const incidentID = cds.utils.uuid()
     const { data: incident } = await POST("/odata/v4/admin/Incidents", {
