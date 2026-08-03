@@ -529,4 +529,85 @@ describe("Rescan triggered for Unscanned attachment", () => {
     expect(cds.spawn).not.toHaveBeenCalled()
     expect(req.reject).not.toHaveBeenCalled()
   })
+
+  it("should not write status on the request path, but spawn the scan and throw 202 (attachments entity)", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    const result = await require("../../lib/generic-handlers")
+      .validateAttachment(req)
+      .catch((err) => err)
+
+    expect(result).toMatchObject({
+      status: 202,
+      code: "UnableToDownloadAttachmentScanStatusExpired",
+    })
+
+    // The request path must NOT write the scan status itself. The spawned scan
+    // (_scanAttachmentsFile) sets "Scanning" as its first step. A request-path
+    // write would hold a DB connection across the 202 throw and race the scan's
+    // own status writes (regression: attachment stuck in "Scanning").
+    expect(malwareScannerSvc.updateStatus).not.toHaveBeenCalled()
+    expect(cds.tx).not.toHaveBeenCalled()
+
+    // The scan is triggered fire-and-forget.
+    expect(cds.spawn).toHaveBeenCalledWith(expect.any(Function))
+  })
+
+  it("should spawn the ScanAttachmentsFile event with the correct payload", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+    })
+
+    let spawnedFn
+    cds.spawn = jest.fn().mockImplementation((fn) => {
+      spawnedFn = fn
+      return { on: jest.fn() }
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    await require("../../lib/generic-handlers")
+      .validateAttachment(req)
+      .catch((err) => err)
+
+    expect(cds.spawn).toHaveBeenCalledTimes(1)
+
+    // Running the spawned function emits the scan event that the malware
+    // scanner consumes to perform the scan and set the status.
+    await spawnedFn()
+    expect(malwareScannerSvc.emit).toHaveBeenCalledWith("ScanAttachmentsFile", {
+      target: target.name,
+      keys: { ID: attachmentId },
+    })
+  })
 })
