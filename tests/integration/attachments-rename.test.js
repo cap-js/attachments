@@ -5,12 +5,12 @@ const {
   newIncident,
   runWithUser,
   uploadDraftAttachment,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, DELETE, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 const { readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path

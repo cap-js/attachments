@@ -4,12 +4,12 @@ const {
   newIncident,
   waitForDeletion,
   delay,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, PATCH, DELETE, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
@@ -1265,7 +1265,7 @@ describe("Tests for inline single attachment in non-draft mode", () => {
       `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
     )
     expect(getRes.status).toEqual(200)
-    expect(getRes.data).toEqual(fileContent)
+    expect(getRes.data).toEqual(Buffer.from(fileContent))
   })
 
   it("Should delete a SingleAttachment and clear all inline fields", async () => {

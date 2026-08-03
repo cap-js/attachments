@@ -3,12 +3,12 @@ const { RequestSend } = require("../utils/api")
 const {
   waitForScanStatus,
   newIncident,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 
