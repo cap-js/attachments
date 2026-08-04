@@ -77,6 +77,7 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).toEqual(fileContent)
@@ -166,6 +167,7 @@ describe("Tests for single attachment entity", () => {
 
     const getContentRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getContentRes.status).toEqual(200)
     expect(getContentRes.data).toEqual(Buffer.from(fileContent))
@@ -444,6 +446,7 @@ describe("Tests for single attachment entity", () => {
     // Verify v1 content is readable
     const getV1 = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getV1.status).toEqual(200)
     expect(getV1.data).toEqual(Buffer.from(v1Content))
@@ -471,6 +474,7 @@ describe("Tests for single attachment entity", () => {
     // Verify v2 content is now returned
     const getV2 = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getV2.status).toEqual(200)
     expect(getV2.data).toEqual(Buffer.from(v2Content))
@@ -602,6 +606,7 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).toEqual(Buffer.from(fileContent))
@@ -772,6 +777,7 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).toEqual(Buffer.from(fileContent))

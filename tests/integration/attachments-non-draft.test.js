@@ -1191,6 +1191,7 @@ describe("Tests for inline single attachment in non-draft mode", () => {
 
     const getRes = await GET(
       `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).toEqual(Buffer.from(fileContent))
