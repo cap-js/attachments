@@ -321,6 +321,27 @@ According to the recommendation of the [Malware Scanning Service](http://help.sa
 
 By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
 
+#### Recovering attachments stuck in "Scanning" on startup
+
+If the server crashes or restarts while a scan is in progress, an attachment row can be left permanently in `Scanning` status. To automatically recover such rows on startup, enable the `rescanOnStart` flag:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "attachments": {
+        "rescanOnStart": true
+      }
+    }
+  }
+}
+```
+
+When enabled, the plugin queries for all attachment rows in `Scanning` status at startup and re-emits `ScanAttachmentsFile` for each. The sweep runs in the background (via `cds.spawn`) so it never delays server startup, and is throttled by the existing [`maxConcurrentScans`](#scan-concurrency-limiting) semaphore. The flag defaults to `false` and has no effect when `scan` is disabled.
+
+> [!Note]
+> In multitenancy deployments, the startup sweep only covers the default tenant. Stuck rows in other tenants are still recovered via the on-download rescan path (`scanExpiryMs`).
+
 ### Audit logging
 
 The attachment service emits the following three events:
