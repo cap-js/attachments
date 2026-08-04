@@ -9,7 +9,7 @@ const app = path.resolve(__dirname, "../incidents-app")
 // Two users: alice creates an incident; bob tries to plant an attachment on it
 const aliceTest = cds.test(app)
 const { GET, POST } = withUser("alice", aliceTest)
-const { POST: bobPOST, GET: bobGET } = withUser("bob", aliceTest)
+const { POST: bobPOST } = withUser("bob", aliceTest)
 
 let aliceIncidentID
 let bobIncidentID
