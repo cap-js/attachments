@@ -16,7 +16,7 @@ const {
   getObjectStoreCredentials,
   fetchToken,
   sizeInBytes,
-  MAX_FILE_SIZE,
+  DEFAULT_MAX_FILE_SIZE,
   validateServiceManagerCredentials,
 } = require("../../lib/helper")
 
@@ -117,12 +117,8 @@ describe("fetchToken", () => {
 })
 
 describe("max attachment size", () => {
-  test("should return 400MB in normal scenario", () => {
-    expect(MAX_FILE_SIZE()).toEqual(400 * 1024 * 1024)
-  })
-  test("should return -1 when scan is disabled", () => {
-    cds.env.requires.attachments.scan = false
-    expect(MAX_FILE_SIZE()).toEqual(-1)
+  test("DEFAULT_MAX_FILE_SIZE is 400MB", () => {
+    expect(DEFAULT_MAX_FILE_SIZE).toEqual(400 * 1024 * 1024)
   })
 })
 
@@ -139,15 +135,12 @@ describe("size to byte converter", () => {
     expect(sizeInBytes(1234)).toEqual(1234)
   })
 
-  test("conversion of size string returns default MAX_FILE_SIZE if no size could be determined", () => {
-    // sizeInBytes returns MAX_FILE_SIZE (400MB = 419430400 bytes) as a safe default
-    // when the size cannot be determined
-    const MAX_FILE_SIZE = 419430400 // 400MB in bytes
-    expect(sizeInBytes("ABCDEFG")).toEqual(MAX_FILE_SIZE)
-
-    expect(sizeInBytes(undefined)).toEqual(MAX_FILE_SIZE)
-
-    expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(MAX_FILE_SIZE)
+  test("conversion of size string returns DEFAULT_MAX_FILE_SIZE if no size could be determined", () => {
+    expect(sizeInBytes("ABCDEFG")).toEqual(DEFAULT_MAX_FILE_SIZE)
+    expect(sizeInBytes(undefined)).toEqual(DEFAULT_MAX_FILE_SIZE)
+    expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(
+      DEFAULT_MAX_FILE_SIZE,
+    )
   })
 })
 
