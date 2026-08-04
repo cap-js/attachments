@@ -95,10 +95,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
 
@@ -134,11 +130,7 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
         content: fakeFileBuffer,
-        createdBy: "alice",
       },
     ).catch((e) => {
       expectedError = e
@@ -161,10 +153,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
           up__ID: incidentID,
           filename: "large-stream.pdf",
           mimeType: "application/pdf",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
       )
 
@@ -296,10 +284,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         filename: "test.pdf",
         mimeType: "application/pdf",
         content: createReadStream(join(__dirname, "content/test.pdf")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await utils.draftModeSave(
@@ -467,7 +451,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: incidentID,
         filename: "draft-only.pdf",
         mimeType: "application/pdf",
-        createdBy: "alice",
       },
     )
     expect(secondAttachRes.data.ID).toBeTruthy()
@@ -522,10 +505,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         content: createReadStream(
           join(__dirname, "..", "integration", "content/sample.pdf"),
         ),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     expect(doc.data.ID).toBeTruthy()
@@ -550,10 +529,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__sampleID: sampleID,
         up__gjahr: gjahr,
         filename: "myfancyfile.pdf",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     expect(doc.data.ID).toBeTruthy()
@@ -789,8 +764,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: testID,
         filename: "testfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(res.data.ID).not.toBeNull()
@@ -833,8 +806,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
           up__ID: testID,
           filename: "testfile.pdf",
           mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
         },
       ],
     })
@@ -882,8 +853,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
           up__ID: testID,
           filename: "testfile.pdf",
           mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
         },
       ],
       details: [
@@ -895,8 +864,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
               up__ID: detailsID,
               filename: "detailsfile.pdf",
               mimeType: "application/pdf",
-              createdAt: new Date(),
-              createdBy: "alice",
             },
           ],
         },
@@ -991,8 +958,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "detailsfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(res.data.ID).not.toBeNull()
@@ -1046,8 +1011,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "nested-draft.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.ID).toBeTruthy()
@@ -1177,8 +1140,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: level2ID,
         filename: "depth3.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.ID).toBeTruthy()
@@ -1257,8 +1218,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: level3ID,
         filename: "depth4.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.ID).toBeTruthy()
@@ -1331,8 +1290,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: testID,
         filename: "testfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.ID).not.toBeNull()
@@ -1371,8 +1328,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "detailsfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.ID).not.toBeNull()
@@ -1408,8 +1363,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: testID,
         filename: "testfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResTest.data.ID).not.toBeNull()
@@ -1440,8 +1393,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "detailsfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).not.toBeNull()
@@ -1491,8 +1442,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResParent.data.ID).toBeTruthy()
@@ -1509,8 +1458,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResChild.data.ID).toBeTruthy()
@@ -1566,8 +1513,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResParent.data.ID).toBeTruthy()
@@ -1578,8 +1523,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResChild.data.ID).toBeTruthy()
@@ -1634,8 +1577,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         filename: "testfile.pdf",
         mimeType: "application/pdf",
         url: maliciousUrl,
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(res.data.ID).toBeTruthy()
@@ -1684,8 +1625,6 @@ describe("Tests for uploading/deleting attachments through API calls", () => {
         up__ID: incidentID,
         filename: "testmal.png",
         mimeType: "image/png",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(res.data.ID).toBeTruthy()

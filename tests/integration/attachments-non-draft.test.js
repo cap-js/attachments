@@ -299,8 +299,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -312,8 +310,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -349,8 +345,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -362,8 +356,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -415,8 +407,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResTest.data.url).toBeTruthy()
@@ -460,8 +450,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.url).toBeTruthy()
@@ -503,8 +491,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: firstID,
         filename: "file1.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes1.data.ID).toBeTruthy()
@@ -515,8 +501,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: secondID,
         filename: "file2.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes2.data.ID).toBeTruthy()
@@ -550,8 +534,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -563,8 +545,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -810,28 +790,16 @@ describe("Testing max and min amounts of attachments", () => {
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
       ],
       hiddenAttachments2: [
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
       ],
     })
@@ -841,10 +809,6 @@ describe("Testing max and min amounts of attachments", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     ).catch((e) => {
       expect(e.status).toEqual(400)
@@ -868,10 +832,6 @@ describe("Testing max and min amounts of attachments", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await DELETE(
@@ -902,10 +862,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -937,26 +893,14 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -995,10 +939,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -1026,26 +966,14 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
