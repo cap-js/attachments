@@ -1,9 +1,6 @@
 const cds = require("@sap/cds")
 const { RequestSend } = require("../utils/api")
-const {
-  waitForScanStatus,
-  newIncident,
-} = require("../utils/testUtils")
+const { waitForScanStatus, newIncident } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
