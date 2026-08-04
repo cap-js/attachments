@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- `finalizePrepareAttachment` now always derives parent (`up__`) keys from the URL path, ignoring any values supplied in the request body. A 404 is returned when the URL-referenced parent record does not exist. Client-supplied attachment IDs are no longer accepted on CREATE.
+
 ## Version 4.0.0 - 2026-08-03
 
 **BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
