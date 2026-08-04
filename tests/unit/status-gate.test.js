@@ -25,7 +25,7 @@ beforeEach(() => {
   })
 
   originalSpawn = cds.spawn
-  cds.spawn = jest.fn().mockImplementation((fn) => {
+  cds.spawn = jest.fn().mockImplementation((_fn) => {
     return { on: jest.fn() }
   })
 
