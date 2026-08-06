@@ -4,8 +4,9 @@ const path = require("path")
 const app = path.resolve(__dirname, "../incidents-app")
 
 const { validateAttachmentMimeType } = require("../../lib/generic-handlers")
-const { withUser, newIncident } = require("../utils/testUtils")
-const { GET, POST, PUT } = withUser("alice", cds.test(app))
+const { newIncident } = require("../utils/testUtils")
+const { GET, POST, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 

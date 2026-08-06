@@ -5,12 +5,12 @@ const {
   waitForMalwareDeletion,
   waitForDeletion,
   runWithUser,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 const { readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
@@ -77,9 +77,10 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
-    expect(getRes.data).toEqual(fileContent.toString())
+    expect(getRes.data).toEqual(fileContent)
   })
 
   it("Should delete a SingleAttachment and its attachment", async () => {
@@ -166,9 +167,10 @@ describe("Tests for single attachment entity", () => {
 
     const getContentRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getContentRes.status).toEqual(200)
-    expect(getContentRes.data).toEqual(fileContent)
+    expect(getContentRes.data).toEqual(Buffer.from(fileContent))
   })
 
   it("Should fail to upload content that exceeds the size limit", async () => {
@@ -444,9 +446,10 @@ describe("Tests for single attachment entity", () => {
     // Verify v1 content is readable
     const getV1 = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getV1.status).toEqual(200)
-    expect(getV1.data).toEqual(v1Content)
+    expect(getV1.data).toEqual(Buffer.from(v1Content))
 
     // Re-edit: create a new draft from the active entity
     await POST(
@@ -471,9 +474,10 @@ describe("Tests for single attachment entity", () => {
     // Verify v2 content is now returned
     const getV2 = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getV2.status).toEqual(200)
-    expect(getV2.data).toEqual(v2Content)
+    expect(getV2.data).toEqual(Buffer.from(v2Content))
   })
 
   it("Should populate myAttachment_url on the active entity after draft activation", async () => {
@@ -602,9 +606,10 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=true)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
-    expect(getRes.data).toEqual(fileContent)
+    expect(getRes.data).toEqual(Buffer.from(fileContent))
   })
 
   it("Should not delete blob when discarding a re-edit with no new upload", async () => {
@@ -772,9 +777,10 @@ describe("Tests for single attachment entity", () => {
 
     const getRes = await GET(
       `/odata/v4/processor/SingleAttachment(ID=${singleAttachment.ID},IsActiveEntity=false)/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
-    expect(getRes.data).toEqual(fileContent)
+    expect(getRes.data).toEqual(Buffer.from(fileContent))
   })
 
   it("Should clear inline attachment fields when DeleteInfectedAttachment is triggered with the correct hash", async () => {
