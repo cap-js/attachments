@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## UNRELEASED
+
+### Added
+
+- Attachments stuck in `Scanning` status after a server crash or restart can now be automatically recovered on startup. Enable via the new `rescanOnStart` flag (defaults to `false`):
+
+  ```json
+  {
+    "cds": {
+      "requires": {
+        "attachments": {
+          "rescanOnStart": true
+        }
+      }
+    }
+  }
+  ```
+
+  When enabled, the plugin queries for all attachment rows in `Scanning` status at startup and re-emits `ScanAttachmentsFile` for each, allowing the normal scanner flow to move them to a terminal status (`Clean`/`Infected`/`Failed`). The sweep runs detached from the serving path (via `cds.spawn`) and is throttled by the existing `maxConcurrentScans` semaphore.
+
 ## Version 4.0.0 - 2026-08-03
 
 **BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
