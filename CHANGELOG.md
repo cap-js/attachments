@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+
 ## Version 4.0.0 - 2026-08-03
 
 **BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
