@@ -1,6 +1,0 @@
-locale;code;name;descr
-es;Unscanned;No escaneado;The file is not yet scanned for malware.
-es;Scanning;Escaneando;The file is currently being scanned for malware.
-es;Infected;Infectado;The file contains malware! Do not download!
-es;Clean;Limpio;The file does not contain any malware.
-es;Failed;Erróneo;The file could not be scanned for malware.

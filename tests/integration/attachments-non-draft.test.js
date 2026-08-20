@@ -1,63 +1,85 @@
 const cds = require("@sap/cds")
-const { test } = cds.test()
-const { waitForScanStatus, newIncident, waitForDeletion } = require("../utils/testUtils")
-const { join, resolve } = cds.utils.path
+const {
+  waitForScanStatus,
+  newIncident,
+  waitForDeletion,
+  delay,
+} = require("../utils/testUtils")
+const path = require("path")
+
+const app = path.resolve(__dirname, "../incidents-app")
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
+const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
-const app = resolve(__dirname, "../incidents-app")
-const { axios, GET, POST, PATCH, DELETE, PUT } = require("@cap-js/cds-test")(app)
-
 describe("Tests for uploading/deleting and fetching attachments through API calls with non draft mode", () => {
-  const isNotLocal = cds.env.requires?.attachments?.kind === 'db' ? it.skip : it
+  const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
+  let originalDeduplicateFileNames
 
-  axios.defaults.auth = { username: "alice" }
-  let log = test.log()
-  const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
-
-  it("Create new entity and ensuring nothing attachment related crashes", async () => {
-    const resCreate = await POST('/odata/v4/admin/Incidents', {
-      title: 'New Incident'
-    })
-    expect(resCreate.status).toBe(201)
-    expect(resCreate.data.title).toBe('New Incident')
+  beforeAll(() => {
+    originalDeduplicateFileNames =
+      cds.env.requires.attachments.deduplicateFileNames
+    cds.env.requires.attachments.deduplicateFileNames = true
   })
 
-  it("should create attachment metadata", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  afterAll(() => {
+    cds.env.requires.attachments.deduplicateFileNames =
+      originalDeduplicateFileNames
+  })
+
+  let log = cds.test.log()
+  const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
+
+  // Allow background operations (malware scan status updates) to complete before teardown
+  afterAll(() => delay(2000))
+
+  it("Create new entity and ensuring nothing attachment related crashes", async () => {
+    const resCreate = await POST("/odata/v4/admin/Incidents", {
+      title: "New Incident",
+    })
+    expect(resCreate.status).toBe(201)
+    expect(resCreate.data.title).toBe("New Incident")
+  })
+
+  it("Should create attachment metadata", async () => {
+    const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
   })
 
-  it("should upload attachment content", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("Should upload attachment content", async () => {
+    const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
     const response = await uploadAttachmentContent(incidentID, attachmentID)
     expect(response.status).toBe(204)
   })
 
-  it("unknown extension throws warning", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("Unknown extension throws warning", async () => {
+    const incidentID = await newIncident(POST, "admin")
     const response = await POST(
       `/odata/v4/admin/Incidents(${incidentID})/attachments`,
-      { filename: 'sample.madeupextension' },
-      { headers: { "Content-Type": "application/json" } }
+      { filename: "sample.madeupextension" },
+      { headers: { "Content-Type": "application/json" } },
     )
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(201)
     expect(log.output.length).toBeGreaterThan(0)
-    expect(log.output).toContain('is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"')
+    expect(log.output).toContain(
+      'is uploaded whose extension "madeupextension" is not known! Falling back to "application/octet-stream"',
+    )
   })
 
-  it("should list attachments for incident", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("Should list attachments for incident", async () => {
+    const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
+    const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
     await scanCleanWaiter
 
     const response = await GET(
-      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
     )
     expect(response.status).toBe(200)
 
@@ -71,9 +93,9 @@ describe("Tests for uploading/deleting and fetching attachments through API call
   })
 
   it("Fetching the content of the uploaded attachment", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+    const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
+    const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
@@ -81,22 +103,20 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     const response = await GET(
       `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
-      { responseType: "arraybuffer" }
+      { responseType: "arraybuffer" },
     )
     expect(response.status).toBe(200)
     expect(response.data).toBeDefined()
     expect(response.data.length).toBeGreaterThan(0)
 
-    const originalContent = readFileSync(
-      join(__dirname, "content/sample.pdf")
-    )
+    const originalContent = readFileSync(join(__dirname, "content/sample.pdf"))
     expect(Buffer.compare(response.data, originalContent)).toBe(0)
   })
 
-  it("should delete attachment and verify deletion", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("Should delete attachment and verify deletion", async () => {
+    const incidentID = await newIncident(POST, "admin")
     const attachmentID = await createAttachmentMetadata(incidentID)
-    const scanCleanWaiter = waitForScanStatus('Clean', attachmentID)
+    const scanCleanWaiter = waitForScanStatus("Clean", attachmentID)
     await uploadAttachmentContent(incidentID, attachmentID)
 
     // Wait for scanning to complete
@@ -104,58 +124,70 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     // Delete the attachment
     const deleteResponse = await DELETE(
-      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`,
     )
     expect(deleteResponse.status).toBe(204)
 
     // Verify the attachment is deleted
     await GET(
-      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`
-    ).catch(e => {
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
   })
 
   it("Updating attachments via srv.run works", async () => {
-    const incidentID = await newIncident(POST, 'admin')
-    const AdminSrv = await cds.connect.to('AdminService')
+    const incidentID = await newIncident(POST, "admin")
+    const AdminSrv = await cds.connect.to("AdminService")
 
-    const attachmentsID = cds.utils.uuid();
+    const attachmentsID = cds.utils.uuid()
     const doc = await POST(
       `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
       {
         ID: attachmentsID,
         up__ID: incidentID,
-      }
+      },
     )
 
-    const scanCleanWaiter = waitForScanStatus('Clean')
+    const scanCleanWaiter = waitForScanStatus("Clean")
 
-    const fileContent = createReadStream(
-      join(__dirname, "content/sample.pdf")
-    )
-    const contentLength = statSync(
-      join(__dirname, "content/sample.pdf")
-    ).size
+    const fileContent = createReadStream(join(__dirname, "content/sample.pdf"))
+    const contentLength = statSync(join(__dirname, "content/sample.pdf")).size
 
-    const user = new cds.User({ id: 'alice', roles: { admin: 1 } })
+    const user = new cds.User({ id: "alice", roles: { admin: 1 } })
     const req = new cds.Request({
-      query: UPDATE.entity({ ref: [{ id: 'AdminService.Incidents', where: [{ ref: ['ID'] }, '=', { val: incidentID }] }, { id: 'attachments', where: [{ ref: ['ID'] }, '=', { val: doc.data.ID }] }] }).set({
+      query: UPDATE.entity({
+        ref: [
+          {
+            id: "AdminService.Incidents",
+            where: [{ ref: ["ID"] }, "=", { val: incidentID }],
+          },
+          {
+            id: "attachments",
+            where: [{ ref: ["ID"] }, "=", { val: doc.data.ID }],
+          },
+        ],
+      }).set({
         filename: "test.pdf",
         content: fileContent,
         mimeType: "application/pdf",
         createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
         ),
         createdBy: "alice",
-      }), user: user, headers: { "content-length": contentLength }
+      }),
+      user: user,
+      headers: { "content-length": contentLength },
     })
-    const ctx = cds.EventContext.for({ id: cds.utils.uuid(), http: { req: null, res: null } })
+    const ctx = cds.EventContext.for({
+      id: cds.utils.uuid(),
+      http: { req: null, res: null },
+    })
     ctx.user = user
     await cds._with(ctx, () => AdminSrv.dispatch(req))
 
     const response = await GET(
-      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
     )
     //the data should have no attachments
     expect(response.status).toBe(200)
@@ -165,13 +197,13 @@ describe("Tests for uploading/deleting and fetching attachments through API call
 
     //content should not be there
     const responseContent = await GET(
-      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`
+      `odata/v4/admin/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentsID})/content`,
     )
     expect(responseContent.status).toBe(200)
   })
 
-  it("should NOT allow overwriting an existing attachment file via /content handler", async () => {
-    const incidentID = await newIncident(POST, 'admin')
+  it("Should NOT allow overwriting an existing attachment file via /content handler", async () => {
+    const incidentID = await newIncident(POST, "admin")
     // Create attachment metadata
     const attachmentID = await createAttachmentMetadata(incidentID)
     expect(attachmentID).toBeDefined()
@@ -181,7 +213,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(response.status).toBe(204)
 
     const fileContent = readFileSync(
-      join(__dirname, "..", "integration", "content/sample.pdf")
+      join(__dirname, "..", "integration", "content/sample.pdf"),
     )
     let error
     try {
@@ -193,7 +225,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
             "Content-Type": "application/pdf",
             "Content-Length": fileContent.length,
           },
-        }
+        },
       )
     } catch (e) {
       error = e
@@ -202,16 +234,63 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     // This should fail with a 409 Conflict
     expect(error).toBeDefined()
     expect(error.response.status).toBe(409)
-    expect(error.response.data.error.message).toMatch(/Attachment sample.pdf already exists and cannot be overwritten/i)
+    expect(error.response.data.error.message).toMatch(
+      /Attachment sample.pdf already exists and cannot be overwritten/i,
+    )
   })
 
-  it("should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should ALLOW overwriting content when @Capabilities.UpdateRestrictions.NonUpdatableProperties is empty", async () => {
+    const incidentID = await newIncident(POST, "admin")
+
+    // Create attachment metadata on overwritableAttachments
+    const createRes = await POST(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments`,
+      { filename: "sample.pdf" },
+      { headers: { "Content-Type": "application/json" } },
+    )
+    const attachmentID = createRes.data.ID
+    expect(attachmentID).toBeDefined()
+
+    // Upload initial file content
+    const fileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/sample.pdf"),
+    )
+    const uploadRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      fileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": fileContent.length,
+        },
+      },
+    )
+    expect(uploadRes.status).toBe(204)
+
+    // Overwrite with different content - this should succeed
+    const newFileContent = readFileSync(
+      join(__dirname, "..", "integration", "content/test.pdf"),
+    )
+    const overwriteRes = await PUT(
+      `/odata/v4/admin/Incidents(${incidentID})/overwritableAttachments(up__ID=${incidentID},ID=${attachmentID})/content`,
+      newFileContent,
+      {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Length": newFileContent.length,
+        },
+      },
+    )
+    expect(overwriteRes.status).toBe(204)
+  })
+
+  it("Should add and fetch attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
-      singledetails: { ID: detailsID, abc: "child" }
+      singledetails: { ID: detailsID, abc: "child" },
     })
 
     const attachResTest = await POST(
@@ -220,10 +299,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
@@ -233,14 +310,12 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
-      }
+      },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
 
     const parentAttachment = await GET(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
     )
 
     expect(parentAttachment.status).toBe(200)
@@ -248,20 +323,20 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(parentAttachment.data.filename).toBe("parentfile.pdf")
 
     const childAttachment = await GET(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`,
     )
     expect(childAttachment.status).toBe(200)
     expect(childAttachment.data.ID).toBe(attachResDetails.data.ID)
     expect(childAttachment.data.filename).toBe("childfile.pdf")
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
-      singledetails: { ID: detailsID, abc: "child" }
+      singledetails: { ID: detailsID, abc: "child" },
     })
 
     const attachResTest = await POST(
@@ -270,10 +345,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
@@ -283,46 +356,50 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
-      }
+      },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
 
     // Delete parent attachment
     const delParent = await DELETE(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
     )
     expect(delParent.status).toBe(204)
 
     // Delete child attachment
     const delChild = await DELETE(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`,
     )
     expect(delChild.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await GET(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
-    ).catch(e => {
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
 
     // Confirm child attachment is deleted
     await GET(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
-    ).catch(e => {
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
   })
 
-  isNotLocal("should delete file from object store if data is deleted", async () => {
+  // prettier-ignore
+  isNotLocal("Should delete file from object store if data is deleted", async () => {
     const detailsID = cds.utils.uuid()
 
-    const testID = await newIncident(POST, 'processor', {
-      name: "Non-draft Test",
-      singledetails: { ID: detailsID, abc: "child" }
-    }, 'NonDraftTest')
+    const testID = await newIncident(
+      POST,
+      "processor",
+      {
+        name: "Non-draft Test",
+        singledetails: { ID: detailsID, abc: "child" },
+      },
+      "NonDraftTest",
+    )
 
     const attachResTest = await POST(
       `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
@@ -330,38 +407,125 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
-      }
+      },
     )
     expect(attachResTest.data.url).toBeTruthy()
-    await uploadAttachmentContent(testID, attachResTest.data.ID, "content/sample.pdf", "processor", "NonDraftTest")
+    await uploadAttachmentContent(
+      testID,
+      attachResTest.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
 
     const deletion = waitForDeletion(attachResTest.data.url)
 
     // Delete parent attachment
     const delParent = await DELETE(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
     )
     expect(delParent.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await GET(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
-    ).catch(e => {
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
 
     expect(await deletion).toBe(true)
   })
 
-  it("should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when parent entity is deleted in non-draft mode", async () => {
+    const testID = cds.utils.uuid()
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Parent delete object store test",
+    })
+
+    const attachRes = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments`,
+      {
+        up__ID: testID,
+        filename: "parentfile.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    expect(attachRes.data.url).toBeTruthy()
+    await uploadAttachmentContent(
+      testID,
+      attachRes.data.ID,
+      "content/sample.pdf",
+      "processor",
+      "NonDraftTest",
+    )
+
+    const deletion = waitForDeletion(attachRes.data.url)
+
+    await DELETE(`odata/v4/processor/NonDraftTest(ID=${testID})`)
+
+    expect(await deletion).toBe(true)
+  })
+
+  it("Should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
+    const firstID = cds.utils.uuid()
+    const secondID = cds.utils.uuid()
+
+    // Use programmatic INSERT to create entities
+    await INSERT.into("sap.capire.incidents.NonDraftTest").entries(
+      {
+        ID: firstID,
+        name: "Test Entry 1",
+      },
+      {
+        ID: secondID,
+        name: "Test Entry 2",
+      },
+    )
+
+    // Verify entities were created by adding attachments
+    const attachRes1 = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments`,
+      {
+        up__ID: firstID,
+        filename: "file1.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    expect(attachRes1.data.ID).toBeTruthy()
+
+    const attachRes2 = await POST(
+      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments`,
+      {
+        up__ID: secondID,
+        filename: "file2.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+    expect(attachRes2.data.ID).toBeTruthy()
+
+    // Verify attachments can be fetched
+    const attachment1 = await GET(
+      `odata/v4/processor/NonDraftTest(ID=${firstID})/attachments(up__ID=${firstID},ID=${attachRes1.data.ID})`,
+    )
+    expect(attachment1.status).toBe(200)
+    expect(attachment1.data.filename).toBe("file1.pdf")
+
+    const attachment2 = await GET(
+      `odata/v4/processor/NonDraftTest(ID=${secondID})/attachments(up__ID=${secondID},ID=${attachRes2.data.ID})`,
+    )
+    expect(attachment2.status).toBe(200)
+    expect(attachment2.data.filename).toBe("file2.pdf")
+  })
+
+  it("Should delete attachments for both NonDraftTest and SingleTestDetails when entities are deleted in non-draft mode", async () => {
     const testID = cds.utils.uuid()
     const detailsID = cds.utils.uuid()
     await POST(`odata/v4/processor/NonDraftTest`, {
       ID: testID,
       name: "Non-draft Test",
-      singledetails: { ID: detailsID, abc: "child" }
+      singledetails: { ID: detailsID, abc: "child" },
     })
 
     const attachResTest = await POST(
@@ -370,10 +534,8 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     )
     expect(attachResTest.data.ID).toBeTruthy()
 
@@ -383,68 +545,263 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
-      }
+      },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
 
     // Delete the parent entity
     const delParentEntity = await DELETE(
-      `odata/v4/processor/NonDraftTest(ID=${testID})`
+      `odata/v4/processor/NonDraftTest(ID=${testID})`,
     )
     expect(delParentEntity.status).toBe(204)
 
     // Confirm parent attachment is deleted
     await GET(
-      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`
-    ).catch(e => {
+      `odata/v4/processor/NonDraftTest(ID=${testID})/attachments(up__ID=${testID},ID=${attachResTest.data.ID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
 
     // Confirm child attachment is deleted
     await GET(
-      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`
-    ).catch(e => {
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments(up__ID=${detailsID},ID=${attachResDetails.data.ID})`,
+    ).catch((e) => {
       expect(e.response.status).toBe(404)
     })
   })
+
+  it("PATCH with empty attachments array should populate attachmentsToDelete (Scenario 1)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH delete test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "to-delete.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.NonDraftTest.attachments")
+        .set({ url: "fake-url-scenario-1" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-1"),
+    ).toBe(true)
+  })
+
+  it("PATCH nested item with empty attachments array should populate attachmentsToDelete (Scenario 2)", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested PATCH delete test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "nested-to-delete.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleTestDetails.attachments")
+        .set({ url: "fake-url-scenario-2" })
+        .where({ ID: attachmentID }),
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      attachments: [],
+    })
+
+    const req = spy.mock.calls[0]?.[1]
+    spy.mockRestore()
+
+    expect(req?.attachmentsToDelete).toBeDefined()
+    expect(req.attachmentsToDelete.length).toBeGreaterThan(0)
+    expect(
+      req.attachmentsToDelete.some((a) => a.url === "fake-url-scenario-2"),
+    ).toBe(true)
+  })
+
+  it("PATCH keeping attachments should not populate attachmentsToDelete (Scenario 3)", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "PATCH keep test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "keep-me.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      attachments: [{ ID: attachmentID }],
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Scalar PATCH test",
+    })
+    await POST(`odata/v4/processor/NonDraftTest(ID=${testID})/attachments`, {
+      ID: attachmentID,
+      up__ID: testID,
+      filename: "should-survive.pdf",
+      mimeType: "application/pdf",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    await PATCH(`odata/v4/processor/NonDraftTest(ID=${testID})`, {
+      name: "Updated name",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("PATCH nested entity with only scalar fields should not populate attachmentsToDelete", async () => {
+    const testID = cds.utils.uuid()
+    const detailsID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+
+    await POST(`odata/v4/processor/NonDraftTest`, {
+      ID: testID,
+      name: "Nested scalar PATCH test",
+      singledetails: { ID: detailsID, abc: "child" },
+    })
+    await POST(
+      `odata/v4/processor/SingleTestDetails(ID=${detailsID})/attachments`,
+      {
+        ID: attachmentID,
+        up__ID: detailsID,
+        filename: "should-survive-nested.pdf",
+        mimeType: "application/pdf",
+      },
+    )
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const spy = jest
+      .spyOn(AttachmentsSrv, "deleteAttachmentsWithKeys")
+      .mockResolvedValue(undefined)
+
+    // singledetails is present in payload but attachments key is absent —> must not delete
+    await PATCH(`odata/v4/processor/SingleTestDetails(ID=${detailsID})`, {
+      abc: "updated",
+    })
+
+    spy.mockRestore()
+
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("Should handle duplicate filenames on deep insert", async () => {
+    const incidentID = cds.utils.uuid()
+    const { data: incident } = await POST("/odata/v4/admin/Incidents", {
+      ID: incidentID,
+      title: "Deep Insert Test",
+      attachments: [
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+        {
+          filename: "duplicate.pdf",
+          mimeType: "application/pdf",
+        },
+      ],
+    })
+
+    expect(incident.attachments.length).toBe(2)
+    const filenames = incident.attachments.map((a) => a.filename).sort()
+    expect(filenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
+
+    const response = await GET(
+      `/odata/v4/admin/Incidents(ID=${incidentID})/attachments`,
+    )
+    expect(response.status).toBe(200)
+    expect(response.data.value.length).toBe(2)
+    const fetchedFilenames = response.data.value.map((a) => a.filename).sort()
+    expect(fetchedFilenames).toEqual(["duplicate-1.pdf", "duplicate.pdf"])
+  })
 })
 
-describe('Testing max and min amounts of attachments', () => {
-
-  it('Create of record in draft gives warning when maximum is met', async () => {
-    const incidentID = await newIncident(POST, 'validation-test-non-draft', {
+describe("Testing max and min amounts of attachments", () => {
+  it("Create of record in draft gives warning when maximum is met", async () => {
+    const incidentID = await newIncident(POST, "validation-test-non-draft", {
       title: `Incident ${Math.floor(Math.random() * 1000)}`,
-      customer_ID: '1004155',
+      customer_ID: "1004155",
       attachments: [
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-          ),
-          createdBy: "alice",
         },
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-          ),
-          createdBy: "alice",
-        }
+        },
       ],
       hiddenAttachments2: [
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-          ),
-          createdBy: "alice",
         },
-      ]
+      ],
     })
     await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
@@ -452,57 +809,49 @@ describe('Testing max and min amounts of attachments', () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
-    ).catch(e => {
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+      expect(e.response.data.error.code).toMatch("MaximumAmountExceeded")
     })
   })
 
-  it('Delete of record in draft gives warning when minimum is not met', async () => {
-    const incidentID = cds.utils.uuid();
-    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
-      {
-        ID: incidentID,
-        title: 'ABCDEFG',
-        customer_ID: '1004155',
-        urgency_code: 'M'
-      }
-    )
+  it("Delete of record in draft gives warning when minimum is not met", async () => {
+    const incidentID = cds.utils.uuid()
+    await INSERT.into(
+      cds.model.definitions["ValidationTestNonDraftService.Incidents"],
+    ).entries({
+      ID: incidentID,
+      title: "ABCDEFG",
+      customer_ID: "1004155",
+      urgency_code: "M",
+    })
     const { data: newAttachment } = await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments`,
       {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-        ),
-        createdBy: "alice",
-      }
+      },
     )
     await DELETE(
-      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${newAttachment.ID})`
-    ).catch(e => {
+      `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/attachments(up__ID=${incidentID},ID=${newAttachment.ID})`,
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled')
+      expect(e.response.data.error.code).toMatch("MinimumAmountNotFulfilled")
     })
   })
 
-  it('Deep create of new draft gives warning when minimum is not met or maximum exceeded', async () => {
-    const incidentID = cds.utils.uuid();
-    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
-      {
-        ID: incidentID,
-        title: 'ABCDEFG',
-        customer_ID: '1004155',
-        urgency_code: 'M'
-      }
-    )
+  it("Deep create of new draft gives warning when minimum is not met or maximum exceeded", async () => {
+    const incidentID = cds.utils.uuid()
+    await INSERT.into(
+      cds.model.definitions["ValidationTestNonDraftService.Incidents"],
+    ).entries({
+      ID: incidentID,
+      title: "ABCDEFG",
+      customer_ID: "1004155",
+      urgency_code: "M",
+    })
     const { status } = await POST(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation`,
       {
@@ -513,13 +862,9 @@ describe('Testing max and min amounts of attachments', () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
-          }
-        ]
-      }
+          },
+        ],
+      },
     )
     expect(status).toEqual(201)
 
@@ -529,11 +874,13 @@ describe('Testing max and min amounts of attachments', () => {
         up__ID: incidentID,
         ID: cds.utils.uuid(),
         message: "ABC",
-        attachments: []
-      }
-    ).catch(e => {
+        attachments: [],
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+      expect(e.response.data.error.code).toMatch(
+        "MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation",
+      )
     })
 
     await POST(
@@ -546,53 +893,43 @@ describe('Testing max and min amounts of attachments', () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
-          }
-        ]
-      }
-    ).catch(e => {
+          },
+        ],
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+      expect(e.response.data.error.code).toMatch("MaximumAmountExceeded")
     })
   })
 
-  it('Deep update of draft gives warning when minimum is not met or maximum exceeded', async () => {
-    const incidentID = cds.utils.uuid();
-    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents']).entries(
-      {
-        ID: incidentID,
-        title: 'ABCDEFG',
-        customer_ID: '1004155',
-        urgency_code: 'M'
-      }
-    )
-    const conversationID = cds.utils.uuid();
-    await INSERT.into(cds.model.definitions['ValidationTestNonDraftService.Incidents.conversation']).entries(
-      {
-        up__ID: incidentID,
-        ID: conversationID,
-        message: "ABC",
-      }
-    )
+  it("Deep update of draft gives warning when minimum is not met or maximum exceeded", async () => {
+    const incidentID = cds.utils.uuid()
+    await INSERT.into(
+      cds.model.definitions["ValidationTestNonDraftService.Incidents"],
+    ).entries({
+      ID: incidentID,
+      title: "ABCDEFG",
+      customer_ID: "1004155",
+      urgency_code: "M",
+    })
+    const conversationID = cds.utils.uuid()
+    await INSERT.into(
+      cds.model.definitions[
+        "ValidationTestNonDraftService.Incidents.conversation"
+      ],
+    ).entries({
+      up__ID: incidentID,
+      ID: conversationID,
+      message: "ABC",
+    })
 
     const { status } = await PATCH(
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation(ID=${conversationID})`,
@@ -602,13 +939,9 @@ describe('Testing max and min amounts of attachments', () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice"
-          }
-        ]
-      }
+          },
+        ],
+      },
     )
     expect(status).toEqual(200)
 
@@ -616,11 +949,13 @@ describe('Testing max and min amounts of attachments', () => {
       `odata/v4/validation-test-non-draft/Incidents(ID=${incidentID})/conversation(ID=${conversationID})`,
       {
         message: "ABC",
-        attachments: []
-      }
-    ).catch(e => {
+        attachments: [],
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+      expect(e.response.data.error.code).toMatch(
+        "MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation",
+      )
     })
 
     await PATCH(
@@ -631,94 +966,93 @@ describe('Testing max and min amounts of attachments', () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-            ),
-            createdBy: "alice",
-          }
-        ]
-      }
-    ).catch(e => {
+          },
+        ],
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(400)
-      expect(e.response.data.error.code).toMatch('MaximumAmountExceeded')
+      expect(e.response.data.error.code).toMatch("MaximumAmountExceeded")
     })
   })
 
-  it('custom error message can be specified targeting composition property', async () => {
-    await POST(
-      `odata/v4/validation-test-non-draft/Incidents`,
-      {
-        customer_ID: '1004155',
-        title: 'ABC',
-        conversation: [
-          {
-            ID: cds.utils.uuid(),
-            message: "ABC",
-            attachments: []
-          }
-        ]
-      }
-    ).catch(e => {
+  it("Custom error message can be specified targeting composition property", async () => {
+    await POST(`odata/v4/validation-test-non-draft/Incidents`, {
+      customer_ID: "1004155",
+      title: "ABC",
+      conversation: [
+        {
+          ID: cds.utils.uuid(),
+          message: "ABC",
+          attachments: [],
+        },
+      ],
+    }).catch((e) => {
       expect(e.status).toEqual(400)
-      const err = e.response.data.error.details.find(e => e.target.startsWith('conversation'));
-      expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation')
+      const err = e.response.data.error.details.find((e) =>
+        e.target.startsWith("conversation"),
+      )
+      expect(err.code).toEqual(
+        "MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents.conversation",
+      )
     })
   })
 
-  it('custom error message can be specified for entity', async () => {
-    await POST(
-      `odata/v4/validation-test-non-draft/Incidents`,
-      {
-        customer_ID: '1004155',
-        title: 'ABC',
-        urgency_code: 'H',
-        attachments: []
-      }
-    ).catch(e => {
+  it("Custom error message can be specified for entity", async () => {
+    await POST(`odata/v4/validation-test-non-draft/Incidents`, {
+      customer_ID: "1004155",
+      title: "ABC",
+      urgency_code: "H",
+      attachments: [],
+    }).catch((e) => {
       expect(e.status).toEqual(400)
-      const err = e.response.data.error.details.find(e => e.target.startsWith('hiddenAttachments2'));
-      expect(err.code).toEqual('MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents|hiddenAttachments2')
+      const err = e.response.data.error.details.find((e) =>
+        e.target.startsWith("hiddenAttachments2"),
+      )
+      expect(err.code).toEqual(
+        "MinimumAmountNotFulfilled|ValidationTestNonDraftService.Incidents|hiddenAttachments2",
+      )
     })
   })
 })
+
 describe("Row-level security on attachments composition", () => {
   let restrictionID, attachmentID
 
   beforeAll(async () => {
-    const scanCleanWaiter = waitForScanStatus('Clean')
+    const scanCleanWaiter = waitForScanStatus("Clean")
     // Create a Incidents entity as a Manager
     restrictionID = cds.utils.uuid()
-    await POST("/odata/v4/restriction/Incidents", {
-      ID: restrictionID,
-      title: "ABC"
-    }, { auth: { username: "alice" } })
+    await POST(
+      "/odata/v4/restriction/Incidents",
+      {
+        ID: restrictionID,
+        title: "ABC",
+      },
+      { auth: { username: "alice" } },
+    )
 
     // Create an attachment as alice and save the ID
-    const attachRes = await POST(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`, {
-      up__ID: restrictionID,
-      filename: "test.pdf",
-      mimeType: "application/pdf"
-    }, { auth: { username: "alice" } })
+    const attachRes = await POST(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
+      {
+        up__ID: restrictionID,
+        filename: "test.pdf",
+        mimeType: "application/pdf",
+      },
+      { auth: { username: "alice" } },
+    )
     attachmentID = attachRes.data.ID
 
     const fileContent = readFileSync(
-      join(__dirname, "..", "integration", "content/sample.pdf")
+      join(__dirname, "..", "integration", "content/sample.pdf"),
     )
     await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
@@ -728,66 +1062,87 @@ describe("Row-level security on attachments composition", () => {
           "Content-Type": "application/pdf",
           "Content-Length": fileContent.length,
         },
-        auth: { username: "alice" }
-      }
+        auth: { username: "alice" },
+      },
     )
 
     await scanCleanWaiter
   })
 
-  it("should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
+  it("Should allow DOWNLOAD attachment content for authorized user (alice)", async () => {
     // Now, try to GET the attachment content as alice
-    const getRes = await GET(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
-      auth: { username: "alice" }
-    })
+    const getRes = await GET(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
+      {
+        auth: { username: "alice" },
+      },
+    )
     expect(getRes.status).toEqual(200)
     expect(getRes.data).not.toBeUndefined()
   })
 
-  it("should reject CREATE attachment for unauthorized user", async () => {
-    await POST(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`, {
-      up__ID: restrictionID,
-      filename: "test.pdf",
-      mimeType: "application/pdf"
-    }, { auth: { username: "bob" } }).catch(e => {
+  it("Should reject CREATE attachment for unauthorized user", async () => {
+    await POST(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
+      {
+        up__ID: restrictionID,
+        filename: "test.pdf",
+        mimeType: "application/pdf",
+      },
+      { auth: { username: "bob" } },
+    ).catch((e) => {
       expect(e.status).toEqual(403)
     })
   })
 
-  it("should reject UPDATE attachment for unauthorized user", async () => {
+  it("Should reject UPDATE attachment for unauthorized user", async () => {
     // Assume an attachment exists, try to update as bob
-    await axios.patch(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
-      note: "Should fail"
-    }, { auth: { username: "bob" } }).catch(e => {
+    await PATCH(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
+      {
+        note: "Should fail",
+      },
+      { auth: { username: "bob" } },
+    ).catch((e) => {
       expect(e.status).toEqual(403)
     })
   })
 
-  it("should reject DOWNLOAD attachment content for unauthorized user", async () => {
-    await GET(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`, {
-      auth: { username: "bob" }
-    }).catch(e => {
+  it("Should reject DOWNLOAD attachment content for unauthorized user", async () => {
+    await GET(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})/content`,
+      {
+        auth: { username: "bob" },
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(403)
     })
   })
 
-  it("should reject DELETE attachment for unauthorized user", async () => {
-    await DELETE(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`, {
-      auth: { username: "bob" }
-    }).catch(e => {
+  it("Should reject DELETE attachment for unauthorized user", async () => {
+    await DELETE(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachmentID})`,
+      {
+        auth: { username: "bob" },
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(403)
     })
   })
 
-  it("should not allow bob to PUT into file alice has POSTed", async () => {
-    const attachRes = await POST(`/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`, {
-      up__ID: restrictionID,
-      filename: "newfile.pdf",
-      mimeType: "application/pdf"
-    }, { auth: { username: "alice" } })
+  it("Should not allow bob to PUT into file alice has POSTed", async () => {
+    const attachRes = await POST(
+      `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments`,
+      {
+        up__ID: restrictionID,
+        filename: "newfile.pdf",
+        mimeType: "application/pdf",
+      },
+      { auth: { username: "alice" } },
+    )
 
     const fileContent = readFileSync(
-      join(__dirname, "..", "integration", "content/sample.pdf")
+      join(__dirname, "..", "integration", "content/sample.pdf"),
     )
     await PUT(
       `/odata/v4/restriction/Incidents(ID=${restrictionID})/attachments(up__ID=${restrictionID},ID=${attachRes.data.ID})/content`,
@@ -797,11 +1152,146 @@ describe("Row-level security on attachments composition", () => {
           "Content-Type": "application/pdf",
           "Content-Length": fileContent.length,
         },
-        auth: { username: "bob" }
-      }
-    ).catch(e => {
+        auth: { username: "bob" },
+      },
+    ).catch((e) => {
       expect(e.status).toEqual(403)
     })
+  })
+})
+
+describe("Tests for inline single attachment in non-draft mode", () => {
+  const isNotLocal = cds.env.requires?.attachments?.kind === "db" ? it.skip : it
+
+  it("Should create a SingleAttachment and serve content without draft", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft inline test",
+      myAttachment_filename: "hello.txt",
+    })
+    expect(entity.ID).toBeDefined()
+
+    const fileContent = "non-draft inline content"
+    const putRes = await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      fileContent,
+      { headers: { "Content-Type": "text/plain" } },
+    )
+    expect(putRes.status).toEqual(204)
+
+    // Bypass scan to can read immediately
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Clean",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: entity.ID }),
+    )
+
+    const getRes = await GET(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      { responseType: "arraybuffer" },
+    )
+    expect(getRes.status).toEqual(200)
+    expect(getRes.data).toEqual(Buffer.from(fileContent))
+  })
+
+  it("Should delete a SingleAttachment and clear all inline fields", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft delete test",
+      myAttachment_filename: "bye.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "content to be deleted",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    // Confirm url was set
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+
+    const delRes = await DELETE(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})`,
+    )
+    expect(delRes.status).toEqual(204)
+
+    const after = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(after).toBeUndefined()
+  })
+
+  // prettier-ignore
+  isNotLocal("Should emit DeleteAttachment when a SingleAttachment entity is deleted", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Object store delete test",
+      myAttachment_filename: "bye.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "content to be deleted",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const db = await cds.connect.to("db")
+    const before = await db.run(
+      SELECT.one
+        .from("sap.capire.incidents.SingleAttachment")
+        .where({ ID: entity.ID }),
+    )
+    expect(before.myAttachment_url).toBeTruthy()
+
+    const deletion = waitForDeletion(before.myAttachment_url)
+
+    await DELETE(`/odata/v4/admin/SingleAttachment(ID=${entity.ID})`)
+
+    expect(await deletion).toBe(true)
+  })
+
+  it("Should return 403 when content is in Scanning status (non-draft)", async () => {
+    const { data: entity } = await POST("/odata/v4/admin/SingleAttachment", {
+      name: "Non-draft scanning status test",
+      myAttachment_filename: "scan.txt",
+    })
+
+    await PUT(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      "scanning content",
+      { headers: { "Content-Type": "text/plain" } },
+    )
+
+    const db = await cds.connect.to("db")
+    await db.run(
+      UPDATE("sap.capire.incidents.SingleAttachment")
+        .set({
+          myAttachment_status: "Scanning",
+          myAttachment_url: "some-url",
+          myAttachment_lastScan: new Date().toISOString(),
+        })
+        .where({ ID: entity.ID }),
+    )
+
+    let expectedError
+    await GET(
+      `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+    ).catch((e) => {
+      expectedError = e.response ?? e
+    })
+
+    expect(expectedError?.status ?? expectedError?.response?.status).toEqual(
+      403,
+    )
   })
 })
 
@@ -811,7 +1301,7 @@ function createHelpers() {
       const response = await POST(
         `/odata/v4/admin/Incidents(${incidentID})/attachments`,
         { filename: filename },
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json" } },
       )
       return response.data.ID
     },
@@ -820,10 +1310,10 @@ function createHelpers() {
       attachmentID,
       contentPath = "content/sample.pdf",
       service = "admin",
-      entity = "Incidents"
+      entity = "Incidents",
     ) => {
       const fileContent = readFileSync(
-        join(__dirname, "..", "integration", contentPath)
+        join(__dirname, "..", "integration", contentPath),
       )
       const response = await PUT(
         `/odata/v4/${service}/${entity}(${incidentID})/attachments(up__ID=${incidentID},ID=${attachmentID})/content`,
@@ -833,7 +1323,7 @@ function createHelpers() {
             "Content-Type": "application/pdf",
             "Content-Length": fileContent.length,
           },
-        }
+        },
       )
       return response
     },

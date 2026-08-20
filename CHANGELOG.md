@@ -4,7 +4,175 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Version 3.7.0
+## [Unreleased]
+
+### Fixed
+
+- Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+
+## Version 4.0.0 - 2026-08-03
+
+**BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
+**BREAKING CHANGE: Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `outboxed`.**
+
+### Changed
+
+- The `outbox` configuration key under `cds.requires.attachments` has been renamed to `outboxed`. A deprecation warning is logged at startup when the old key is detected.
+- Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
+
+### Fixed
+
+- Attachments are now served with `Content-Disposition: attachment` by default with inline being a toggle
+
+## Version 3.13.4 - 2026-07-31
+
+### Fixed
+
+- Fixed a race condition where a download-triggered re-scan could leave an attachment stuck in `Scanning` (causing clean files to be rejected on download). The redundant request-path status write in `rescan` has been removed; the spawned scan (`_scanAttachmentsFile`) already sets the status to `Scanning` as its first step. This also avoids holding a DB connection across the request rejection, which could drain the pool on single-connection databases.
+- Non-draft PATCH now allows for deleting attachment arrays from the database.
+
+## Version 3.13.3 - 2026-07-24
+
+### Fixed
+
+- Avoid leaking Service Manager credentials when service manager binding is not complete.
+- Replaced `axios` with the built-in `fetch` API, removing an external dependency
+
+## Version 3.13.2 - 2026-07-23
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+- Upload of inline attachments with `@Core.AcceptableMediaTypes` annotation no longer crashes with a TypeError
+- UI facets for inline attachments are now correctly added even when no `Attachments` composition is present in the application
+- Inline attachments annotated with `@UI.Hidden` now correctly hide their facet instead of showing an empty section
+
+### Migration Note
+
+- The per-locale `ScanStates_texts_*.csv` files (e.g. `_de.csv`, `_ar.csv`) were consolidated into a single base CSV in this version. To resolve, add the removed per-locale files to your `undeploy.json` before upgrading. Alternatively, enable `--auto-undeploy` in your HDI deploy configuration to automatically undeploy artifacts that no longer exist in the source.
+
+## Version 3.13.1 - 2026-06-26
+
+### Fixed
+
+- Multiple single attachments components now are visible in the UI with unique labels
+
+## Version 3.13.0 - 2026-06-22
+
+### Added
+
+- Ability to use a single attachment instead of a composition. This can be done simply when creating an entity by having a field of type Attachment, without the composition value:
+
+```cds
+entity MyEntity {
+  title: String;
+  attachment: Attachment;
+}
+```
+
+### Fixed
+
+- Removed hard-coded attributes that were being used. Variable attribute names supports multiple compositions of attachments on a single entity.
+
+## Version 3.12.2 - 2026-05-20
+
+### Fixed
+
+- Querying from content column while using object storage now returns expected result.
+
+## Version 3.12.1 - 2026-04-29
+
+### Added
+
+- File deduplication can now be disabled via `cds.requires.attachments.deduplicateFileNames=false`
+
+### Fixed
+
+- Security audit events (`AttachmentSizeExceeded`, `AttachmentUploadRejected`, `AttachmentDownloadRejected`) now log the real client IP on reverse-proxy deployments (e.g. BTP Cloud Foundry) as well by setting `X-Forwarded-For` as an attribute on the audit log.
+
+## Version 3.12.0 - 2026-04-20
+
+### Added
+
+- A maximum concurrent amount of scans can now be configured for the malware scanner.
+
+### Changed
+
+- The retry logic for the malware scanner was improved to be more robust under high loads.
+
+### Fixed
+
+- Wrong file name being shown when rejecting an attachment due to file size.
+- Fix a server crash when uploading extensions due to wrongfully assuming each request has a query attached.
+
+## Version 3.11.0 - 2026-04-02
+
+### Added
+
+- Support for controlling content overwrite behavior via `@Capabilities.UpdateRestrictions.NonUpdatableProperties`. By default, `content` is listed as non-updateable, preventing overwrites with a `409` error. Setting the annotation to an empty array (`[]`) on a specific attachment composition allows content to be overwritten.
+
+### Fixed
+
+- When `cds.env.fiori.bypass_draft` was enabled attachments were wrongfully deleted
+
+## Version 3.10.0 - 2026-03-31
+
+### Added
+
+- Emit the following security events on the attachments service: - AttachmentDownloadRejected, AttachmentSizeExceeded AttachmentUploadRejected.
+- If `@cap-js/audit-logging` is installed automatically trigger audit logs for the security events.
+- Duplicate file names to a single attachment entity are automatically assigned a distinguishing suffix.
+- Local testing using a Postgres database now possible.
+- Native server-side `copy()` method on `AttachmentsService` for copying attachments between entities without transferring binary data through the application. Supports all storage backends (DB, AWS S3, Azure Blob Storage, GCP Cloud Storage) with backend-native copy operations.
+
+### Fixed
+
+- Fixed bug where deeply nested attachments were not properly handled.
+- Fixed bug to allow navigation of self-referencing entities.
+- Fix that POST requests for attachments did not have a response when the plugin is used with an object store.
+
+## Version 3.9.0 - 2026-03-10
+
+### Fixed
+
+- Fixed security vulnerability where `@Core.AcceptableMediaTypes` validation could be bypassed during content upload by manipulating the `Content-Type` header. The mimeType is now validated against the value stored in the database (derived from filename extension) rather than the request header.
+- Relaxed requirement for `Content-Length` header; stream length validation is now used as an additional check to leverage support for chunked uploads.
+- Fixed bug where self-referencing entities caused overflow error due to infinite looping.
+- Fixed bug in which discarded drafts would save files to database.
+- Now allows for downloading files while in draft mode.
+
+## Version 3.8.0 - 2026-02-20
+
+### Added
+
+- Support for all generic MIME types (see [mime.js](https://github.com/cap-js/attachments/blob/e982cef4f41371ddc5d621fcdb9f69b18ec8c4b2/lib/mime.js)).
+- DB handler for programmatic attachment insertion via `INSERT.into()`:
+  ```js
+  const firstID = cds.utils.uuid()
+  const secondID = cds.utils.uuid()
+  await INSERT.into("sap.capire.incidents.NonDraftTest").entries(
+    {
+      ID: firstID,
+      title: "Test Incident 1",
+      description: "This is a test incident 1",
+      urgency_code: "L",
+      urgency_descr: "Low",
+    },
+    {
+      ID: secondID,
+      title: "Urgent Test Incident 2",
+      description: "This is a test incident 2",
+      urgency_code: "L",
+      urgency_descr: "Low",
+    },
+  )
+  ```
+
+### Fixed
+
+- Resolved an issue in draft mode where discarding an active draft incorrectly deleted attachments from the object store. Removed dependency on `req.diff()`.
+
+## Version 3.7.0 - 2026-01-22
 
 ### Added
 
@@ -15,36 +183,37 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Addressed an issue where files were deleted twice from the underlying object store, which previously resulted in error messages and looping through the outbox.
 
-## Version 3.6.1
+## Version 3.6.1 - 2026-01-15
 
 ### Fixed
 
 - Resolved an issue where URLs for nested entities were not generated.
 - Fixed an internal server error in CDS 8 caused by the absence of `cds.infer?.target`.
 
-## Version 3.6.0
+## Version 3.6.0 - 2026-01-08
 
 ### Added
 
 - Introduced support for `@Validation.MaxItems` and `@Validation.MinItems` annotations, enabling you to define the minimum and maximum number of attachments that can be uploaded.
 
-    #### Example: Limit to a Maximum of 2 Attachments
+  #### Example: Limit to a Maximum of 2 Attachments
 
-    ```cds
-    entity Incidents {
-        @Validation.MaxItems: 2
-        attachments: Composition of many Attachments;
-    }
-    ```
+  ```cds
+  entity Incidents {
+      @Validation.MaxItems: 2
+      attachments: Composition of many Attachments;
+  }
+  ```
 
-    #### Example: Require at Least 2 Attachments
+  #### Example: Require at Least 2 Attachments
 
-    ```cds
-    entity Incidents {
-        @Validation.MinItems: 2
-        attachments: Composition of many Attachments;
-    }
-    ```
+  ```cds
+  entity Incidents {
+      @Validation.MinItems: 2
+      attachments: Composition of many Attachments;
+  }
+  ```
+
 - Enhanced the `note` field to support multi-line input, improving readability for longer text entries.
 
 ### Fixed
@@ -54,36 +223,36 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Handling the use of nested POST requests in non-draft mode.
 - Prevent overriding attachments using `/content` handler.
 
-## Version 3.5.0
+## Version 3.5.0 - 2025-12-05
 
 ### Fixed
 
 - Enforced the use of the `Content-Length` header to prevent server errors.
 - Designated the `content` property in the Attachments table as a `NonSortableProperty` to prevent database errors when sorting LargeBinary fields.
 
-## Version 3.4.0
+## Version 3.4.0 - 2025-11-25
 
 ### Added
 
 - Introduced support for the `@Core.AcceptableMediaTypes` annotation, allowing specification of permitted MIME types for attachment uploads:
-    ```cds
-    annotate my.Books.attachments with {
-        content @Core.AcceptableMediaTypes: ['image/jpeg'];
-    }
-    ```
+  ```cds
+  annotate my.Books.attachments with {
+      content @Core.AcceptableMediaTypes: ['image/jpeg'];
+  }
+  ```
 - Added support for the `@Validation.Maximum` annotation to define the maximum allowed file size for attachments:
-    ```cds
-    annotate my.Books.attachments with {
-        content @Validation.Maximum: '2MB';
-    }
-    ```
+  ```cds
+  annotate my.Books.attachments with {
+      content @Validation.Maximum: '2MB';
+  }
+  ```
 
 ### Fixed
 
 - Removed the previous hard limit of `400 MB` for file uploads. Files exceeding this size may still fail during malware scanning and will be marked with a `Failed` status.
 - Resolved issues with generic handler registration, enabling services to intercept the attachments plugin using middleware.
 
-## Version 3.3.0
+## Version 3.3.0 - 2025-11-18
 
 ### Added
 
@@ -100,20 +269,20 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Fixed a server crash when the filename would not be given when creating new attachment metadata.
 - Fixed an issue where attachment handlers would be missing when all Attachments entity were behind feature toggles.
 - Fixed an issue where with storage kind `db` attachments could not be uploaded as drafts.
-- Fixed an issue where the content could be uploaded for a not existing attachments entity. 
+- Fixed an issue where the content could be uploaded for a not existing attachments entity.
 
-## Version 3.2.0
+## Version 3.2.0 - 2025-11-07
 
 ### Added
 
 - Implemented integration with additional cloud providers for attachment storage:
-    - Azure Blob Storage (`kind: azure`).
-    - Google Cloud Platform Object Store (`kind: gcp`).
+  - Azure Blob Storage (`kind: azure`).
+  - Google Cloud Platform Object Store (`kind: gcp`).
 - Added support for mTLS authentication for the malware scanning service.
 - Added criticality status to the attachment scan status.
 - Provided translations for all SAP-supported languages.
 
-## Version 3.1.0
+## Version 3.1.0 - 2025-10-21
 
 ### Added
 
@@ -125,7 +294,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Ensured reliable deletion of all related attachments when parent entities are removed, preventing orphaned data.
 - Improved handling of attachment deletion for non-draft entities to ensure consistent cleanup.
 
-## Version 3.0.0
+## Version 3.0.0 - 2025-10-14
 
 **BREAKING CHANGE:** Replaced usage of the CAP `req` variable with `cds.context` throughout the codebase.
 
@@ -140,7 +309,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Deprecated `@attachments.disable_facet`
 - Introduced support for @UI.Hidden, enabling dynamic hiding of the attachments section in the UI.
 
-## Version 2.2.2
+## Version 2.2.2 - 2025-09-26
 
 ### Added
 
@@ -150,13 +319,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Resolved an issue in hybrid mode where an incorrect route path variable was used for attachment uploads in local environments.
 
-## Version 2.2.1
+## Version 2.2.1 - 2025-09-10
 
 ### Fixed
 
 - Ensured content is correctly stored and retrievable in non-draft mode.
 
-## Version 2.2.0
+## Version 2.2.0 - 2025-07-21
 
 ### Added
 
@@ -168,13 +337,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Improved error handling and runtime crashes.
 - Fixed support for MTLS authentication via Service Manager.
 
-## Version 2.1.2
+## Version 2.1.2 - 2025-05-22
 
 ### Fixed
 
 - Bug fixes.
 
-## Version 2.1.1
+## Version 2.1.1 - 2025-05-14
 
 ### Added
 
@@ -184,7 +353,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Deleted attachments are now removed from S3 when a draft is discarded or deleted.
 
-## Version 2.1.0
+## Version 2.1.0 - 2025-04-21
 
 ### Added
 
@@ -194,19 +363,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Support for `.mov` file extension.
 
-## Version 2.0.2
+## Version 2.0.2 - 2025-03-19
 
 ### Fixed
 
 - Restored Attachments aspect on root namespace.
 
-## Version 2.0.1
+## Version 2.0.1 - 2025-03-17
 
 ### Fixed
 
 - Minor bug fixes.
 
-## Version 2.0.0
+## Version 2.0.0 - 2025-03-10
 
 ### Changed
 
@@ -217,13 +386,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - **Visibility Control**: Added visibility control for attachments plugin using `@attachments.disable_facet`.
 
-## Version 1.2.1
+## Version 1.2.1 - 2025-02-26
 
 ### Fixed
 
 - CDS version check added for rendering UI facets in older versions.
 
-## Version 1.2.0
+## Version 1.2.0 - 2025-02-26
 
 ### Added
 
@@ -233,7 +402,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fixed query syntax error for hana cloud bindings.
 
-## Version 1.1.9
+## Version 1.1.9 - 2025-02-04
 
 ### Added
 
@@ -244,7 +413,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fixed upload attachment bug after cds `8.7.0` update.
 
-## Version 1.1.8
+## Version 1.1.8 - 2024-11-04
 
 ### Changed
 
@@ -254,13 +423,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fix for viewing stored attachment.
 
-## Version 1.1.7
+## Version 1.1.7 - 2024-10-07
 
 ### Fixed
 
 - Fix for scenario where an aspect has a composition.
 
-## Version 1.1.6
+## Version 1.1.6 - 2024-08-23
 
 ### Added
 
@@ -270,7 +439,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fix for adding note for attachments.
 
-## Version 1.1.5
+## Version 1.1.5 - 2024-08-07
 
 ### Changed
 
@@ -278,13 +447,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Scan status is mocked to `Clean` only in the development profile and otherwise set to `Unscanned`, when malware scan is disabled.
 - When malware scan is disabled, removed restriction to access uploaded attachment.
 
-## Version 1.1.4
+## Version 1.1.4 - 2024-07-08
 
 ### Changed
 
 - Updated Node version restriction.
 
-## Version 1.1.3
+## Version 1.1.3 - 2024-06-27
 
 ### Changed
 
@@ -294,7 +463,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Minor bug fixes.
 
-## Version 1.1.2
+## Version 1.1.2 - 2024-06-21
 
 ### Added
 
@@ -310,7 +479,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Bug fixes for event handlers in production.
 - Bug fix for attachment target condition.
 
-## Version 1.1.1
+## Version 1.1.1 - 2024-05-31
 
 ### Changed
 
@@ -321,7 +490,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Bug fixes for upload functionality in production.
 
-## Version 1.1.0
+## Version 1.1.0 - 2024-05-28
 
 ### Added
 
@@ -331,19 +500,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Fixes for deployment
 
-## Version 1.0.2
+## Version 1.0.2 - 2024-04-30
 
 ### Fixed
 
 - Bug fixes
 
-## Version 1.0.1
+## Version 1.0.1 - 2024-03-28
 
 ### Fixed
 
 - Updating the documentation.
 
-## Version 1.0.0
+## Version 1.0.0 - 2024-03-28
 
 ### Added
 

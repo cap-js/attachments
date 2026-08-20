@@ -1,8 +1,8 @@
 using {sap.capire.incidents as my} from './schema';
-using {Attachments} from '@cap-js/attachments';
+using {Attachments, Attachment} from '@cap-js/attachments';
 
 extend my.Incidents with {
-  @Validation.MaxItems: 2
+  @Validation.MaxItems: 3
   attachments            : Composition of many Attachments;
   @attachments.disable_facet
   @Validation.MaxItems : (urgency.code = 'H' ? 2 : 3)
@@ -16,6 +16,9 @@ extend my.Incidents with {
 
   @UI.Hidden
   maximumSizeAttachments : Composition of many Attachments;
+
+  @UI.Hidden
+  overwritableAttachments : Composition of many Attachments;
 }
 
 annotate my.Incidents.maximumSizeAttachments with {
@@ -25,6 +28,9 @@ annotate my.Incidents.maximumSizeAttachments with {
 annotate my.Incidents.mediaTypeAttachments with {
   content @Core.AcceptableMediaTypes: ['image/jpeg'];
 }
+
+// Allow overwriting content for overwritableAttachments by setting empty NonUpdatableProperties
+annotate my.Incidents.overwritableAttachments with @Capabilities.UpdateRestrictions.NonUpdatableProperties: [];
 
 @UI.Facets: [{
   $Type : 'UI.ReferenceFacet',
@@ -52,5 +58,33 @@ extend my.NonDraftTest with {
 }
 
 extend my.SingleTestDetails with {
+  attachments : Composition of many Attachments;
+}
+
+extend my.SingleAttachment with {
+  myAttachment : Attachment;
+}
+
+annotate my.SingleAttachment with {
+  myAttachment {
+    content @Validation.Maximum: '5MB' @UI.Hidden;
+  }
+}
+
+extend my.Posts with {
+  attachments : Composition of many Attachments;
+}
+
+extend my.Comments with {
+  attachments : Composition of many Attachments;
+}
+
+// Depth 3: Level0 -> children(Level1) -> children(Level2) -> attachments
+extend my.Level2 with {
+  attachments : Composition of many Attachments;
+}
+
+// Depth 4: Level0 -> children(Level1) -> children(Level2) -> items(Level3) -> attachments
+extend my.Level3 with {
   attachments : Composition of many Attachments;
 }

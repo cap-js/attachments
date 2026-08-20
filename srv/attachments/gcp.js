@@ -1,0 +1,427 @@
+let Storage
+try {
+  ;({ Storage } = require("@google-cloud/storage"))
+} catch (e) {
+  if (e.code === "MODULE_NOT_FOUND")
+    throw new Error(
+      'The Google Cloud Platform storage provider requires "@google-cloud/storage" to be installed.\n' +
+        "Please run: npm install @google-cloud/storage",
+      { cause: e },
+    )
+  throw e
+}
+const cds = require("@sap/cds")
+const LOG = cds.log("attachments")
+const utils = require("../../lib/helper")
+const {
+  MAX_FILE_SIZE,
+  sizeInBytes,
+  createSizeCheckHandler,
+} = require("../../lib/helper")
+
+module.exports = class GoogleAttachmentsService extends (
+  require("./object-store")
+) {
+  /**
+   * Creates or retrieves a cached Google Cloud Platform client for the given tenant
+   * @returns {Promise<{bucket: import('@google-cloud/storage').Bucket}>}
+   */
+  async retrieveClient() {
+    const tenantID = this.separateObjectStore ? cds.context.tenant : "shared"
+    LOG.debug("Retrieving tenant-specific Google Cloud Platform client", {
+      tenantID,
+    })
+    const existingClient = this.clientsCache.get(tenantID)
+    if (existingClient) {
+      LOG.debug("Using cached GCP client", {
+        tenantID,
+        bucketName: existingClient.bucket.name,
+      })
+      return existingClient
+    }
+
+    try {
+      LOG.debug(
+        `Fetching object store credentials for tenant ${tenantID}. Using ${this.separateObjectStore ? "shared" : "tenant-specific"} object store.`,
+      )
+      const credentials = this.separateObjectStore
+        ? (await utils.getObjectStoreCredentials(tenantID))?.credentials
+        : cds.env.requires?.objectStore?.credentials
+
+      if (!credentials) {
+        throw new Error("SAP Object Store instance is not bound.")
+      }
+
+      // Validate required credentials
+      const requiredFields = [
+        "bucket",
+        "projectId",
+        "base64EncodedPrivateKeyData",
+      ]
+      const missingFields = requiredFields.filter(
+        (field) => !credentials[field],
+      )
+
+      if (missingFields.length > 0) {
+        if (credentials.access_key_id) {
+          throw new Error(
+            "AWS S3 credentials found where Google Cloud Platform credentials expected, please check your service bindings.",
+          )
+        } else if (credentials.container_name) {
+          throw new Error(
+            "Azure credentials found where Google Cloud Platform credentials expected, please check your service bindings.",
+          )
+        }
+        throw new Error(
+          `Missing Google Cloud Platform credentials: ${missingFields.join(", ")}`,
+        )
+      }
+
+      LOG.debug("Creating Google Cloud Platform client for tenant", {
+        tenantID,
+        bucketName: credentials.bucket,
+      })
+
+      const storageClient = new Storage({
+        projectId: credentials.projectId,
+        credentials: JSON.parse(
+          Buffer.from(
+            credentials.base64EncodedPrivateKeyData,
+            "base64",
+          ).toString("utf8"),
+        ),
+      })
+
+      const newGoogleClient = {
+        bucket: storageClient.bucket(credentials.bucket),
+      }
+
+      this.clientsCache.set(tenantID, newGoogleClient)
+
+      LOG.debug("Google Cloud Platform client has been created successful", {
+        tenantID,
+        bucketName: newGoogleClient.bucket.name,
+      })
+
+      return newGoogleClient
+    } catch (error) {
+      LOG.error(
+        "Failed to create tenant-specific Google Cloud Platform client",
+        error,
+        "Check Service Manager and Google Cloud Platform instance configuration",
+        { tenantID },
+      )
+      throw error
+    }
+  }
+
+  /**
+   * Checks if a file exists in Google Cloud Storage
+   * @param {string} fileName - The name/key of the file to check
+   * @returns {Promise<boolean>} - True if the file exists, false otherwise
+   */
+  async exists(fileName) {
+    const { bucket } = await this.retrieveClient()
+    const [exists] = await bucket.file(fileName).exists()
+    return exists
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async put(attachments, data) {
+    if (Array.isArray(data)) {
+      LOG.debug("Processing bulk file upload", {
+        fileCount: data.length,
+        filenames: data.map((d) => d.filename),
+      })
+      return Promise.all(data.map((d) => this.put(attachments, d)))
+    }
+
+    const startTime = Date.now()
+
+    LOG.debug("Starting file upload to Google Cloud Platform", {
+      attachmentEntity: attachments.name,
+      tenant: cds.context.tenant,
+    })
+
+    const { bucket } = await this.retrieveClient()
+
+    try {
+      const { content, ...metadata } = data
+      const blobName = metadata.url
+
+      if (!blobName) {
+        LOG.error(
+          "File key/URL is required for Google Cloud Platform upload",
+          null,
+          "Ensure attachment data includes a valid URL/key",
+          { metadata: { ...metadata, content: !!content } },
+        )
+        throw new Error("File key is required for upload")
+      }
+
+      if (!content || !content.on) {
+        LOG.error(
+          "File content is required for Google Cloud Platform upload",
+          null,
+          "Ensure attachment data includes file content",
+          { key: blobName, hasContent: !!content },
+        )
+        throw new Error("File content is required for upload")
+      }
+
+      const file = bucket.file(blobName)
+
+      if (
+        this._isContentUpdateRestricted(attachments) &&
+        (await this.exists(blobName))
+      ) {
+        const error = new Error("Attachment already exists")
+        error.status = 409
+        throw error
+      }
+
+      const filename =
+        data.filename ??
+        (attachments.elements?.filename
+          ? (
+              await SELECT.one("filename")
+                .from(attachments)
+                .where({ ID: data.ID })
+            )?.filename
+          : null)
+
+      const contentElement =
+        data._contentElement ?? attachments.elements?.content
+      const maxFileSize =
+        contentElement?.["@Validation.Maximum"] != null
+          ? (sizeInBytes(
+              contentElement["@Validation.Maximum"],
+              attachments.name,
+            ) ?? MAX_FILE_SIZE)
+          : MAX_FILE_SIZE
+
+      LOG.debug("Uploading file to Google Cloud Platform", {
+        bucketName: bucket.name,
+        blobName,
+        maxFileSize,
+      })
+
+      const sizeLimit = contentElement?.["@Validation.Maximum"] || "400MB"
+      const writeStream = file.createWriteStream()
+
+      let resolveUpload
+      const uploadPromise = new Promise((resolve) => {
+        resolveUpload = resolve
+      })
+
+      const { handler, getSizeExceeded, createError } = createSizeCheckHandler({
+        maxFileSize,
+        filename,
+        sizeLimit,
+        onSizeExceeded: () => {
+          // Unpipe and destroy the write stream to abort the upload
+          content.unpipe(writeStream)
+          writeStream.destroy()
+          // Resume content to drain it (prevents backpressure from hanging the connection)
+          content.resume()
+          resolveUpload()
+        },
+      })
+
+      content.on("data", handler)
+
+      // The file upload has to be done first, so super.put can compute the hash and trigger malware scan
+      try {
+        await Promise.race([
+          uploadPromise,
+          new Promise((resolve, reject) => {
+            content.pipe(writeStream)
+            writeStream.on("finish", resolve)
+            writeStream.on("error", (err) => {
+              // Ignore errors if size exceeded - we intentionally destroyed the stream
+              if (getSizeExceeded()) {
+                resolve()
+              } else {
+                reject(err)
+              }
+            })
+            content.on("error", reject)
+          }),
+        ])
+      } catch (err) {
+        if (getSizeExceeded()) {
+          throw createError()
+        }
+        throw err
+      }
+
+      // Check after promise resolves if size was exceeded
+      if (getSizeExceeded()) {
+        // Try to delete the partial upload
+        try {
+          await file.delete({ ignoreNotFound: true })
+        } catch {
+          // Ignore delete errors
+        }
+        throw createError()
+      }
+
+      if (metadata.ID) {
+        await super.put(attachments, metadata)
+      }
+
+      const duration = Date.now() - startTime
+      LOG.debug("File upload to Google Cloud Platform completed successfully", {
+        fileId: metadata.ID,
+        bucketName: bucket.name,
+        blobName,
+        duration,
+      })
+    } catch (err) {
+      if (err.status === 409) {
+        throw err
+      }
+      const duration = Date.now() - startTime
+      LOG.error(
+        "File upload to Google Cloud Platform failed",
+        err,
+        "Check Google Cloud Platform connectivity, credentials, and container permissions",
+        {
+          fileId: data?.ID,
+          bucketName: bucket.name,
+          blobName: data?.url,
+          duration,
+        },
+      )
+      throw err
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async get(attachments, keys, url) {
+    const startTime = Date.now()
+    LOG.debug("Starting stream from Google Cloud Platform", {
+      attachmentEntity: attachments.name,
+      keys,
+      tenant: cds.context.tenant,
+    })
+    const { bucket } = await this.retrieveClient()
+
+    try {
+      LOG.debug("Fetching attachment metadata", { keys })
+      const response = url
+        ? { url }
+        : await SELECT.from(attachments, keys).columns("url")
+
+      if (!response?.url) {
+        LOG.warn(
+          "File URL not found in database",
+          null,
+          "Check if the attachment exists and has been properly uploaded",
+          { keys, hasResponse: !!response },
+        )
+        return null
+      }
+
+      const blobName = response.url
+
+      LOG.debug("Streaming file from Google Cloud Platform", {
+        bucketName: bucket.name,
+        blobName,
+      })
+
+      const file = bucket.file(blobName)
+      const readStream = await file.createReadStream()
+
+      const duration = Date.now() - startTime
+      LOG.debug("File streamed from Google Cloud Platform successfully", {
+        fileId: keys.ID,
+        bucketName: bucket.name,
+        blobName,
+        duration,
+      })
+
+      return readStream
+    } catch (error) {
+      const duration = Date.now() - startTime
+      const suggestion =
+        error.code === "BlobNotFound"
+          ? "File may have been deleted from Google Cloud Platform or URL is incorrect"
+          : error.code === "AuthenticationFailed"
+            ? "Check Google Cloud Platform credentials and SAS token"
+            : "Check Google Cloud Platform connectivity and configuration"
+
+      LOG.error(
+        "File download from Google Cloud Platform failed",
+        error,
+        suggestion,
+        {
+          fileId: keys?.ID,
+          bucketName: bucket.name,
+          attachmentName: attachments.name,
+          duration,
+        },
+      )
+
+      throw error
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async copy(
+    sourceAttachmentsEntity,
+    sourceKeys,
+    targetAttachmentsEntity,
+    targetKeys = {},
+  ) {
+    LOG.debug("Copying attachment (GCP)", {
+      source: sourceAttachmentsEntity.name,
+      sourceKeys,
+      target: targetAttachmentsEntity.name,
+    })
+    const safeTargetKeys = this._sanitizeTargetKeys(targetKeys)
+    const { source, newID, newUrl } = await this._prepareCopy(
+      sourceAttachmentsEntity,
+      sourceKeys,
+    )
+    const { bucket } = await this.retrieveClient()
+    if (await this.exists(newUrl)) {
+      const err = new Error("Target blob already exists")
+      err.status = 409
+      throw err
+    }
+    await bucket.file(source.url).copy(bucket.file(newUrl))
+    const newRecord = { ...source, ...safeTargetKeys, ID: newID, url: newUrl }
+    await INSERT(newRecord).into(targetAttachmentsEntity)
+    return newRecord
+  }
+
+  /**
+   * Deletes a file from Google Cloud Platform
+   * @param {string} Key - The key of the file to delete
+   * @returns {Promise} - Promise resolving when deletion is complete
+   */
+  async delete(blobName) {
+    const { bucket } = await this.retrieveClient()
+    LOG.debug(
+      `[GCP] Executing delete for file ${blobName} in bucket ${bucket.name}`,
+    )
+
+    const file = bucket.file(blobName)
+    const [response] = await file.delete({ ignoreNotFound: true })
+    if (response?.statusCode !== 204) {
+      LOG.warn("File has not been deleted from Google Cloud Storage", {
+        blobName,
+        bucketName: bucket.name,
+        response,
+      })
+    }
+    return true
+  }
+}

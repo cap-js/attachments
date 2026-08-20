@@ -6,7 +6,9 @@ using from '../db/attachments';
  */
 service ProcessorService {
   @cds.redirection.target
-  entity Incidents                    as projection on my.Incidents;
+  entity Incidents                    as projection on my.Incidents actions {
+    action copyIncident() returns Incidents;
+  };
 
   entity Customers @readonly          as projection on my.Customers;
 
@@ -21,6 +23,25 @@ service ProcessorService {
   entity NonDraftTest                 as projection on my.NonDraftTest;
 
   entity SingleTestDetails            as projection on my.SingleTestDetails;
+
+  @odata.draft.enabled
+  entity SingleAttachment             as projection on my.SingleAttachment;
+
+  @odata.draft.enabled
+  entity Posts as projection on my.Posts;
+
+  entity Comments as projection on my.Comments;
+
+  @odata.draft.enabled
+  entity Level0 as projection on my.Level0;
+
+  entity Level0Notes as projection on my.Level0Notes;
+  entity Level1 as projection on my.Level1;
+  entity Level1Tags as projection on my.Level1Tags;
+  entity Level2 as projection on my.Level2;
+  entity Level3 as projection on my.Level3;
+
+  action insertTestData() returns String;
 }
 
 /**
@@ -29,6 +50,7 @@ service ProcessorService {
 service AdminService {
   entity Customers as projection on my.Customers;
   entity Incidents as projection on my.Incidents;
+  entity SingleAttachment  as projection on my.SingleAttachment;
 }
 
 service ValidationTestService {
@@ -71,27 +93,23 @@ service ValidationTestNonDraftService {
 }
 
 service RestrictionService {
-  @(restrict: [
-    {
-      grant: '*',
-      to: 'admin',
-      where: 'title = ''ABC'''
-    }
-  ])
-  entity Incidents as projection on my.Incidents;
+  @(restrict: [{
+    grant: '*',
+    to   : 'admin',
+    where: 'title = ''ABC'''
+  }])
+  entity Incidents     as projection on my.Incidents;
 
-  @(restrict: [
-    {
-      grant: '*',
-      to: 'admin',
-      where: 'title = ''ABC'''
-    }
-  ]) 
+  @(restrict: [{
+    grant: '*',
+    to   : 'admin',
+    where: 'title = ''ABC'''
+  }])
   @odata.draft.enabled
   @cds.redirection.target
   entity DraftIcidents as projection on my.Incidents;
 }
 
-annotate ProcessorService.Incidents with @odata.draft.enabled; 
+annotate ProcessorService.Incidents with @odata.draft.enabled;
 annotate ProcessorService with @(requires: 'support');
 annotate AdminService with @(requires: 'admin');

@@ -154,6 +154,17 @@ annotate service.Incidents with {
         ![@UI.TextArrangement] : #TextOnly,
     }
 };
+
+annotate service.Incidents with @(
+    UI.Identification : [{
+        $Type              : 'UI.DataFieldForAction',
+        Label              : 'Copy Incident',
+        Action             : 'ProcessorService.copyIncident',
+        ![@UI.Hidden]      : { $edmJson: { $Not: { $Path: 'IsActiveEntity' } } },
+        InvocationGrouping : #Isolated,
+    }]
+);
+
 annotate service.Incidents.conversation with @(
     title : '{i18n>Conversation}',
     UI.LineItem #i18nConversation1 : [
@@ -244,4 +255,25 @@ annotate service.TestDetails with @(
       Target : 'attachments/@UI.LineItem'
     }
   ]
+);
+
+annotate service.SingleAttachment with @(
+    UI.LineItem : [
+        {
+            Value : name,
+            Label : 'Name',
+        },
+    ],
+    UI.Facets : [
+        {
+            $Type : 'UI.ReferenceFacet',
+            Label : 'General Information',
+            Target : '@UI.FieldGroup#General',
+        },
+    ],
+    UI.FieldGroup #General : {
+        Data : [
+            { Value : name },
+        ]
+    }
 );

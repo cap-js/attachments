@@ -2,29 +2,38 @@
 
 # Attachments Plugin
 
-The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an [*aspect*](https://cap.cloud.sap/docs/cds/cdl#aspects) called `Attachments`. It also provides a CAP-level, easy-to-use integration of the [SAP Object Store](https://help.sap.com/docs/object-store/object-store-service-on-sap-btp/what-is-object-store).
+The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/node.js/cds-plugins#cds-plugin-packages) that provides out-of-the box asset storage and handling by using an [_aspect_](https://cap.cloud.sap/docs/cds/cdl#aspects) called `Attachments`. It also provides a CAP-level, easy-to-use integration of the [SAP Object Store](https://help.sap.com/docs/object-store/object-store-service-on-sap-btp/what-is-object-store).
 
 ### Table of Contents
 
 <!-- TOC -->
 
 - [Attachments Plugin](#attachments-plugin)
-    - [Table of Contents](#table-of-contents)
+  - [Table of Contents](#table-of-contents)
   - [Usage](#usage)
     - [Quick Start](#quick-start)
     - [Local Walk-Through](#local-walk-through)
     - [Changes in the CDS Models](#changes-in-the-cds-models)
+    - [Single Attachments](#single-attachments)
     - [Storage Targets](#storage-targets)
     - [Malware Scanner](#malware-scanner)
+      - [Rate Limit Handling (Auto-Retry)](#rate-limit-handling-auto-retry)
+      - [Scan Concurrency Limiting](#scan-concurrency-limiting)
       - [Automatic file rescanning](#automatic-file-rescanning)
+    - [Audit logging](#audit-logging)
     - [Visibility Control for Attachments UI Facet Generation](#visibility-control-for-attachments-ui-facet-generation)
       - [Example Usage](#example-usage)
+    - [Copying Attachments](#copying-attachments)
+      - [Examples](#examples)
+    - [Querying Attachments Programmatically](#querying-attachments-programmatically)
     - [Non-Draft Upload](#non-draft-upload)
     - [Specify the maximum file size](#specify-the-maximum-file-size)
     - [Restrict allowed MIME types](#restrict-allowed-mime-types)
     - [Minimum and Maximum Number of Attachments](#minimum-and-maximum-number-of-attachments)
       - [Limit to a Maximum of 2 Attachments](#limit-to-a-maximum-of-2-attachments)
       - [Require a Minimum of 2 Attachments](#require-a-minimum-of-2-attachments)
+    - [Allow Overwriting Attachment Content](#allow-overwriting-attachment-content)
+    - [Deduplicate File Names](#deduplicate-file-names)
   - [Releases](#releases)
   - [Minimum UI5 and CAP NodeJS Version](#minimum-ui5-and-cap-nodejs-version)
   - [Architecture Overview](#architecture-overview)
@@ -47,46 +56,48 @@ The `@cap-js/attachments` package is a [CDS plugin](https://cap.cloud.sap/docs/n
 
 For a quick local development setup with in-memory storage:
 
-- The plugin is self-configuring as described, see the following details section. To enable attachments, simply add the plugin package to your project:  
+- The plugin is self-configuring as described, see the following details section. To enable attachments, simply add the plugin package to your project:
+
   ```sh
   npm add @cap-js/attachments
   ```
 
   <details>
-    The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application: 
+    The attachments plugin needs to be referenced in the package.json of the consuming CAP NodeJS application:
 
-    ```cds
-    "dependencies": { 
-      "@cap-js/attachments": "<latest-version>", 
+  ```cds
+  "dependencies": {
+    "@cap-js/attachments": "<latest-version>",
+    // (...)
+  }
+  ```
+
+  In addition, different profiles can be found in `package.json` as well, such as:
+
+  ```json
+  "cds": {
+    "requires": {
       // (...)
+      "[hybrid]": {
+        "attachments": {
+          "kind": "standard"
+          // (...)
+        }
+      }
     }
-    ```
+  }
+  ```
 
-    In addition, different profiles can be found in `package.json` as well, such as: 
-
-    ```json
-    "cds": {  
-      "requires": {  
-        // (...)
-        "[hybrid]": {  
-          "attachments": {  
-            "kind": "standard"  
-            // (...)
-          }  
-        }  
-      }  
-    }  
-    ```
   </details>
 
-- To use Attachments, extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](#changes-in-the-cds-models) for more details): 
+- To use Attachments, extend a CDS model by adding an element that refers to the pre-defined Attachments type (see [Changes in the CDS Models](#changes-in-the-cds-models) for more details):
 
   ```cds
   using { Attachments } from '@cap-js/attachments';
 
-  entity Incidents {  
+  entity Incidents {
       // (...)
-      attachments: Composition of many Attachments;  
+      attachments: Composition of many Attachments;
   }
   ```
 
@@ -96,54 +107,54 @@ For productive use, a valid object store binding is required, see [Object Stores
 
 ### Local Walk-Through
 
-With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps. 
+With the steps above, we have successfully set up asset handling for our reference application. To test the application locally, use the following steps.
 
 > [!NOTE]
 > For local testing, the attachment objects are stored in a [local database](https://cap.cloud.sap/docs/guides/databases-sqlite).
 
 1. **Start the server**:
 
-- *Default* scenario (In memory database):
+- _Default_ scenario (In memory database):
   ```sh
   cds watch
   ```
 
 2. **Navigate to the object page** of the incident `Solar panel broken`:
-Go to object page for incident **Solar panel broken**
+   Go to object page for incident **Solar panel broken**
 
 3. The `Attachments` type has generated an out-of-the-box Attachments table (see 1) at the bottom of the Object page:
-  <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
+   <img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/facet.png">
 
-4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored that file in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_tests/integration/content/sample.pdf_](./tests/integration/content/sample.pdf):
-  <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
+4. **Upload a file** by going into Edit mode and either using the **Upload** button on the Attachments table or by drag/drop. Then click the **Save** button to have that file stored in the dedicated resource (database, S3 bucket, etc.). We demonstrate this by uploading the PDF file from [_tests/integration/content/sample.pdf_](./tests/integration/content/sample.pdf):
+   <img width="1300" alt="Upload an attachment" style="border-radius:0.5rem;" src="etc/upload.gif">
 
 5. **Delete a file** by going into Edit mode, selecting the file, and pressing the **Delete** button above the Attachments table. Clicking the **Save** button will then delete that file from the resource (database, S3 bucket, etc.).
-  <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
+   <img width="1300" alt="Delete an attachment" style="border-radius:0.5rem;" src="etc/delete.gif">
 
 ### Changes in the CDS Models
 
-To use the aspect `Attachments` on an existing entity, the corresponding entity needs to either include attachments as an element in the model definition or be extended in a CDS file in the `srv` module. In the quick start, the former was done, adding an element to the model definition: 
+To use the aspect `Attachments` on an existing entity, the corresponding entity needs to either include attachments as an element in the model definition or be extended in a CDS file in the `srv` module. In the quick start, the former was done, adding an element to the model definition:
 
 ```cds
-using { Attachments } from '@cap-js/attachments';  
+using { Attachments } from '@cap-js/attachments';
 
-entity Incidents {  
-  // ...  
-  attachments: Composition of many Attachments;  
-} 
+entity Incidents {
+  // ...
+  attachments: Composition of many Attachments;
+}
 ```
- 
+
 The entity Incidents can also be extended in the `srv` module, as seen in the following example:
 
 ```cds
-using { Attachments } from '@cap-js/attachments'; 
+using { Attachments } from '@cap-js/attachments';
 
-extend my.Incidents with { 
-  attachments: Composition of many Attachments; 
-} 
-  
-service ProcessorService { 
-  entity Incidents as projection on my.Incidents 
+extend my.Incidents with {
+  attachments: Composition of many Attachments;
+}
+
+service ProcessorService {
+  entity Incidents as projection on my.Incidents
 }
 ```
 
@@ -153,25 +164,41 @@ Both methods directly add the respective UI Facet. To use the plugin with an SAP
 annotate service.Incidents with @odata.draft.enabled;
 ```
 
+If you are not using SAP Fiori elements, draft enablement is not required. For more information, see [non-draft upload](#non-draft-upload) for an alternative upload flow.
+
+### Single Attachments
+
+It is also possible to allow for only 1 attachment by defining the attachments field as a single attachment. This displays a different UI that more clearly shows the single attachment rather than in a list.
+
+```cds
+using { Attachment } from '@cap-js/attachments';
+entity Incidents {
+  ...
+  attachment: Attachment;
+}
+```
+
+<img width="1300" alt="Attachments Table" style="border-radius:0.5rem;" src="etc/comparison.png">
+
 ### Storage Targets
 
 When testing locally, the plugin operates without a dedicated storage target, storing attachments directly in the underlying database. In a hybrid setup, a dedicated storage target is preferred. You can bind it by using the `cds bind` command as described in the [CAP documentation for hybrid testing](https://cap.cloud.sap/docs/advanced/hybrid-testing#services-on-cloud-foundry).
 
-Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model. 
+Meanwhile, with a dedicated storage target the attachment is not stored in the underlying database; instead, it is saved on the specified storage target and only a reference to the file including metadata is kept in the database, as defined in the CDS model.
 
 For using an Object Store in BTP, you must already have an SAP Object Store service instance on the appropriate landscape created. To bind it in a hybrid setup, follow this setup:
 
 1. Log in to Cloud Foundry:
 
-  ```sh
-  cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
-  ```
+```sh
+cf login -a <CF-API> -o <ORG-NAME> -s <SPACE-NAME> --sso
+```
 
-2.  To bind to the service, generate a new file _.cdsrc-private.json in the project directory by running:
+2.  To bind to the service, generate a new file \_.cdsrc-private.json in the project directory by running:
 
-  ```sh
-  cds bind <HybridObjectStoreName> --to <RemoteObjectStoreName>
-  ```
+```sh
+cds bind <HybridObjectStoreName> --to <RemoteObjectStoreName>
+```
 
 Where `HybridObjectStoreName` can be any name given by the user here and `RemoteObjectStoreName` is the name of your object store instance in SAP BTP.
 
@@ -196,30 +223,85 @@ cds bind <HybridMalwareScannerName> --to <RemoteMalwareScannerName>
 By default, malware scanning is enabled for all profiles if a storage provider has been specified. You can configure malware scanning by setting:
 
 ```json
-{  
-  "cds": {  
-     // (...)  
-     "attachments": {  
-       "scan": true  
-     }  
-  }  
-} 
+{
+  "cds": {
+    // (...)
+    "attachments": {
+      "scan": true
+    }
+  }
+}
 ```
 
-If there is no malware scanner available and the scanner is not disabled, then the upload will fail. 
+If there is no malware scanner available and the scanner is not disabled, then the upload will fail.
 
-Scan status codes: 
-- `Unscanned`: Attachment is still unscanned. 
-- `Scanning`: Immediately after upload, the attachment is marked as Scanning. Depending on processing speed, it may already appear as Clean when the page is reloaded. 
-- `Clean`: Only attachments with the status Clean are accessible. 
-- `Infected`: The attachment is infected. 
-- `Failed`: Scanning failed. 
+Scan status codes:
+
+- `Unscanned`: Attachment is still unscanned.
+- `Scanning`: Immediately after upload, the attachment is marked as Scanning. Depending on processing speed, it may already appear as Clean when the page is reloaded.
+- `Clean`: Only attachments with the status Clean are accessible.
+- `Infected`: The attachment is infected.
+- `Failed`: Scanning failed.
 
 > [!Note]
 > The malware scanner supports mTLS authentication which requires an annual renewal of the certificate. Previously, basic authentication was used which has now been deprecated.
 
 > [!Note]
 > If the malware scanner reports a file size larger than the limit specified via [@Validation.Maximum](#specify-the-maximum-file-size) it removes the file and sets the status of the attachment metadata to failed.
+
+#### Rate Limit Handling (Auto-Retry)
+
+The SAP Malware Scanning Service enforces a rate limit of 30 concurrent requests per subaccount. When this limit is exceeded, the service responds with HTTP `429 Too Many Requests`. By default, the plugin automatically retries scan requests that receive a 429 response using exponential backoff with jitter.
+
+You can configure the retry behavior in `package.json` or `.cdsrc.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "retry": {
+          "maxAttempts": 5,
+          "initialDelay": 1000,
+          "maxDelay": 30000
+        }
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                            |
+| -------------------- | ------- | ------------------------------------------------------ |
+| `retry.maxAttempts`  | `5`     | Total number of attempts including the initial request |
+| `retry.initialDelay` | `1000`  | Base delay in milliseconds before the first retry      |
+| `retry.maxDelay`     | `30000` | Maximum delay in milliseconds between retries          |
+
+When a 429 response includes a `Retry-After` header, the plugin respects that value (capped at `maxDelay`). Only 429 responses trigger retries — other errors fail immediately.
+
+To disable retry and restore the previous behavior (immediate failure on 429), set `retry` to `false`.
+
+#### Scan Concurrency Limiting
+
+To reduce pressure on the shared rate limit, the plugin limits how many scan requests run concurrently within a single process. Excess scans are queued and processed as slots become available.
+
+```json
+{
+  "cds": {
+    "requires": {
+      "malwareScanner": {
+        "maxConcurrentScans": 10
+      }
+    }
+  }
+}
+```
+
+| Option               | Default | Description                                                                                            |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `maxConcurrentScans` | `30`    | Maximum number of concurrent scan requests per process. Set to `0` to disable (unbounded parallelism). |
+
+A scan that is retrying due to a 429 response holds its concurrency slot during the backoff wait, preventing retry storms from competing with new scans.
 
 #### Automatic file rescanning
 
@@ -238,6 +320,23 @@ According to the recommendation of the [Malware Scanning Service](http://help.sa
 ```
 
 By default, `scanExpiryMs` is set to `259200000` milliseconds (3 days). Downloading an attachment is not permitted unless its status is `Clean`.
+
+### Audit logging
+
+The attachment service emits the following three events:
+
+- AttachmentDownloadRejected,
+- AttachmentSizeExceeded,
+- AttachmentUploadRejected
+
+When `@cap-js/audit-logging` is a dependency of your app, the three events will be automatically logged as security events in the audit log service.
+
+You can register custom handlers for the three events by writing:
+
+```js
+const attachments = await cds.connect.to("attachments")
+attachments.on("AttachmentDownloadRejected", (msg) => {})
+```
 
 ### Visibility Control for Attachments UI Facet Generation
 
@@ -269,13 +368,106 @@ entity Incidents {
 }
 ```
 
+### Copying Attachments
+
+The `AttachmentsService` exposes a programmatic `copy()` method that copies an attachment to a new record. On cloud storage backends (AWS S3, Azure Blob Storage, GCP Cloud Storage) this uses a backend-native server-side copy — no binary data is transferred through your application. On database storage it reads and inserts the content directly.
+
+**Signature:**
+
+```js
+const AttachmentsSrv = await cds.connect.to("attachments")
+await AttachmentsSrv.copy(
+  sourceAttachmentsEntity,
+  sourceKeys,
+  targetAttachmentsEntity,
+  (targetKeys = {}),
+)
+```
+
+| Parameter                 | Description                                                                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceAttachmentsEntity` | CDS entity definition of the source attachment composition.                                                                                                             |
+| `sourceKeys`              | Keys of the attachment (e.g. `{ ID: '...' }`)                                                                                                                           |
+| `targetAttachmentsEntity` | CDS entity definition of the target attachment composition.                                                                                                             |
+| `targetKeys`              | Parent FK fields for the new record (e.g. `{ up__ID: '...' }`). When `targetAttachmentsEntity` is a draft table, must also include `DraftAdministrativeData_DraftUUID`. |
+
+The scan `status`, `lastScan`, and `hash` are inherited from the source — no re-scan is triggered since the binary content is identical. Copying an attachment when the status is not `Clean` is rejected with a `400` error.
+
+> [!NOTE]
+> Only copies within the same tenant are supported. Cross-tenant copies are not possible.
+
+#### Examples
+
+<details>
+
+<summary>copy between two active records:</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments,
+  { up__ID: targetIncidentID },
+)
+```
+
+</details>
+
+<details>
+
+<summary>copy into a new draft record (e.g. creating an incident from a template)</summary>
+
+```js
+const { Incidents } = ProcessorService.entities
+
+// Look up the draft session UUID for the target incident's open draft
+const targetDraft = await SELECT.one
+  .from(Incidents.drafts, { ID: targetIncidentID })
+  .columns("DraftAdministrativeData_DraftUUID")
+
+await AttachmentsSrv.copy(
+  Incidents.attachments,
+  { ID: sourceAttachmentID },
+  Incidents.attachments.drafts,
+  {
+    up__ID: targetIncidentID,
+    DraftAdministrativeData_DraftUUID:
+      targetDraft.DraftAdministrativeData_DraftUUID,
+  },
+)
+```
+
+</details>
+
+### Querying Attachments Programmatically
+
+Because `Attachments` is a standard CDS composition, the resulting attachment entity can be queried directly using [cds.ql](https://cap.cloud.sap/docs/node.js/cds-ql) in the same way as querying any other entity in a CAP service.
+
+The entity is accessible by its fully-qualified name `"<Entity>.attachments"` via `service.entities`, for example:
+
+```js
+const Attachments = ProcessorService.entities["Incidents.attachments"]
+```
+
+Attachment metadata (ID, filename, mimeType, status, lastScan, note, createdAt, createdBy) for a given parent record can be fetched using `SELECT.from`. Note that the binary content field is excluded by default, making the operation lightweight:
+
+```js
+const attachmentsMeta = await SELECT.from(Attachments).where({
+  up__ID: incidentID,
+})
+```
+
+The `up__ID` column is the auto-generated foreign key back to the parent record. The suffix after `up__` is the parent entity's key field name (e.g. `ID`).
+
 ### Non-Draft Upload
 
-For scenarios where the entity is not draft-enabled, for example [`tests/non-draft-request.http`](./tests/non-draft-request.http), separate HTTP requests for metadata creation and asset uploading need to be performed manually. 
+For scenarios where the entity is not draft-enabled, for example [`tests/non-draft-request.http`](./tests/non-draft-request.http), separate HTTP requests for metadata creation and asset uploading need to be performed manually.
 
 The typical sequence includes:
 
-1. **POST** -> create attachment metadata, returns ID  
+1. **POST** -> create attachment metadata, returns ID
 2. **PUT** -> upload file content using the ID
 
 ### Specify the maximum file size
@@ -328,6 +520,30 @@ annotate Incidents.attachments with {
 
 When a file with a disallowed MIME type is uploaded, the request will be rejected with a `400` error.
 
+### Inline browser preview
+
+By default, attachments are served with `Content-Disposition: attachment`, which forces a file download and prevents the browser from rendering the content inline. This is the secure default to protect against stored files from XSS attacks that would execute in the application's origin when opened.
+
+To enable inline browser preview (i.e. PDFs and images opening directly in the browser tab instead of downloading), set the `inline` flag in your CDS config:
+
+```json
+"cds": {
+  "requires": {
+    "attachments": {
+      "inline": true
+    }
+  }
+}
+```
+
+> **Security note:** When enabling inline preview, you should restrict the allowed MIME types to a safe allowlist using `@Core.AcceptableMediaTypes` to prevent script-capable file types from being uploaded. Types such as `image/svg+xml`, `text/html`, and `application/xhtml+xml` can execute embedded JavaScript when rendered inline by a browser and should be excluded:
+>
+> ```cds
+> annotate Incidents.attachments with {
+>   content @Core.AcceptableMediaTypes : ['image/jpeg', 'image/png', 'application/pdf'];
+> }
+> ```
+
 ### Minimum and Maximum Number of Attachments
 
 You can control the number of attachments allowed for an entity by using the `@Validation.MaxItems` and `@Validation.MinItems` annotations. These annotations define the maximum and minimum number of files that can be associated with an entity.
@@ -352,6 +568,48 @@ entity Incidents {
 }
 ```
 
+### Allow Overwriting Attachment Content
+
+By default, the `Attachments` aspect annotates the entity with `@Capabilities.UpdateRestrictions.NonUpdatableProperties: [content]`, which prevents overwriting the content of an existing attachment. Any attempt to upload new content to an attachment that already has content will be rejected with a `409 Conflict` error.
+
+To allow overwriting attachment content, override the annotation with an empty array on the specific attachment composition:
+
+```cds
+using { Attachments } from '@cap-js/attachments';
+
+entity Incidents {
+  ...
+  attachments: Composition of many Attachments;
+}
+
+// Allow content to be overwritten
+annotate Incidents.attachments with
+  @Capabilities.UpdateRestrictions.NonUpdatableProperties: [] {};
+```
+
+With this annotation in place, uploading new content via `PUT` to an attachment that already has content will overwrite the existing content instead of returning a `409` error.
+
+> [!NOTE]
+> This annotation is evaluated at runtime by all storage backends. When content overwrite is allowed, uploading to an existing attachment replaces the stored file.
+
+### Deduplicate File Names
+
+When multiple attachments with the same file name are uploaded to the same parent entity, the plugin can automatically rename duplicates by appending a numerical suffix (e.g. `report.pdf`, `report-1.pdf`, `report-2.pdf`). This applies to both single uploads and deep inserts.
+
+The behavior is enabled by default. To disable it, set `deduplicateFileNames` to `false` in the attachments configuration:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "attachments": {
+        "deduplicateFileNames": false
+      }
+    }
+  }
+}
+```
+
 ## Releases
 
 - The plugin is released to [NPM Registry](https://www.npmjs.com/package/@cap-js/attachments).
@@ -365,20 +623,21 @@ entity Incidents {
 | UI5       | 1.136.0         |
 
 ## Architecture Overview
+
 ### Multitenancy
 
 The plugin supports multi-tenancy scenarios, allowing both shared and tenant-specific object store instances.
 
 > [!Note]
-> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multi-tenancy.  
+> Starting from version 2.1.0, **separate mode** for object store instances is the default setting for multi-tenancy.
 
 For multi-tenant applications, `@cap-js/attachments` must be included in the dependencies of both the application-level and _mtx/sidecar/package.json_ files.
 
 #### Separate object store instances
 
-By default the plugin creates for each tenant its own object store instance during the tenants subscription.
+By default, the plugin creates its own object store instance for each tenant during the tenant's subscription.
 
-When the tenant unsubscribes the object store instance is deleted.
+When the tenant unsubscribes, the object store instance is deleted.
 
 > [!WARNING]
 > When you remove the plugin from an application after separate object stores already have been created, the object stores are not automatically removed!
@@ -398,6 +657,7 @@ To configure a shared object store instance, modify both the package.json files 
   }
 }
 ```
+
 To ensure tenant identification when using a shared object store instance, the plugin prefixes attachment URLs with the tenant ID. Be sure the shared object store instance is bound to the `mtx` application module before deployment.
 
 ### Object Stores
@@ -441,10 +701,11 @@ resources:
       service-plan: standard
 ```
 
-
 ### Tests
 
 The unit tests in this module do not need a binding to the respective object stores, run them with `npm install`. To achieve a clean install, the command `rm -rf node_modules` should be used before installation.
+
+For testing locally with a Postgres database, create a Podman (or Docker) container and run the command `podman compose -f tests/pg.yml up -d`. This should be run every time the container is stopped. On the initial setup, the database must be deployed with `npm run deploy:postgres`. From then on, running the tests with Postgres is simply `npm run test:postgres`. For more information on Postgres setup, see the official [Capire documentation](https://cap.cloud.sap/docs/guides/databases/postgres).
 
 The integration tests need a binding to a real object store. Run them with `npm run test`.
 To set the binding, please see the section [Storage Targets](#storage-targets).
@@ -452,9 +713,9 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 ### Supported Storage Provider
 
 - **Standard** (`kind: "standard"`) | Depending on the bound object store credentials, uses AWS S3, Azure Blob Storage or GCP Cloud Storage. You can manually specify the implementation by adjusting the type to:
-    - **AWS S3** (`kind: "s3"`)
-    - **Azure Blob Storage** (`kind: "azure"`)
-    - **GCP Cloud Storage** (`kind: "gcp"`)
+  - **AWS S3** (`kind: "s3"`)
+  - **Azure Blob Storage** (`kind: "azure"`)
+  - **GCP Cloud Storage** (`kind: "gcp"`)
 
 ### Model Texts
 
@@ -469,13 +730,12 @@ The following table gives an overview of the fields and the i18n codes:
 | `status`   | `ScanStatus` |
 | `note`     | `note`       |
 
-In addition to the field names, header information (`@UI.HeaderInfo`) are also annotated:
+In addition to the field names, header information (`@UI.HeaderInfo`) is also annotated:
 
 | Header Info      | i18n Code     |
 | ---------------- | ------------- |
 | `TypeName`       | `Attachment`  |
 | `TypeNamePlural` | `Attachments` |
-
 
 ## Monitoring & Logging
 
@@ -495,7 +755,7 @@ To configure logging for the attachments plugin, add the following configuration
 ...
 ```
 
-## Support, Feedback, and Contributing 
+## Support, Feedback, and Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/attachments/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, the **local development setup**, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
 

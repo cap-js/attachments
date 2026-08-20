@@ -4,3 +4,178 @@ en;Scanning;Scanning;The file is currently being scanned for malware.
 en;Infected;Infected;The file contains malware! Do not download!
 en;Clean;Clean;The file does not contain any malware.
 en;Failed;Failed;The file could not be scanned for malware.
+de;Unscanned;Nicht gescannt;The file is not yet scanned for malware.
+de;Scanning;Wird gescannt...;The file is currently being scanned for malware.
+de;Infected;Mit Malware infiziert;The file contains malware! Do not download!
+de;Clean;Nicht infiziert;The file does not contain any malware.
+de;Failed;Fehlgeschlagen;The file could not be scanned for malware.
+ar;Unscanned;غير ممسوح ضوئيًا;The file is not yet scanned for malware.
+ar;Scanning;مسح ضوئي;The file is currently being scanned for malware.
+ar;Infected;مصاب;The file contains malware! Do not download!
+ar;Clean;تنظيف;The file does not contain any malware.
+ar;Failed;فشل;The file could not be scanned for malware.
+bg;Unscanned;Несканирано;The file is not yet scanned for malware.
+bg;Scanning;Сканиране;The file is currently being scanned for malware.
+bg;Infected;Заразено;The file contains malware! Do not download!
+bg;Clean;Изчистване;The file does not contain any malware.
+bg;Failed;Неуспешно;The file could not be scanned for malware.
+cs;Unscanned;Neskenováno;The file is not yet scanned for malware.
+cs;Scanning;Skenování;The file is currently being scanned for malware.
+cs;Infected;Infikováno;The file contains malware! Do not download!
+cs;Clean;Čisté;The file does not contain any malware.
+cs;Failed;Neúspěšné;The file could not be scanned for malware.
+da;Unscanned;Ikke scannet;The file is not yet scanned for malware.
+da;Scanning;Scanner;The file is currently being scanned for malware.
+da;Infected;Inficeret;The file contains malware! Do not download!
+da;Clean;Ikke inficeret;The file does not contain any malware.
+da;Failed;Mislykkedes;The file could not be scanned for malware.
+el;Unscanned;Μη σαρωμένο;The file is not yet scanned for malware.
+el;Scanning;Σάρωση;The file is currently being scanned for malware.
+el;Infected;Μολυσμένο;The file contains malware! Do not download!
+el;Clean;Καθαρό;The file does not contain any malware.
+el;Failed;Απέτυχε;The file could not be scanned for malware.
+1Q;Unscanned;MIFCEl1UcB6mtMYPEpGkFg_Unscanned;The file is not yet scanned for malware.
+1Q;Scanning;1JZcapjaptnO90nRzLOKfA_Scanning;The file is currently being scanned for malware.
+1Q;Infected;k7Lkk1J5vjNZFP3Jk+UGoQ_Infected;The file contains malware! Do not download!
+1Q;Clean;tigQFpJIv6FMSWJ7xAiyzg_Clean;The file does not contain any malware.
+1Q;Failed;DZf6BDpFERRKSceDMjcKGQ_Failed;The file could not be scanned for malware.
+es;Unscanned;No escaneado;The file is not yet scanned for malware.
+es;Scanning;Escaneando;The file is currently being scanned for malware.
+es;Infected;Infectado;The file contains malware! Do not download!
+es;Clean;Limpio;The file does not contain any malware.
+es;Failed;Erróneo;The file could not be scanned for malware.
+es_MX;Unscanned;No escaneado;The file is not yet scanned for malware.
+es_MX;Scanning;Escaneando;The file is currently being scanned for malware.
+es_MX;Infected;Infectado;The file contains malware! Do not download!
+es_MX;Clean;Limpio;The file does not contain any malware.
+es_MX;Failed;Erróneo;The file could not be scanned for malware.
+fi;Unscanned;Skannaamaton;The file is not yet scanned for malware.
+fi;Scanning;Skannataan;The file is currently being scanned for malware.
+fi;Infected;Tartunnan saanut;The file contains malware! Do not download!
+fi;Clean;Puhdistettu;The file does not contain any malware.
+fi;Failed;Epäonnistui;The file could not be scanned for malware.
+fr;Unscanned;Non analysé;The file is not yet scanned for malware.
+fr;Scanning;Analyse en cours;The file is currently being scanned for malware.
+fr;Infected;Infecté;The file contains malware! Do not download!
+fr;Clean;Non infecté;The file does not contain any malware.
+fr;Failed;Échec;The file could not be scanned for malware.
+he;Unscanned;לא סרוק;The file is not yet scanned for malware.
+he;Scanning;סריקה;The file is currently being scanned for malware.
+he;Infected;מזוהם;The file contains malware! Do not download!
+he;Clean;נקי;The file does not contain any malware.
+he;Failed;נכשל;The file could not be scanned for malware.
+hr;Unscanned;Neskenirano;The file is not yet scanned for malware.
+hr;Scanning;Skeniranje;The file is currently being scanned for malware.
+hr;Infected;Zaražena;The file contains malware! Do not download!
+hr;Clean;Čista;The file does not contain any malware.
+hr;Failed;Nije uspjelo;The file could not be scanned for malware.
+hu;Unscanned;Nincs beolvasva;The file is not yet scanned for malware.
+hu;Scanning;Beolvasás;The file is currently being scanned for malware.
+hu;Infected;Fertőzött;The file contains malware! Do not download!
+hu;Clean;Tisztítás;The file does not contain any malware.
+hu;Failed;Nem sikerült;The file could not be scanned for malware.
+it;Unscanned;Non digitalizzato;The file is not yet scanned for malware.
+it;Scanning;Scansione in corso;The file is currently being scanned for malware.
+it;Infected;Infettato;The file contains malware! Do not download!
+it;Clean;Pulito;The file does not contain any malware.
+it;Failed;Non riuscito;The file could not be scanned for malware.
+ja;Unscanned;未スキャン;The file is not yet scanned for malware.
+ja;Scanning;スキャン中;The file is currently being scanned for malware.
+ja;Infected;感染あり;The file contains malware! Do not download!
+ja;Clean;感染なし;The file does not contain any malware.
+ja;Failed;失敗;The file could not be scanned for malware.
+kk;Unscanned;Сканерленбеген;The file is not yet scanned for malware.
+kk;Scanning;Сканерлеуде;The file is currently being scanned for malware.
+kk;Infected;Бұзылған;The file contains malware! Do not download!
+kk;Clean;Таза;The file does not contain any malware.
+kk;Failed;Сәтсіз;The file could not be scanned for malware.
+ko;Unscanned;스캔되지 않음;The file is not yet scanned for malware.
+ko;Scanning;스캔 중;The file is currently being scanned for malware.
+ko;Infected;감염됨;The file contains malware! Do not download!
+ko;Clean;정상;The file does not contain any malware.
+ko;Failed;실패;The file could not be scanned for malware.
+ms;Unscanned;Tidak Diimbas;The file is not yet scanned for malware.
+ms;Scanning;Mengimbas;The file is currently being scanned for malware.
+ms;Infected;Dijangkiti;The file contains malware! Do not download!
+ms;Clean;Bersih;The file does not contain any malware.
+ms;Failed;Gagal;The file could not be scanned for malware.
+nl;Unscanned;Niet gescand;The file is not yet scanned for malware.
+nl;Scanning;Bezig met scannen;The file is currently being scanned for malware.
+nl;Infected;Geïnfecteerd;The file contains malware! Do not download!
+nl;Clean;Schoon;The file does not contain any malware.
+nl;Failed;Mislukt;The file could not be scanned for malware.
+no;Unscanned;Ikke skannet;The file is not yet scanned for malware.
+no;Scanning;Skannes;The file is currently being scanned for malware.
+no;Infected;Infisert;The file contains malware! Do not download!
+no;Clean;Ikke infisert;The file does not contain any malware.
+no;Failed;Mislyktes;The file could not be scanned for malware.
+pl;Unscanned;Nie zeskanowano;The file is not yet scanned for malware.
+pl;Scanning;Skanowanie;The file is currently being scanned for malware.
+pl;Infected;Zainfekowane;The file contains malware! Do not download!
+pl;Clean;Czyste;The file does not contain any malware.
+pl;Failed;Niepowodzenie;The file could not be scanned for malware.
+pt;Unscanned;Não verificado;The file is not yet scanned for malware.
+pt;Scanning;Verificando;The file is currently being scanned for malware.
+pt;Infected;Infectado;The file contains malware! Do not download!
+pt;Clean;Limpo;The file does not contain any malware.
+pt;Failed;Com falha;The file could not be scanned for malware.
+ro;Unscanned;Nescanat;The file is not yet scanned for malware.
+ro;Scanning;Se scanează;The file is currently being scanned for malware.
+ro;Infected;Infectat;The file contains malware! Do not download!
+ro;Clean;Curat;The file does not contain any malware.
+ro;Failed;Nereușit;The file could not be scanned for malware.
+ru;Unscanned;Не проверено;The file is not yet scanned for malware.
+ru;Scanning;Проверка;The file is currently being scanned for malware.
+ru;Infected;Заражено;The file contains malware! Do not download!
+ru;Clean;Чисто;The file does not contain any malware.
+ru;Failed;Неудачно;The file could not be scanned for malware.
+sh;Unscanned;Nije skenirano;The file is not yet scanned for malware.
+sh;Scanning;Skeniranje;The file is currently being scanned for malware.
+sh;Infected;Zaraženo;The file contains malware! Do not download!
+sh;Clean;Čisto;The file does not contain any malware.
+sh;Failed;Nije uspelo;The file could not be scanned for malware.
+sk;Unscanned;Nenaskenované;The file is not yet scanned for malware.
+sk;Scanning;Skenovanie;The file is currently being scanned for malware.
+sk;Infected;Infikované;The file contains malware! Do not download!
+sk;Clean;Očistiť;The file does not contain any malware.
+sk;Failed;Neúspešné;The file could not be scanned for malware.
+sl;Unscanned;Ni optično prebrano;The file is not yet scanned for malware.
+sl;Scanning;Optično branje;The file is currently being scanned for malware.
+sl;Infected;Okuženo;The file contains malware! Do not download!
+sl;Clean;Čisto;The file does not contain any malware.
+sl;Failed;Neuspešno;The file could not be scanned for malware.
+sv;Unscanned;Ej skannad;The file is not yet scanned for malware.
+sv;Scanning;Skannar;The file is currently being scanned for malware.
+sv;Infected;Infekterad;The file contains malware! Do not download!
+sv;Clean;Ren;The file does not contain any malware.
+sv;Failed;Misslyckades;The file could not be scanned for malware.
+th;Unscanned;ยังไม่ได้สแกน;The file is not yet scanned for malware.
+th;Scanning;กำลังสแกน;The file is currently being scanned for malware.
+th;Infected;ติดมัลแวร์;The file contains malware! Do not download!
+th;Clean;ไม่มีมัลแวร์;The file does not contain any malware.
+th;Failed;ล้มเหลว;The file could not be scanned for malware.
+tr;Unscanned;Taranmamış;The file is not yet scanned for malware.
+tr;Scanning;Taranıyor;The file is currently being scanned for malware.
+tr;Infected;Enfekte;The file contains malware! Do not download!
+tr;Clean;Temiz;The file does not contain any malware.
+tr;Failed;Başarısız;The file could not be scanned for malware.
+uk;Unscanned;Не проскановано;The file is not yet scanned for malware.
+uk;Scanning;Сканування;The file is currently being scanned for malware.
+uk;Infected;Інфіковано;The file contains malware! Do not download!
+uk;Clean;Очистити;The file does not contain any malware.
+uk;Failed;Помилка;The file could not be scanned for malware.
+vi;Unscanned;Chưa quét được;The file is not yet scanned for malware.
+vi;Scanning;Đang quét;The file is currently being scanned for malware.
+vi;Infected;Bị nhiễm virus;The file contains malware! Do not download!
+vi;Clean;Dọn dẹp;The file does not contain any malware.
+vi;Failed;Không thành công;The file could not be scanned for malware.
+zh_CN;Unscanned;未扫描;The file is not yet scanned for malware.
+zh_CN;Scanning;扫描中;The file is currently being scanned for malware.
+zh_CN;Infected;被感染;The file contains malware! Do not download!
+zh_CN;Clean;无感染;The file does not contain any malware.
+zh_CN;Failed;失败;The file could not be scanned for malware.
+zh_TW;Unscanned;未掃描;The file is not yet scanned for malware.
+zh_TW;Scanning;正在掃描;The file is currently being scanned for malware.
+zh_TW;Infected;已感染;The file contains malware! Do not download!
+zh_TW;Clean;清除;The file does not contain any malware.
+zh_TW;Failed;失敗;The file could not be scanned for malware.
