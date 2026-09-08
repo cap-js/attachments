@@ -476,6 +476,7 @@ describe("Rescan triggered for Unscanned attachment", () => {
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
       status: "Unscanned",
       lastScan: null,
+      url: "https://example.com/file.pdf",
     })
 
     const attachmentId = cds.utils.uuid()
@@ -509,6 +510,7 @@ describe("Rescan triggered for Unscanned attachment", () => {
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
       status: "Unscanned",
       lastScan: null,
+      url: "https://example.com/file.pdf",
     })
 
     const attachmentId = cds.utils.uuid()
@@ -536,6 +538,7 @@ describe("Rescan triggered for Unscanned attachment", () => {
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
       status: "Unscanned",
       lastScan: null,
+      url: "https://example.com/file.pdf",
     })
 
     const attachmentId = cds.utils.uuid()
@@ -576,6 +579,7 @@ describe("Rescan triggered for Unscanned attachment", () => {
     attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
       status: "Unscanned",
       lastScan: null,
+      url: "https://example.com/file.pdf",
     })
 
     let spawnedFn
@@ -609,5 +613,60 @@ describe("Rescan triggered for Unscanned attachment", () => {
       target: target.name,
       keys: { ID: attachmentId },
     })
+  })
+})
+
+describe("Download rejected when no file has been uploaded", () => {
+  it("should return 404 when attachment record exists but no file was uploaded", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+      url: null,
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: true }
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    expect(req.reject).toHaveBeenCalledWith(404)
+    expect(cds.connect.to).not.toHaveBeenCalledWith("malwareScanner")
+  })
+
+  it("should return 404 when no file was uploaded even when scan is disabled", async () => {
+    const target = cds.model.definitions["AdminService.Incidents.attachments"]
+
+    attachmentsSvc.getStatus = jest.fn().mockResolvedValue({
+      status: "Unscanned",
+      lastScan: null,
+      url: null,
+    })
+
+    const attachmentId = cds.utils.uuid()
+    const req = {
+      target,
+      data: { ID: attachmentId },
+      req: { url: "/some/path/content" },
+      query: { SELECT: { columns: [] } },
+      params: [{ ID: attachmentId }],
+      reject: jest.fn(),
+    }
+
+    cds.env.requires.attachments = { scan: false }
+
+    await require("../../lib/generic-handlers").validateAttachment(req)
+
+    expect(req.reject).toHaveBeenCalledWith(404)
   })
 })
