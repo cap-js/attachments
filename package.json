@@ -33,7 +33,7 @@
     "@cap-js/sqlite": ">=2"
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
+    "@sap/cds": ">=8 <10"
   },
   "cds": {
     "requires": {
