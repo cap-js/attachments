@@ -5,12 +5,12 @@ const {
   newIncident,
   runWithUser,
   uploadDraftAttachment,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, DELETE, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const alice = new cds.User({ id: "alice", roles: { admin: 1, support: 1 } })
 const { readFileSync } = cds.utils.fs
 const { join, basename } = cds.utils.path
@@ -50,8 +50,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -62,8 +60,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -74,8 +70,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -134,8 +128,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -187,8 +179,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: initialFilename,
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -199,8 +189,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: initialFilename,
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -211,8 +199,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: initialFilename,
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -401,8 +387,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -411,8 +395,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -442,8 +424,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -452,8 +432,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -462,8 +440,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -472,8 +448,6 @@ describe("Tests for renaming duplicate attachments", () => {
         up__ID: incidentID,
         filename: basename(filepath),
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
 
@@ -519,8 +493,6 @@ describe("Tests for renaming duplicate attachments", () => {
           up__ID: incidentID,
           filename: basename(filepath),
           mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
         },
       )
 
@@ -531,8 +503,6 @@ describe("Tests for renaming duplicate attachments", () => {
           up__ID: incidentID,
           filename: basename(filepath),
           mimeType: "application/pdf",
-          createdAt: new Date(),
-          createdBy: "alice",
         },
       )
 

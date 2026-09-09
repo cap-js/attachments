@@ -1,14 +1,11 @@
 const cds = require("@sap/cds")
 const { RequestSend } = require("../utils/api")
-const {
-  waitForScanStatus,
-  newIncident,
-  withUser,
-} = require("../utils/testUtils")
+const { waitForScanStatus, newIncident } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, DELETE, PATCH, PUT } = withUser("alice", cds.test(app))
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const { createReadStream, readFileSync } = cds.utils.fs
 const { join } = cds.utils.path
 
@@ -159,10 +156,6 @@ describe("Tests for acceptable media types", () => {
         filename: "sample.pdf",
         mimeType: "application/pdf",
         content: createReadStream(join(__dirname, "content/sample.pdf")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     ).catch((e) => {
       expectedError = e
@@ -189,11 +182,7 @@ describe("Tests for acceptable media types", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/pdf boundary=something",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
         content: createReadStream(join(__dirname, "content/sample.pdf")),
-        createdBy: "alice",
       },
     ).catch((e) => {
       expectedError = e
@@ -220,11 +209,7 @@ describe("Tests for acceptable media types", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/pdf charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
         content: createReadStream(join(__dirname, "content/sample.pdf")),
-        createdBy: "alice",
       },
     ).catch((e) => {
       expect(e.status).toEqual(400)
@@ -250,10 +235,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -263,10 +244,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     const { status: postStatus } = await POST(
@@ -276,10 +253,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     expect(postStatus).toEqual(201)
@@ -304,10 +277,6 @@ describe("Testing max and min amounts of attachments", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     const { status: deleteStatus } = await DELETE(
@@ -340,10 +309,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -385,26 +350,14 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -446,10 +399,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
             DraftAdministrativeData_DraftUUID: "12345",
           },
         ],
@@ -478,28 +427,16 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
             DraftAdministrativeData_DraftUUID: "12345",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
             DraftAdministrativeData_DraftUUID: "12345",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
             DraftAdministrativeData_DraftUUID: "12345",
           },
         ],
@@ -542,10 +479,6 @@ describe("Testing max and min amounts of attachments", () => {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
             content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
             DraftAdministrativeData_DraftUUID: "12345",
           },
         ],
@@ -558,10 +491,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await POST(
@@ -571,10 +500,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await INSERT.into(
@@ -598,10 +523,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
 
@@ -769,10 +690,6 @@ describe("Testing max and min amounts of attachments", () => {
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
         content: createReadStream(join(__dirname, "content/sample-1.jpg")),
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
 

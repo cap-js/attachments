@@ -1,19 +1,15 @@
 const cds = require("@sap/cds")
-const { test } = cds.test()
 const {
   waitForScanStatus,
   newIncident,
   waitForDeletion,
   delay,
-  withUser,
 } = require("../utils/testUtils")
 const path = require("path")
 
 const app = path.resolve(__dirname, "../incidents-app")
-const { GET, POST, PATCH, DELETE, PUT } = withUser(
-  "alice",
-  require("@cap-js/cds-test")(app),
-)
+const { GET, POST, DELETE, PATCH, PUT, defaults } = cds.test(app)
+defaults.auth = { username: "alice" }
 const { join } = cds.utils.path
 const { createReadStream, readFileSync, statSync } = cds.utils.fs
 
@@ -32,7 +28,7 @@ describe("Tests for uploading/deleting and fetching attachments through API call
       originalDeduplicateFileNames
   })
 
-  let log = test.log()
+  let log = cds.test.log()
   const { createAttachmentMetadata, uploadAttachmentContent } = createHelpers()
 
   // Allow background operations (malware scan status updates) to complete before teardown
@@ -303,8 +299,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -316,8 +310,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -353,8 +345,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -366,8 +356,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -419,8 +407,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResTest.data.url).toBeTruthy()
@@ -464,8 +450,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes.data.url).toBeTruthy()
@@ -557,8 +541,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: firstID,
         filename: "file1.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes1.data.ID).toBeTruthy()
@@ -569,8 +551,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: secondID,
         filename: "file2.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachRes2.data.ID).toBeTruthy()
@@ -604,8 +584,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: testID,
         filename: "parentfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
       { headers: { "Content-Type": "application/json" } },
     )
@@ -617,8 +595,6 @@ describe("Tests for uploading/deleting and fetching attachments through API call
         up__ID: detailsID,
         filename: "childfile.pdf",
         mimeType: "application/pdf",
-        createdAt: new Date(),
-        createdBy: "alice",
       },
     )
     expect(attachResDetails.data.ID).toBeTruthy()
@@ -864,28 +840,16 @@ describe("Testing max and min amounts of attachments", () => {
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
       ],
       hiddenAttachments2: [
         {
           filename: "sample.pdf",
           mimeType: "application/jpeg; charset=UTF-8",
-          createdAt: new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-          ),
-          createdBy: "alice",
         },
       ],
     })
@@ -895,10 +859,6 @@ describe("Testing max and min amounts of attachments", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     ).catch((e) => {
       expect(e.status).toEqual(400)
@@ -922,10 +882,6 @@ describe("Testing max and min amounts of attachments", () => {
         up__ID: incidentID,
         filename: "sample.pdf",
         mimeType: "application/jpeg; charset=UTF-8",
-        createdAt: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-        ),
-        createdBy: "alice",
       },
     )
     await DELETE(
@@ -956,10 +912,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -991,26 +943,14 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -1049,10 +989,6 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -1080,26 +1016,14 @@ describe("Testing max and min amounts of attachments", () => {
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
           {
             filename: "sample.pdf",
             mimeType: "application/jpeg; charset=UTF-8",
-            createdAt: new Date(
-              Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
-            ),
-            createdBy: "alice",
           },
         ],
       },
@@ -1109,7 +1033,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified targeting composition property", async () => {
+  it("Custom error message can be specified targeting composition property", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",
@@ -1131,7 +1055,7 @@ describe("Testing max and min amounts of attachments", () => {
     })
   })
 
-  it("custom error message can be specified for entity", async () => {
+  it("Custom error message can be specified for entity", async () => {
     await POST(`odata/v4/validation-test-non-draft/Incidents`, {
       customer_ID: "1004155",
       title: "ABC",
@@ -1317,9 +1241,10 @@ describe("Tests for inline single attachment in non-draft mode", () => {
 
     const getRes = await GET(
       `/odata/v4/admin/SingleAttachment(ID=${entity.ID})/myAttachment_content`,
+      { responseType: "arraybuffer" },
     )
     expect(getRes.status).toEqual(200)
-    expect(getRes.data).toEqual(fileContent)
+    expect(getRes.data).toEqual(Buffer.from(fileContent))
   })
 
   it("Should delete a SingleAttachment and clear all inline fields", async () => {
