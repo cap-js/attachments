@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1",
-    "@cap-js/hana": ">=2.7",
-    "@cap-js/sqlite": ">=2"
+    "@cap-js/hana": "^2.7",
+    "@cap-js/sqlite": "^2"
   },
   "peerDependencies": {
     "@sap/cds": ">=8 <10"
