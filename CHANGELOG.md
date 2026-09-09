@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+- Downloading or rescanning a metadata-only attachment (POST created but content not yet uploaded) now correctly returns 404 instead of triggering a rescan with a misleading 202 response.
 
 ## Version 4.0.0 - 2026-08-03
 
