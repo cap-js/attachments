@@ -497,17 +497,20 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     })
 
     const AttachmentsSrv = await cds.connect.to("attachments")
-    const target = cds.model.definitions["sap.capire.incidents.Incidents.attachments"]
-    const putSpy = jest.spyOn(AttachmentsSrv, "put").mockImplementation(async (_t, data) => {
-      await UPSERT.into(target).entries({
-        up__ID: data.up__ID,
-        ID: data.ID,
-        url: data.url,
-        filename: data.filename,
-        mimeType: data.mimeType,
-        status: "Unscanned",
+    const target =
+      cds.model.definitions["sap.capire.incidents.Incidents.attachments"]
+    const putSpy = jest
+      .spyOn(AttachmentsSrv, "put")
+      .mockImplementation(async (_t, data) => {
+        await UPSERT.into(target).entries({
+          up__ID: data.up__ID,
+          ID: data.ID,
+          url: data.url,
+          filename: data.filename,
+          mimeType: data.mimeType,
+          status: "Unscanned",
+        })
       })
-    })
     const originalKind = cds.env.requires.attachments.kind
     cds.env.requires.attachments.kind = "aws-s3"
 
