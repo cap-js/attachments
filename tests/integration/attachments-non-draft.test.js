@@ -468,6 +468,56 @@ describe("Tests for uploading/deleting and fetching attachments through API call
     expect(await deletion).toBe(true)
   })
 
+  it("Programmatic INSERT with attachment content should not cause duplicate key error", async () => {
+    // Regression: in 3.13.x the DB handler called next() after attachment.put(), causing
+    // a duplicate INSERT for the same (up__ID, ID) key. Simulate object-store mode by
+    // overriding kind and mocking put() to write metadata to the DB (as the real service
+    // would via UPSERT), then verify the full flow completes without a constraint violation.
+    const incidentID = cds.utils.uuid()
+    const attachmentID = cds.utils.uuid()
+    await INSERT.into("sap.capire.incidents.Incidents").entries({
+      ID: incidentID,
+      title: "Programmatic import test",
+    })
+
+    const AttachmentsSrv = await cds.connect.to("attachments")
+    const target =
+      cds.model.definitions["sap.capire.incidents.Incidents.attachments"]
+    const putSpy = jest
+      .spyOn(AttachmentsSrv, "put")
+      .mockImplementation(async (_t, data) => {
+        await UPSERT.into(target).entries({
+          up__ID: data.up__ID,
+          ID: data.ID,
+          url: data.url,
+          filename: data.filename,
+          mimeType: data.mimeType,
+          status: "Unscanned",
+        })
+      })
+    const originalKind = cds.env.requires.attachments.kind
+    cds.env.requires.attachments.kind = "aws-s3"
+
+    try {
+      const { Readable } = require("stream")
+      await INSERT.into(target).entries({
+        up__ID: incidentID,
+        ID: attachmentID,
+        filename: "import.pdf",
+        mimeType: "application/pdf",
+        content: Readable.from(Buffer.from("pdf")),
+      })
+    } finally {
+      cds.env.requires.attachments.kind = originalKind
+      putSpy.mockRestore()
+    }
+
+    const db = await cds.connect.to("db")
+    const rows = await db.run(SELECT.from(target).where({ up__ID: incidentID }))
+    expect(rows.length).toBe(1)
+    expect(rows[0].ID).toBe(attachmentID)
+  })
+
   it("Should create NonDraftTest entities using programmatic INSERT and add attachments", async () => {
     const firstID = cds.utils.uuid()
     const secondID = cds.utils.uuid()

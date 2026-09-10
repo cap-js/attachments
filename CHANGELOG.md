@@ -4,25 +4,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## Version 3.13.5 - 2026-09-09
 
 ### Fixed
 
-- Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
-
-## Version 4.0.0 - 2026-08-03
-
-**BREAKING CHANGE: The attachments plugin comes now without hyperscaler dependencies, please make sure to install them accordingly!**
-**BREAKING CHANGE: Projects that explicitly set `attachments.outbox: true` in their own CDS configuration must rename the key to `outboxed`.**
-
-### Changed
-
-- The `outbox` configuration key under `cds.requires.attachments` has been renamed to `outboxed`. A deprecation warning is logged at startup when the old key is detected.
-- Cloud storage SDKs (`@aws-sdk/client-s3`, `@aws-sdk/lib-storage`, `@azure/storage-blob`, `@google-cloud/storage`) are now optional peer dependencies. Install only the SDK(s) for the provider you use (e.g. `npm install @aws-sdk/client-s3 @aws-sdk/lib-storage` for AWS S3). A clear error message with the exact install command is shown if a required SDK is missing at runtime.
-
-### Fixed
-
-- Attachments are now served with `Content-Disposition: attachment` by default with inline being a toggle
+- Programmatic attachment imports that include file content no longer fail with a duplicate-key error on HANA.
 
 ## Version 3.13.4 - 2026-07-31
 
