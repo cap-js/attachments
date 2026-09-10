@@ -25,6 +25,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 - Attachments are now served with `Content-Disposition: attachment` by default with inline being a toggle
 
+## Version 3.13.5 - [Unreleased]
+
+### Fixed
+
+- Programmatic attachment imports that include file content no longer fail with a duplicate-key error on HANA.
+
 ## Version 3.13.4 - 2026-07-31
 
 ### Fixed
