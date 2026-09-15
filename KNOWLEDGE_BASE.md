@@ -1,6 +1,6 @@
 # `@cap-js/attachments` — Developer Knowledge Base
 
-*Written for someone joining the team cold. Assumes familiarity with SAP CAP but not this plugin specifically.*
+_Written for someone joining the team cold. Assumes familiarity with SAP CAP but not this plugin specifically._
 
 ---
 
@@ -84,15 +84,15 @@ These are registered once at the DB layer rather than per-service because the st
 
 The property returns an object with:
 
-| Property | Description |
-|----------|-------------|
-| `isAttachmentsEntity` | True if this entity itself is a media data entity (`@_is_media_data`) |
-| `hasAttachmentsComposition` | True if any composition path leads to an attachment entity (memoized) |
-| `attachmentCompositions` | All composition paths (arrays of element names) leading to attachment entities |
-| `inlineAttachmentPrefixes` | List of inline field prefixes on this entity (memoized) |
-| `hasInlineAttachments` | True if any inline prefixes exist (memoized) |
+| Property                    | Description                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `isAttachmentsEntity`       | True if this entity itself is a media data entity (`@_is_media_data`)          |
+| `hasAttachmentsComposition` | True if any composition path leads to an attachment entity (memoized)          |
+| `attachmentCompositions`    | All composition paths (arrays of element names) leading to attachment entities |
+| `inlineAttachmentPrefixes`  | List of inline field prefixes on this entity (memoized)                        |
+| `hasInlineAttachments`      | True if any inline prefixes exist (memoized)                                   |
 
-**The memoization pattern** (`delete this.X; this.X = computed; return this.X`) is the standard CDS idiom for lazy-computed, self-replacing getters on linked entity objects. It avoids re-running the composition tree walk on every access. `attachmentCompositions` is intentionally *not* memoized because composition paths can change between model reloads (relevant in MTX multitenancy).
+**The memoization pattern** (`delete this.X; this.X = computed; return this.X`) is the standard CDS idiom for lazy-computed, self-replacing getters on linked entity objects. It avoids re-running the composition tree walk on every access. `attachmentCompositions` is intentionally _not_ memoized because composition paths can change between model reloads (relevant in MTX multitenancy).
 
 ---
 
@@ -100,11 +100,11 @@ The property returns an object with:
 
 Configured via `cds.env.requires.attachments.kind`:
 
-| Kind | Used when |
-|------|-----------|
-| `db` | Development default, or when explicitly set |
-| `standard` | Production — auto-detects cloud provider from credential shape |
-| `attachments-s3` / `attachments-azure` / `attachments-gcp` | Explicit cloud provider |
+| Kind                                                       | Used when                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------- |
+| `db`                                                       | Development default, or when explicitly set                    |
+| `standard`                                                 | Production — auto-detects cloud provider from credential shape |
+| `attachments-s3` / `attachments-azure` / `attachments-gcp` | Explicit cloud provider                                        |
 
 **`standard` auto-detection** ([`lib/helper.js:133`](lib/helper.js#L133)): Sniffs `objectStore.credentials` for `access_key_id` (AWS), `container_name` (Azure), or `projectId` (GCP). If none match, falls back to `"aws-s3"` — this is intentional (AWS was the first supported backend) but will produce a cryptic AWS SDK error rather than a clear message if credentials are actually missing or misconfigured. No warning is logged on this fallback (see open questions).
 
@@ -124,12 +124,12 @@ Integrates with the SAP BTP Malware Scanner service.
 
 **Retry:** Configurable exponential backoff with jitter on 429 responses.
 
-| Config key | Default | Description |
-|-----------|---------|-------------|
-| `maxAttempts` | 5 | Max retry attempts |
-| `initialDelay` | 1000ms | First retry delay |
-| `maxDelay` | 30000ms | Retry delay cap |
-| `maxConcurrentScans` | 30 | Semaphore limit for concurrent scans |
+| Config key           | Default | Description                          |
+| -------------------- | ------- | ------------------------------------ |
+| `maxAttempts`        | 5       | Max retry attempts                   |
+| `initialDelay`       | 1000ms  | First retry delay                    |
+| `maxDelay`           | 30000ms | Retry delay cap                      |
+| `maxConcurrentScans` | 30      | Semaphore limit for concurrent scans |
 
 **Scan expiry:** `scanExpiryMs: 259200000` (3 days). Controls how long a `"Clean"` status is considered valid before re-scanning.
 
@@ -222,11 +222,11 @@ Run: `npm test` (SQLite), `npm run test:postgres` (Postgres, requires `CDS_ENV=p
 
 The following could not be answered during the handover and should be resolved with the original authors.
 
-| # | Location | Question |
-|---|----------|----------|
-| 1 | [`lib/plugin.js:28`](lib/plugin.js#L28) | Why does the attachment intercept sit at the DB layer (`db.on("INSERT")`, `db.on("SELECT")`) rather than being registered per `ApplicationService`? What specific problem forced it down to this level? |
-| 2 | [`lib/csn-runtime-extension.js:79`](lib/csn-runtime-extension.js#L79) | Why patch `cds.builtin.classes.entity.prototype` directly rather than using a standalone helper function? Is the intent that `_attachments` must be accessible inside CAP internals where only the entity definition object is in scope? |
-| 3 | [`lib/plugin.js:265`](lib/plugin.js#L265) | `// const csnCopy = structuredClone(csn) // REVISIT: Why did we add this cloning?` — what mutation in `unfoldModel` was this protecting against, and why was it removed? |
-| 4 | [`lib/helper.js:143`](lib/helper.js#L143) | When `getAttachmentKind()` falls back to `"aws-s3"` with no matching credentials, no warning is logged. Should there be one? Without credentials, the first upload will fail with a cryptic AWS SDK error. |
-| 5 | [`lib/plugin.js:718`](lib/plugin.js#L718) | `// REVISIT: once cap-js/hana stringifies the values because HDB requires it` — is `stringifyValues` still needed, or has the upstream HANA adapter been fixed and this is now dead code? |
-| 6 | [`srv/attachments/basic.js:267`](srv/attachments/basic.js#L267) | When is `cds.env.fiori.move_media_data_in_db` true? Does it signal that CAP itself will handle the draft-to-active content copy, making the plugin's SAVE handler redundant? Is this the expected default in recent CAP versions? |
+| #   | Location                                                              | Question                                                                                                                                                                                                                                 |
+| --- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | [`lib/plugin.js:28`](lib/plugin.js#L28)                               | Why does the attachment intercept sit at the DB layer (`db.on("INSERT")`, `db.on("SELECT")`) rather than being registered per `ApplicationService`? What specific problem forced it down to this level?                                  |
+| 2   | [`lib/csn-runtime-extension.js:79`](lib/csn-runtime-extension.js#L79) | Why patch `cds.builtin.classes.entity.prototype` directly rather than using a standalone helper function? Is the intent that `_attachments` must be accessible inside CAP internals where only the entity definition object is in scope? |
+| 3   | [`lib/plugin.js:265`](lib/plugin.js#L265)                             | `// const csnCopy = structuredClone(csn) // REVISIT: Why did we add this cloning?` — what mutation in `unfoldModel` was this protecting against, and why was it removed?                                                                 |
+| 4   | [`lib/helper.js:143`](lib/helper.js#L143)                             | When `getAttachmentKind()` falls back to `"aws-s3"` with no matching credentials, no warning is logged. Should there be one? Without credentials, the first upload will fail with a cryptic AWS SDK error.                               |
+| 5   | [`lib/plugin.js:718`](lib/plugin.js#L718)                             | `// REVISIT: once cap-js/hana stringifies the values because HDB requires it` — is `stringifyValues` still needed, or has the upstream HANA adapter been fixed and this is now dead code?                                                |
+| 6   | [`srv/attachments/basic.js:267`](srv/attachments/basic.js#L267)       | When is `cds.env.fiori.move_media_data_in_db` true? Does it signal that CAP itself will handle the draft-to-active content copy, making the plugin's SAVE handler redundant? Is this the expected default in recent CAP versions?        |
