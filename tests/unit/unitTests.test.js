@@ -26,6 +26,11 @@ beforeEach(() => {
     requires: {
       attachments: { scan: true },
     },
+    remote: {
+      timeout: 60_000,
+      cache_size: 100,
+      cache_expiry_buffer: 60_000,
+    },
     profiles: [],
   }
   global.fetch = jest.fn(() =>
@@ -51,10 +56,11 @@ describe("getObjectStoreCredentials", () => {
     global.fetch = jest
       .fn()
       // First call: fetchTokenWithClientSecret (POST to /oauth/token)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ access_token: "test-token" }),
-      })
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: "test-token" }), {
+          headers: { "content-type": "application/json" },
+        }),
+      )
       // Second call: fetchObjectStoreBinding (GET service_bindings)
       .mockResolvedValueOnce({
         ok: true,
@@ -88,11 +94,14 @@ describe("getObjectStoreCredentials", () => {
 
 describe("fetchToken", () => {
   it("should return a token when fetch resolves", async () => {
-    global.fetch = jest.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ access_token: "test-token" }),
-    })
-    const token = await fetchToken("url", "clientId", "clientSecret")
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: "test-token" }), {
+          headers: { "content-type": "application/json" },
+        }),
+      )
+    const token = await fetchToken("https://url", "clientId", "clientSecret")
     expect(token).toBe("test-token")
   })
 
@@ -110,9 +119,9 @@ describe("fetchToken", () => {
 
   it("should handle error and throw", async () => {
     global.fetch = jest.fn().mockRejectedValueOnce(new Error("fail"))
-    await expect(fetchToken("url", "clientId", "clientSecret")).rejects.toThrow(
-      "fail",
-    )
+    await expect(
+      fetchToken("https://url", "errorClient", "clientSecret"),
+    ).rejects.toThrow("fail")
   })
 })
 
