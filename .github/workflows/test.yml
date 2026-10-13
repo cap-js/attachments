@@ -98,5 +98,6 @@ jobs:
       - run: npm i
       - name: Deploy to Postgres
         run: npm run deploy:postgres
+      # The suites share one outbox, so separate Jest workers could consume each other's events.
       - name: Integration tests (Postgres)
-        run: CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
+        run: npm run test:postgres -- --testPathPatterns="tests/integration"
