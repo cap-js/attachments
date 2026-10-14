@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+- Downloading or rescanning a metadata-only attachment (POST created but content not yet uploaded) now correctly returns 404 instead of triggering a rescan with a misleading 202 response.
 
 ## Version 4.0.0 - 2026-08-03
 
@@ -23,6 +24,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Attachments are now served with `Content-Disposition: attachment` by default with inline being a toggle
+
+## Version 3.13.5 - [Unreleased]
+
+### Fixed
+
+- Programmatic attachment imports that include file content no longer fail with a duplicate-key error on HANA.
 
 ## Version 3.13.4 - 2026-07-31
 
