@@ -99,4 +99,4 @@ jobs:
       - name: Deploy to Postgres
         run: npm run deploy:postgres
       - name: Integration tests (Postgres)
-        run: CDS_ENV=pg npm run test -- --testPathPatterns="tests/integration"
+        run: npm run test:postgres -- --testPathPatterns="tests/integration"
