@@ -4,11 +4,11 @@ inputs:
   CF_API:
     description: "Cloud Foundry API endpoint"
     required: true
-  CF_USERNAME:
-    description: "Cloud Foundry username"
+  CF_USER_ORIGIN:
+    description: "Origin key of the platform IdP (SAP Cloud Identity Services) for Cloud Foundry"
     required: true
-  CF_PASSWORD:
-    description: "Cloud Foundry password"
+  CIS_ISSUER_URI:
+    description: "Issuer URI of the SAP Cloud Identity Services tenant, used as audience of the GitHub OIDC token"
     required: true
   CF_ORG:
     description: "Cloud Foundry organization"
@@ -39,19 +39,33 @@ runs:
         sudo mv cf8 /usr/local/bin/
         cf --version
 
-    - name: Authenticate with Cloud Foundry
+    - name: Authenticate with Cloud Foundry (GitHub OIDC)
       shell: bash
       env:
         CF_API: ${{ inputs.CF_API }}
-        CF_USERNAME: ${{ inputs.CF_USERNAME }}
-        CF_PASSWORD: ${{ inputs.CF_PASSWORD }}
         CF_ORG: ${{ inputs.CF_ORG }}
         CF_SPACE: ${{ inputs.CF_SPACE }}
+        CF_USER_ORIGIN: ${{ inputs.CF_USER_ORIGIN }}
+        CIS_ISSUER_URI: ${{ inputs.CIS_ISSUER_URI }}
       run: |
+        if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+          echo "::error::ACTIONS_ID_TOKEN_REQUEST_URL is not set. The calling job needs 'permissions: id-token: write'."
+          exit 1
+        fi
+        # A trailing slash is a common mistake and would make the audience not match
+        audience=$(jq -rn --arg a "${CIS_ISSUER_URI%/}" '$a|@uri')
         for i in {1..5}; do
-          cf api "$CF_API" && \
-          cf auth && \
-          cf target -o "$CF_ORG" -s "$CF_SPACE" && break
+          # The token is short-lived, so request a fresh one on every attempt
+          githubJwt=$(curl -sSf \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            -H "Accept: application/json; api-version=2.0" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" | jq -r '.value // empty')
+          if [ -n "$githubJwt" ]; then
+            echo "::add-mask::$githubJwt"
+            cf api "$CF_API" && \
+            cf auth --assertion "$githubJwt" --origin "$CF_USER_ORIGIN" && \
+            cf target -o "$CF_ORG" -s "$CF_SPACE" && break
+          fi
           echo "cf login failed, retrying ($i/5)..."
           sleep 10
           if [ "$i" -eq 5 ]; then
