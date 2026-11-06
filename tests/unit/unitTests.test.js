@@ -14,6 +14,7 @@ jest.doMock("../../srv/malware-scanner/malwareScanner", () => {
 const cds = require("@sap/cds")
 const {
   getObjectStoreCredentials,
+  getAttachmentKind,
   fetchToken,
   sizeInBytes,
   MAX_FILE_SIZE,
@@ -148,6 +149,46 @@ describe("size to byte converter", () => {
     expect(sizeInBytes(undefined)).toEqual(MAX_FILE_SIZE)
 
     expect(sizeInBytes({ $edmJson: "Dummy Value" })).toEqual(MAX_FILE_SIZE)
+  })
+})
+
+describe("getAttachmentKind", () => {
+  it("should return 'db' when kind is not 'standard'", () => {
+    cds.env.requires.attachments = { kind: "db" }
+    expect(getAttachmentKind()).toBe("db")
+  })
+
+  it("should return 'db' when kind is not set", () => {
+    cds.env.requires.attachments = {}
+    expect(getAttachmentKind()).toBe("db")
+  })
+
+  it("should return 'aws-s3' when access_key_id is present", () => {
+    cds.env.requires.attachments = { kind: "standard" }
+    cds.env.requires.objectStore = { credentials: { access_key_id: "key" } }
+    expect(getAttachmentKind()).toBe("aws-s3")
+  })
+
+  it("should return 'azure-blob-storage' when container_name is present", () => {
+    cds.env.requires.attachments = { kind: "standard" }
+    cds.env.requires.objectStore = {
+      credentials: { container_name: "container" },
+    }
+    expect(getAttachmentKind()).toBe("azure-blob-storage")
+  })
+
+  it("should return 'gcp' when projectId is present", () => {
+    cds.env.requires.attachments = { kind: "standard" }
+    cds.env.requires.objectStore = { credentials: { projectId: "my-project" } }
+    expect(getAttachmentKind()).toBe("gcp")
+  })
+
+  it("should throw when kind is 'standard' but no recognized credentials are present", () => {
+    cds.env.requires.attachments = { kind: "standard" }
+    cds.env.requires.objectStore = { credentials: {} }
+    expect(() => getAttachmentKind()).toThrow(
+      "Cannot identify object store provider based on provided object-store credentials",
+    )
   })
 })
 
