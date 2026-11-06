@@ -56,7 +56,7 @@ jobs:
         scanner-auth: [basic, mtls]
     steps:
       - name: Integration tests (HANA)
-        uses: cap-js/attachments/.github/actions/integration-tests@oidc-cf-login
+        uses: cap-js/attachments/.github/actions/integration-tests@main
         with:
           CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
           CF_USER_ORIGIN: ${{ secrets['CF_USER_ORIGIN'] }}
