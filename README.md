@@ -717,6 +717,12 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
   - **Azure Blob Storage** (`kind: "azure"`)
   - **GCP Cloud Storage** (`kind: "gcp"`)
 
+Depending on the used object-store add these dependencies to your `package.json`:
+
+- **AWS S3**: "`@aws-sdk/client-s3`", "`@aws-sdk/lib-storage`"
+- **Azure Blob Storage**: "`@azure/storage-blob`", "`abort-controller`"
+- **GCP Cloud Storage**: "`@google-cloud/storage`"
+
 ### Model Texts
 
 In the model, several fields are annotated with the `@title` annotation. Default texts are provided in [2 languages](./_i18n). If these defaults are not sufficient for an application, they can be overwritten by applications with custom texts or translations.

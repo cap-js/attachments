@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+- Document required object-store provider dependencies, as they are not provided automatically anymore since [v4.0.0](https://github.com/cap-js/attachments/releases/tag/v4.0.0).
 
 ## Version 4.0.0 - 2026-08-03
 
