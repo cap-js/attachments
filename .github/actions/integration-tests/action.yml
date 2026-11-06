@@ -54,18 +54,19 @@ runs:
         fi
         # A trailing slash is a common mistake and would make the audience not match
         audience=$(jq -rn --arg a "${CIS_ISSUER_URI%/}" '$a|@uri')
+        githubJwt=$(curl -sSf \
+          -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          -H "Accept: application/json; api-version=2.0" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" | jq -r '.value // empty')
+        if [ -z "$githubJwt" ]; then
+          echo "::error::Could not get a GitHub OIDC token."
+          exit 1
+        fi
+        echo "::add-mask::$githubJwt"
         for i in {1..5}; do
-          # The token is short-lived, so request a fresh one on every attempt
-          githubJwt=$(curl -sSf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            -H "Accept: application/json; api-version=2.0" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" | jq -r '.value // empty')
-          if [ -n "$githubJwt" ]; then
-            echo "::add-mask::$githubJwt"
-            cf api "$CF_API" && \
-            cf auth --assertion "$githubJwt" --origin "$CF_USER_ORIGIN" && \
-            cf target -o "$CF_ORG" -s "$CF_SPACE" && break
-          fi
+          cf api "$CF_API" && \
+          cf auth --assertion "$githubJwt" --origin "$CF_USER_ORIGIN" && \
+          cf target -o "$CF_ORG" -s "$CF_SPACE" && break
           echo "cf login failed, retrying ($i/5)..."
           sleep 10
           if [ "$i" -eq 5 ]; then
