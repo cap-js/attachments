@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+- Removed unused `abort-controller` polyfill import that caused a `MODULE_NOT_FOUND` error under pnpm's strict module resolution. `AbortController` is a Node.js built-in global since v15.
 
 ## Version 4.0.0 - 2026-08-03
 
