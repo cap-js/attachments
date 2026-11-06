@@ -44,6 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: requires-approval
     if: always() && (needs.requires-approval.result == 'success' || needs.requires-approval.result == 'skipped')
+    permissions:
+      id-token: write
+      contents: read
     name: Integration Tests on Node.js ${{ matrix['node-version'] }} with ${{ matrix.hyperscaler }} and ${{ matrix['scanner-auth'] }} scanner auth
     strategy:
       fail-fast: false
@@ -56,8 +59,8 @@ jobs:
         uses: cap-js/attachments/.github/actions/integration-tests@main
         with:
           CF_API: ${{ secrets[format('CF_API_{0}', matrix.hyperscaler)] }}
-          CF_USERNAME: ${{ secrets['CF_USERNAME'] }}
-          CF_PASSWORD: ${{ secrets['CF_PASSWORD'] }}
+          CF_USER_ORIGIN: ${{ secrets['CF_USER_ORIGIN'] }}
+          CIS_ISSUER_URI: ${{ secrets['CIS_ISSUER_URI'] }}
           CF_ORG: ${{ secrets[format('CF_ORG_{0}', matrix.hyperscaler)] }}
           CF_SPACE: ${{ secrets[format('CF_SPACE_{0}', matrix.hyperscaler)] }}
           OBJECT_STORE_KIND: ${{ vars[format('OBJECT_STORE_KIND_{0}', matrix.hyperscaler)] }}
