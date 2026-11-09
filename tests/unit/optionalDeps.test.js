@@ -60,11 +60,6 @@ describe("optional peer dependency errors", () => {
   test("azure-blob-storage loads successfully when SDK is present", () => {
     jest.isolateModules(() => {
       jest.dontMock("@azure/storage-blob")
-      // https-proxy-agent and http-proxy-agent v7+ are ESM-only (no CJS build),
-      // which Jest's CJS runtime cannot require(). Mock them so loading
-      // @azure/storage-blob doesn't fail on its transitive proxy-agent deps.
-      jest.mock("https-proxy-agent", () => ({ HttpsProxyAgent: class {} }))
-      jest.mock("http-proxy-agent", () => ({ HttpProxyAgent: class {} }))
       expect(() =>
         require("../../srv/attachments/azure-blob-storage"),
       ).not.toThrow()
