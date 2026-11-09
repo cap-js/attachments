@@ -719,9 +719,9 @@ To set the binding, please see the section [Storage Targets](#storage-targets).
 
 Depending on the used object-store add these dependencies to your `package.json`:
 
-- **AWS S3**: "`@aws-sdk/client-s3`", "`@aws-sdk/lib-storage`"
-- **Azure Blob Storage**: "`@azure/storage-blob`", "`abort-controller`"
-- **GCP Cloud Storage**: "`@google-cloud/storage`"
+- **AWS S3**: "`@aws-sdk/client-s3@^3`", "`@aws-sdk/lib-storage@^3`"
+- **Azure Blob Storage**: "`@azure/storage-blob@^12`"
+- **GCP Cloud Storage**: "`@google-cloud/storage@^7`"
 
 ### Model Texts
 
