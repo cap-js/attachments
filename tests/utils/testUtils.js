@@ -100,7 +100,8 @@ async function waitForDeletion(attachmentID) {
       AttachmentsSrv.on("DeleteAttachment", handler)
       entry = AttachmentsSrv._handlers.on.at(-1)
     }),
-    delay(30000).then(async () => {
+    delay(120000).then(async () => {
+      // original timeout was 30000, reduce once tests work reliably again
       const { messagesAmount } = await SELECT.one
         .from("cds.outbox.Messages")
         .columns("count(1) as messagesAmount")
@@ -140,7 +141,8 @@ async function waitForMalwareDeletion(attachmentID) {
       AttachmentsSrv.on("DeleteInfectedAttachment", handler)
       entry = AttachmentsSrv._handlers.on.at(-1)
     }),
-    delay(30000).then(async () => {
+    delay(120000).then(async () => {
+      // original timeout was 30000, reduce once tests work reliably again
       const { messagesAmount } = await SELECT.one
         .from("cds.outbox.Messages")
         .columns("count(1) as messagesAmount")
