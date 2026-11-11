@@ -158,13 +158,9 @@ async function newIncident(
   },
   entity = "Incidents",
 ) {
-  try {
-    // Create draft from active entity
-    const res = await POST(`odata/v4/${serviceName}/${entity}`, payload)
-    return res.data.ID
-  } catch (err) {
-    return err
-  }
+  // Create draft from active entity
+  const res = await POST(`odata/v4/${serviceName}/${entity}`, payload)
+  return res.data.ID
 }
 
 async function runWithUser(user, fn) {
