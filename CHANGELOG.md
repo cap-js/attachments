@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [Unreleased]
+## Version 4.0.1 - 2026-11-12
 
 ### Fixed
 
