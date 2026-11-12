@@ -98,7 +98,7 @@ async function waitForDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteAttachment", handler)
     }),
-    delay(120000).then(async () => {
+    delay(30000).then(async () => {
       let detail = ""
       try {
         const messages = await SELECT.from("cds.outbox.Messages").columns(
@@ -155,7 +155,7 @@ async function waitForMalwareDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteInfectedAttachment", handler)
     }),
-    delay(120000).then(async () => {
+    delay(30000).then(async () => {
       let detail = ""
       try {
         const messages = await SELECT.from("cds.outbox.Messages").columns(
