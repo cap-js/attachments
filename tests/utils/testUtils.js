@@ -98,13 +98,35 @@ async function waitForDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteAttachment", handler)
     }),
-    // original timeout was 30000, reduce once tests work reliably again
-    delay(120000).then(async () => {
-      const { messagesAmount } = await SELECT.one
-        .from("cds.outbox.Messages")
-        .columns("count(1) as messagesAmount")
+    delay(30000).then(async () => {
+      let detail = ""
+      try {
+        const messages = await SELECT.from("cds.outbox.Messages").columns(
+          "ID",
+          "target",
+          "status",
+          "attempts",
+          "lastError",
+          "lastAttemptTimestamp",
+          "timestamp",
+          "msg",
+        )
+
+        const diagnostics = messages.map(({ msg, lastError, ...row }) => ({
+          ...row,
+          matchesExpected: String(msg ?? "").includes(attachmentID),
+          lastError: String(lastError ?? "").slice(0, 200),
+        }))
+
+        detail =
+          `\n${messages.length} messages in outbox.\n` +
+          JSON.stringify(diagnostics, null, 2)
+      } catch (e) {
+        detail = `\n(could not query outbox: ${e.message})`
+      }
+
       throw new Error(
-        `Timeout waiting for deletion of attachment ID: ${attachmentID}. ${messagesAmount} messages in outbox.`,
+        `Timeout waiting for deletion of attachment ID: ${attachmentID}.${detail}`,
       )
     }),
   ])
@@ -133,13 +155,35 @@ async function waitForMalwareDeletion(attachmentID) {
       }
       AttachmentsSrv.on("DeleteInfectedAttachment", handler)
     }),
-    // original timeout was 30000, reduce once tests work reliably again
-    delay(120000).then(async () => {
-      const { messagesAmount } = await SELECT.one
-        .from("cds.outbox.Messages")
-        .columns("count(1) as messagesAmount")
+    delay(30000).then(async () => {
+      let detail = ""
+      try {
+        const messages = await SELECT.from("cds.outbox.Messages").columns(
+          "ID",
+          "target",
+          "status",
+          "attempts",
+          "lastError",
+          "lastAttemptTimestamp",
+          "timestamp",
+          "msg",
+        )
+
+        const diagnostics = messages.map(({ msg, lastError, ...row }) => ({
+          ...row,
+          matchesExpected: String(msg ?? "").includes(attachmentID),
+          lastError: String(lastError ?? "").slice(0, 200),
+        }))
+
+        detail =
+          `\n${messages.length} messages in outbox.\n` +
+          JSON.stringify(diagnostics, null, 2)
+      } catch (e) {
+        detail = `\n(could not query outbox: ${e.message})`
+      }
+
       throw new Error(
-        `Timeout waiting for malware deletion of attachment ID: ${attachmentID}. ${messagesAmount} messages in outbox.`,
+        `Timeout waiting for malware deletion of attachment ID: ${attachmentID}.${detail}`,
       )
     }),
   ])
