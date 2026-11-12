@@ -32,6 +32,46 @@ If you want to test your implementation against the BTP Object Store or the Malw
 
 If you are prompted locally for authentication use CAPs local development mock values of "alice" and "1234".
 
+## Running tests locally against BTP service instances
+
+Some integration tests are guarded by `isNotLocal` — they are skipped when `cds.env.requires.attachments.kind` is `"db"` (the default for local development) and only run when a real object store backend is configured.
+
+### Using real BTP services via `cds bind` (local SQLite database)
+
+This setup uses the BTP Malware Scanning Service and Object Store from your BTP account, while keeping the database local (SQLite). This is the simplest way to run the `isNotLocal` tests without needing a HANA HDI container.
+
+First deploy a local SQLite database. This avoids HANA connection errors when the hybrid profile is active, since CAP will use the deployed `db.sqlite` file as the database instead of attempting to connect to HANA:
+
+```sh
+cd tests/incidents-app && cds deploy --to sqlite && cd -
+```
+
+Make sure `tests/incidents-app/package.json` has the SQLite db configured for the hybrid profile. The `audit-log` entry redirects audit log output to the console — without it the tests fail because no audit log service is bound. Add the following inside the `"requires"` block:
+
+```diff
+  "requires": {
++   "[hybrid]": {
++     "db": {
++       "kind": "sqlite",
++       "credentials": {
++         "url": "db.sqlite"
++       }
++     },
++     "audit-log": {
++       "kind": "audit-log-to-console"
++     }
++   },
+    "queue": {
+```
+
+Then bind the required BTP services and run the tests via `cds bind --exec` so the bound credentials are injected:
+
+```sh
+cds bind --profile hybrid <object-store-instance>    # binds your BTP Object Store instance
+cds bind --profile hybrid <malware-scanner-instance> # binds your BTP Malware Scanning Service instance
+cds bind --profile hybrid --exec -- npx jest --runInBand
+```
+
 ## Contributing Code or Documentation
 
 You are welcome to contribute code in order to fix a bug or to implement a new feature that is logged as an issue.
