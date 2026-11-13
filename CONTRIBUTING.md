@@ -38,6 +38,11 @@ Some integration tests are guarded by `isNotLocal` — they are skipped when `cd
 
 ### Using real BTP services via `cds bind` (local SQLite database)
 
+Prerequisite:
+
+- malware-scan-instance and object-store-instance available in targeted btp space.
+- logged in into cf.
+
 This setup uses the BTP Malware Scanning Service and Object Store from your BTP account, while keeping the database local (SQLite). This is the simplest way to run the `isNotLocal` tests without needing a HANA HDI container.
 
 First deploy a local SQLite database. This avoids HANA connection errors when the hybrid profile is active, since CAP will use the deployed `db.sqlite` file as the database instead of attempting to connect to HANA:
