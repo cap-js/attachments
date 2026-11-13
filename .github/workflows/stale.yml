@@ -11,7 +11,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629 # v10
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
         with:
           close-issue-message: "This issue has been automatically closed due to 2 weeks of inactivity. If you believe this was a mistake, please reopen or comment to continue the discussion."
           days-before-stale: -1
