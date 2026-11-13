@@ -77,6 +77,30 @@ cds bind --profile hybrid <malware-scanner-instance> # binds your BTP Malware Sc
 cds bind --profile hybrid --exec -- npx jest --runInBand
 ```
 
+### Using real BTP services via `cds bind` (HANA database)
+
+Prerequisite:
+
+- malware-scan-instance, object-store-instance and hana-instance available in targeted btp space.
+- logged in into cf.
+
+This setup uses the BTP Malware Scanning Service, Object Store and HANA from your BTP account.
+
+First deploy to a hana-hdi container.
+
+```sh
+cd tests/incidents-app && cds deploy --to hana && cd -
+```
+
+Then bind the required BTP services and run the tests via `cds bind --exec` so the bound credentials are injected:
+
+```sh
+cds bind --profile hybrid <object-store-instance>       # binds your BTP Object Store instance
+cds bind --profile hybrid <malware-scanner-instance>    # binds your BTP Malware Scanning Service instance
+cds bind --profile hybrid <hana-hdi-container-instance> # binds your hana-hdi-container-instance created above
+cds bind --profile hybrid --exec -- npx jest --runInBand
+```
+
 ## Contributing Code or Documentation
 
 You are welcome to contribute code in order to fix a bug or to implement a new feature that is logged as an issue.
