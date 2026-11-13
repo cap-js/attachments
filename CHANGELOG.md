@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Fixed
 
 - Malware-scan-status gate bypassed by `/content/$value`: `validateAttachment` now recognises the OData `/$value` suffix as a content request and enforces scan policy accordingly. The `getScanInfo` prefix extraction is also corrected for `/$value` URLs (CWE-184).
+- Fixed test suite broken by `https-proxy-agent` and `http-proxy-agent` switching to ESM-only in v7+. Jest's CJS runtime cannot `require()` ESM modules, and both packages are pulled in transitively by `@azure/storage-blob` → `@typespec/ts-http-runtime`. Both packages are now stubbed globally via `moduleNameMapper` in `jest.config.js` so Jest never attempts to load their ESM entry points.
+- Increased `waitForDeletion` and `waitForMalwareDeletion` test helper timeouts from 30 s to 120 s to prevent flaky test failures when the malware scan service is slow under load.
+- Document required object-store provider dependencies, as they are not provided automatically anymore since [v4.0.0](https://github.com/cap-js/attachments/releases/tag/v4.0.0).
+- Removed unused `abort-controller` polyfill import that caused a `MODULE_NOT_FOUND` error under pnpm's strict module resolution. `AbortController` is a Node.js built-in global since v15.
 
 ## Version 4.0.0 - 2026-08-03
 

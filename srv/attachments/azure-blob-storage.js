@@ -10,7 +10,6 @@ try {
     )
   throw e
 }
-const { AbortController } = require("abort-controller")
 const cds = require("@sap/cds")
 const LOG = cds.log("attachments")
 const utils = require("../../lib/helper")
