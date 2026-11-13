@@ -14,6 +14,7 @@ jest.mock("@sap/cds", () => {
 
 describe("mtx/server.js - handler registration on served vs listening", () => {
   beforeAll(() => {
+    process.env.CDS_ENV = "mtx-sidecar"
     require("../../lib/mtx/server")
   })
 
@@ -26,7 +27,6 @@ describe("mtx/server.js - handler registration on served vs listening", () => {
     const cds = require("@sap/cds")
     const afterCalls = []
 
-    process.env.CDS_ENV = "mtx-sidecar"
     cds.env.requires = {
       ...cds.env.requires,
       attachments: { kind: "s3", objectStore: { kind: "separate" } },
