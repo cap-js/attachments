@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest --silent=true",
+    "test": "npx jest --silent=true --runInBand",
     "test:postgres": "CDS_ENV=pg npx jest --silent=true --runInBand",
     "deploy:postgres": "cd ./tests/incidents-app && cds deploy --profile pg",
     "prepare": "git config core.hooksPath .husky"
