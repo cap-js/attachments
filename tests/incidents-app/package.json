@@ -20,6 +20,10 @@
       }
     },
     "requires": {
+      "audit-log": {
+        "kind": "audit-log-to-console",
+        "outbox": false
+      },
       "queue": {
         "parallel": true,
         "chunkSize": 50,
