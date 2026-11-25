@@ -448,7 +448,11 @@ class AttachmentsService extends cds.Service {
     const result = []
     for (const path of compositions) {
       const entityTarget = traverseEntity(parentTarget, path)
-      const attachments = this.traverseDataByPath(active, path) || []
+      // traverseDataByPath returns a single object for a "Composition of one"
+      // and may contain null entries; normalize to a flat array of records.
+      const attachments = [this.traverseDataByPath(active, path)]
+        .flat()
+        .filter(Boolean)
       result.push(
         ...attachments
           .filter((a) => a.url)

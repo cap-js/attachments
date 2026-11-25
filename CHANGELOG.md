@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## Unreleased
+
+### Fixed
+
+- Deleting a non-draft entity whose composition tree contains attachments no longer throws a `TypeError` in `urlsFromCompositions` (a `Composition of one` returned a single object, and children without a file produced `null` entries).
+
 ## Version 4.0.1 - 2026-11-16
 
 ### Fixed
